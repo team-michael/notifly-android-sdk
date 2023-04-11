@@ -9,7 +9,7 @@
 ```bash
 curl -X POST \
   https://fcm.googleapis.com/fcm/send \
-  -H 'Authorization: key=AAAA5_bCtUY:APA91bFOccC_CNmkcFje5tRgFPR51aEgAyQgcSboQ6JRPmP-qrrV6TSq8lA-HtLJ8IPL2JRMnvl9_eQ1g__jyFXZ4N22ykIbJxZGGULu3OKZt_OTodOhAFZfDbJGi_J5znN4O1n-tKi3' \
+  -H 'Authorization: key=AAAAc0VpeVc:APA91bHye9A8uc5hjc0IwEeqk2hEeiEBQ63ndVdeQ_YZaTL3_CLgN7I0hqGnJywEFetX5YZSDxnLmTQjziFJ-DyowtJLjLmbrltVDc-tHGPzlM6BV7XefhrgSGXnrXM7pbntpEn6AqHC' \
   -H 'Content-Type: application/json' \
   -d '{
     "notification": {
@@ -21,7 +21,7 @@ curl -X POST \
         "link": "www.saladpet.com"
     },
     "priority": "high",
-    "registration_ids": ["cwWnuwf5mEc_vfyKhH-2l7:APA91bEf1ZF8IRJaU03XqSm7mENi0ldKVfc1LM72l_65Off-ur1S_PnohgVNqLKAs4FaGz6EpPyDXrRZu5K5Sk96DUHjvLKdAacE_bK0oyRAi2JYAsGXRYt13ZeUAXrZKUYvavNQ_dvd"]
+    "registration_ids": ["dr_JkT53QBOAidHYvYDClh:APA91bHaUKxrj50BUJV2rG8PIdXfrQdqR7H8uHPjv7NDRbKnmF4_oj7pW8b624XaRXXsxsqQL_h3Wd0uvZWD_6_6qowbXDQrg2cBNEztOwrpZlMaX5j2MIpNNzk_nEitZsG1RomBKKQk"]
 }'
 ```
 
@@ -29,10 +29,10 @@ curl -X POST \
 
 ```bash
 curl -X POST \
+  https://fcm.googleapis.com/fcm/send \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: key=AAAA5_bCtUY:APA91bFOccC_CNmkcFje5tRgFPR51aEgAyQgcSboQ6JRPmP-qrrV6TSq8lA-HtLJ8IPL2JRMnvl9_eQ1g__jyFXZ4N22ykIbJxZGGULu3OKZt_OTodOhAFZfDbJGi_J5znN4O1n-tKi3' \
+  -H 'Authorization: key=AAAAc0VpeVc:APA91bHye9A8uc5hjc0IwEeqk2hEeiEBQ63ndVdeQ_YZaTL3_CLgN7I0hqGnJywEFetX5YZSDxnLmTQjziFJ-DyowtJLjLmbrltVDc-tHGPzlM6BV7XefhrgSGXnrXM7pbntpEn6AqHC' \
   -d '{
-    "content_available": true,
     "data": {
         "campaign_id": "TestCampaignMinyong",
         "notifly_message_type": "in-app-message",
@@ -44,7 +44,6 @@ curl -X POST \
             "position": "full"
         }
     },
-    "registration_ids": ["f10B8R4WR-mYS-LUMsBEmL:APA91bFg9T7IEK0ZqL76FoIG_Zy6K57i6zNGqmAhRLcbE6uPkPLY9g11i4AiZxgeuNu9Ldif1MtOtifcLVo_HY3CeEjlybCndDULNt05ktY-4o0UfM3bPijwyIyD0rIZcesZOJIh0RyO"]
-}' \
-  https://fcm.googleapis.com/fcm/send
+    "registration_ids": ["dr_JkT53QBOAidHYvYDClh:APA91bHaUKxrj50BUJV2rG8PIdXfrQdqR7H8uHPjv7NDRbKnmF4_oj7pW8b624XaRXXsxsqQL_h3Wd0uvZWD_6_6qowbXDQrg2cBNEztOwrpZlMaX5j2MIpNNzk_nEitZsG1RomBKKQk"]
+}'
 ```
