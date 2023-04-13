@@ -75,7 +75,7 @@ object NotiflySharedPreferences {
             is Boolean -> getBoolean(context, key, default) as T
             is String -> getString(context, key, default) as T
             is String? -> getStringNullable(context, key, default) as T
-            else -> throw IllegalArgumentException("Invalid Type for 'default' parameter: ${default::javaClass}")
+            else -> throw IllegalArgumentException("Invalid Type for 'default' parameter: ${default!!::javaClass}")
         }
     }
 

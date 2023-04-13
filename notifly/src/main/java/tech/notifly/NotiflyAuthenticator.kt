@@ -1,7 +1,12 @@
 package tech.notifly
 
+import android.content.Context
 import android.util.Log
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -39,6 +44,31 @@ object NotiflyAuthenticator {
                 Log.e(Notifly.TAG, "Authentication Failed", e)
                 null
             }
+        }
+    }
+
+
+    suspend fun getNotiflyUserId(context: Context): String {
+        // Get cached value if exists
+        val encodedUserId: String? = NotiflySharedPreferences.get(context, "notiflyUserId", null)
+        if (encodedUserId != null) return encodedUserId
+
+        // Retrieve user id
+        val projectId: String? = NotiflySharedPreferences.get(context, "notiflyProjectId", null)
+        val externalUserId: String? = NotiflySharedPreferences.get(context, "notiflyExternalUserId", null)
+        val notiflyUserId = if (externalUserId != null) {
+            UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_REGISTERED_USER_ID, "${projectId}${externalUserId}")
+        } else {
+            UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_UNREGISTERED_USER_ID, "${projectId}${getFcmToken()}")
+        }
+        return notiflyUserId.toString().also { NotiflySharedPreferences.put(context, "notiflyUserId", notiflyUserId) }
+    }
+
+    suspend fun getFcmToken(): String? {
+        return try {
+            FirebaseMessaging.getInstance().token.await()
+        } catch (e: Exception) {
+            null
         }
     }
 }

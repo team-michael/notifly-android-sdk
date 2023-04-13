@@ -1,15 +1,26 @@
 package tech.notifly.sample
 
+import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.Manifest
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -19,7 +30,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -79,81 +94,185 @@ class SampleActivity : ComponentActivity() {
         }
     }
 
-
     @Composable
-    fun NotiflyAuthenticatorSection(username: String, password: String) {
-        val idToken = remember { mutableStateOf("null") }
+    fun LabelTextRow(label: String, text: String) {
+        val context = LocalContext.current
+        val stateText = remember { mutableStateOf(text) }
 
-        LaunchedEffect(key1 = idToken) {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    // Call the suspend function getCognitoIdToken
-                    val token = NotiflyAuthenticator.getCognitoIdToken(username, password)
-
-                    // Process the token
-                    if (token != null) {
-                        idToken.value = token
-                        println("Cognito ID Token: $token")
-                    } else {
-                        idToken.value = "ID Token is null"
-                        println("Failed to fetch Cognito ID Token")
-                    }
-                } catch (e: Exception) {
-                    idToken.value = "Failed to Fetch Cognito ID Token: ${e.message}"
-                    println("Error: $e")
-                }
-            }
+        LaunchedEffect(text) {
+            stateText.value = text
         }
 
-        return Column(modifier = Modifier.padding(8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onLongPress = {
+                        copyTextToClipboard(context, label, stateText.value)
+                    })
+                }
+        ) {
             Text(
-                text = "USERNAME: $username",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 8.dp)
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
             )
             Text(
-                text = "PASSWORD: $password",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            Text(
-                text = "ID Token: ${idToken.value}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 8.dp)
+                text = text,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.weight(2f),
+                textAlign = TextAlign.End,
             )
         }
     }
 
     @Composable
-    fun SampleVerticalList(username: String, password: String) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Notifly", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    fun LabelTextColumn(label: String, text: String) {
+        val context = LocalContext.current
+        val stateText = remember { mutableStateOf(text) }
 
-            NotiflyAuthenticatorSection(username, password)
+        LaunchedEffect(text) {
+            stateText.value = text
+        }
 
-            Button(
-                onClick = { /* Handle button click */ },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text(text = "Button 1")
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onLongPress = {
+                        copyTextToClipboard(context, label, stateText.value)
+                    })
+                }
+        ) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = text,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
+        }
+    }
 
-            Button(
-                onClick = { /* Handle button click */ },
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Text(text = "Button 2")
-            }
+    @Composable
+    fun NotiflyAuthenticatorSection(username: String, password: String) {
+        val context = LocalContext.current
+        val idToken = remember { mutableStateOf("loading...") }
+        val fcmToken = remember { mutableStateOf("loading...") }
+        val notiflyUserId = remember { mutableStateOf("loading...") }
 
-            Button(
-                onClick = { /* Handle button click */ },
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Text(text = "Button 3")
+        LaunchedEffect(key1 = idToken) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val token = NotiflyAuthenticator.getCognitoIdToken(username, password)
+
+                    if (token != null) {
+                        idToken.value = token
+                        println("Cognito ID Token: $token")
+                    } else {
+                        idToken.value = "null"
+                        println("Cognito ID Token: null")
+                    }
+                } catch (e: Exception) {
+                    idToken.value = "Error: ${e.message}"
+                    println("Error: $e")
+                }
             }
         }
+
+        LaunchedEffect(key1 = fcmToken) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val token = NotiflyAuthenticator.getFcmToken()
+
+                    if (token != null) {
+                        fcmToken.value = token
+                        println("FCM Token: $token")
+                    } else {
+                        fcmToken.value = "null"
+                        println("FCM Token: null")
+                    }
+                } catch (e: Exception) {
+                    fcmToken.value = "Error: ${e.message}"
+                    println("Error: $e")
+                }
+            }
+        }
+
+        LaunchedEffect(key1 = notiflyUserId) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val userId = NotiflyAuthenticator.getNotiflyUserId(context)
+
+                    notiflyUserId.value = userId
+                    println("Notifly User ID: $userId")
+                } catch (e: Exception) {
+                    notiflyUserId.value = "Error: ${e.message}"
+                    println("Error: $e")
+                }
+            }
+        }
+
+        return Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            LabelTextRow("USERNAME", username)
+            LabelTextRow("PASSWORD", password)
+            LabelTextColumn("ID Token", idToken.value)
+            LabelTextColumn("FCM Token", fcmToken.value)
+            LabelTextColumn("Notifly User ID", notiflyUserId.value)
+        }
+    }
+
+    @Composable
+    fun SampleVerticalList(username: String, password: String) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(text = "Notifly", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+                NotiflyAuthenticatorSection(username, password)
+
+                Button(
+                    onClick = { /* Handle button click */ },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text(text = "Button 1")
+                }
+
+                Button(
+                    onClick = { /* Handle button click */ },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Button 2")
+                }
+
+                Button(
+                    onClick = { /* Handle button click */ },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Button 3")
+                }
+            }
+        }
+    }
+
+    private fun copyTextToClipboard(context: Context, label: String, text: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText(label, text)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, "Copied <$label> to ClipBoard", LENGTH_SHORT).show()
     }
 }
