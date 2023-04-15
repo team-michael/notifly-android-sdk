@@ -1,6 +1,5 @@
 package tech.notifly
 
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 

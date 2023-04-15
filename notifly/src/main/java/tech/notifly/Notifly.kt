@@ -15,9 +15,9 @@ object Notifly {
         useCustomClickHandler: Boolean = false,
     ) {
         try {
-            NotiflySharedPreferences.put(context, "notiflyProjectId", projectId)
-            NotiflySharedPreferences.put(context, "notiflyUsername", username)
-            NotiflySharedPreferences.put(context, "notiflyPassword", password)
+            NotiflyStorage.put(context, "notiflyProjectId", projectId)
+            NotiflyStorage.put(context, "notiflyUsername", username)
+            NotiflyStorage.put(context, "notiflyPassword", password)
 
             // todo: handle in-app messaging
             // todo: handle notification open

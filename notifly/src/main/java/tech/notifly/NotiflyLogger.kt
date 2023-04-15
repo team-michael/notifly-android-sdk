@@ -3,10 +3,8 @@ package tech.notifly
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -37,12 +35,12 @@ object NotiflyLogger {
         GlobalScope.launch {
             try {
                 var notiflyCognitoIdToken: String? =
-                    NotiflySharedPreferences.get(context, "notiflyCognitoIdToken", null)
+                    NotiflyStorage.get(context, "notiflyCognitoIdToken", null)
                 val notiflyUserId: String = NotiflyUtils.getNotiflyUserId(context)
                 val notiflyExternalUserId: String =
-                    NotiflySharedPreferences.get(context, "notiflyExternalUserId", "")
+                    NotiflyStorage.get(context, "notiflyExternalUserId", "")
                 val notiflyProjectId: String =
-                    NotiflySharedPreferences.get(context, "notiflyProjectId", "")
+                    NotiflyStorage.get(context, "notiflyProjectId", "")
                 val uniqueId: String = NotiflyUtils.getUniqueId(context)
                 val osVersion: String = NotiflyUtils.getSystemVersion()
                 val appVersion: String = NotiflyUtils.getAppVersion(context)
@@ -126,10 +124,10 @@ object NotiflyLogger {
     }
 
     private suspend fun invalidateCognitoIdToken(context: Context): String? {
-        val username: String = NotiflySharedPreferences.get(context, "notiflyUsername", "")
-        val password: String = NotiflySharedPreferences.get(context, "notiflyPassword", "")
+        val username: String = NotiflyStorage.get(context, "notiflyUsername", "")
+        val password: String = NotiflyStorage.get(context, "notiflyPassword", "")
         val newCognitoIdToken = NotiflyUtils.getCognitoIdToken(username, password)
-        NotiflySharedPreferences.put(context, "notiflyCognitoIdToken", newCognitoIdToken)
+        NotiflyStorage.put(context, "notiflyCognitoIdToken", newCognitoIdToken)
         return newCognitoIdToken
     }
 

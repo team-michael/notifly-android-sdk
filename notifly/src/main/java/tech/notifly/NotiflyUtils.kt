@@ -49,12 +49,12 @@ object NotiflyUtils {
 
     suspend fun getNotiflyUserId(context: Context): String {
         // Get cached value if exists
-        val encodedUserId: String? = NotiflySharedPreferences.get(context, "notiflyUserId", null)
+        val encodedUserId: String? = NotiflyStorage.get(context, "notiflyUserId", null)
         if (encodedUserId != null) return encodedUserId
 
         // Retrieve user id
-        val projectId: String? = NotiflySharedPreferences.get(context, "notiflyProjectId", null)
-        val externalUserId: String? = NotiflySharedPreferences.get(context, "notiflyExternalUserId", null)
+        val projectId: String? = NotiflyStorage.get(context, "notiflyProjectId", null)
+        val externalUserId: String? = NotiflyStorage.get(context, "notiflyExternalUserId", null)
         val notiflyUserUUID = if (externalUserId != null) {
             UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_REGISTERED_USER_ID, "${projectId}${externalUserId}")
         } else {
@@ -62,7 +62,7 @@ object NotiflyUtils {
         }
 
         val notiflyUserId = notiflyUserUUID.toString().replace("-", "")
-        return notiflyUserId.also { NotiflySharedPreferences.put(context, "notiflyUserId", notiflyUserId) }
+        return notiflyUserId.also { NotiflyStorage.put(context, "notiflyUserId", notiflyUserId) }
     }
 
     suspend fun getFcmToken(): String? {

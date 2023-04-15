@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 
-object NotiflySharedPreferences {
+object NotiflyStorage {
 
     private const val PREFERENCES_NAME = "Notifly"
     private lateinit var notiflySharedPreferences: SharedPreferences
