@@ -1,7 +1,4 @@
 ext {
-    /* Operating System */
-    OS_ANDROID = "android"
-
     /* Build Types */
     BUILD_DEBUG = "debug"
     BUILD_RELEASE = "release"

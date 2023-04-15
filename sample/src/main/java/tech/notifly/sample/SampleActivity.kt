@@ -30,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +40,9 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import tech.notifly.NotiflyAuthenticator
+import tech.notifly.Notifly
+import tech.notifly.NotiflyLogger
+import tech.notifly.NotiflyUtils
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
 
 class SampleActivity : ComponentActivity() {
@@ -175,7 +176,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = idToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val token = NotiflyAuthenticator.getCognitoIdToken(username, password)
+                    val token = NotiflyUtils.getCognitoIdToken(username, password)
 
                     if (token != null) {
                         idToken.value = token
@@ -194,7 +195,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = fcmToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val token = NotiflyAuthenticator.getFcmToken()
+                    val token = NotiflyUtils.getFcmToken()
 
                     if (token != null) {
                         fcmToken.value = token
@@ -213,7 +214,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val userId = NotiflyAuthenticator.getNotiflyUserId(context)
+                    val userId = NotiflyUtils.getNotiflyUserId(context)
 
                     notiflyUserId.value = userId
                     println("Notifly User ID: $userId")
@@ -240,23 +241,43 @@ class SampleActivity : ComponentActivity() {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
+            val context = LocalContext.current
+
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Notifly", fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
                 NotiflyAuthenticatorSection(username, password)
 
                 Button(
-                    onClick = { /* Handle button click */ },
-                    modifier = Modifier.padding(top = 16.dp)
+                    onClick = {
+                        Notifly.initialize(
+                            context = context,
+                            projectId = "a0d696d1aba7535fad6710cddf3b1cab",
+                            username = "minyong",
+                            password = "000000"
+                        )
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text(text = "Button 1")
+                    Text(text = "Initialize")
                 }
 
                 Button(
-                    onClick = { /* Handle button click */ },
-                    modifier = Modifier.padding(top = 8.dp)
+                    onClick = {
+                        NotiflyLogger.logEvent(
+                            context = context,
+                            eventName = "EventName",
+                            eventParams = mapOf(
+                                "keyString" to "value1",
+                                "keyBoolean" to true,
+                                "keyInt" to 100,
+                            ),
+                            isInternalEvent = true
+                        )
+                    },
+                    modifier = Modifier.padding(top = 16.dp)
                 ) {
-                    Text(text = "Button 2")
+                    Text(text = "Internal Event")
                 }
 
                 Button(

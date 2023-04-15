@@ -2,8 +2,6 @@ package tech.notifly
 
 import android.content.Context
 import android.util.Log
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -13,7 +11,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
-object NotiflyAuthenticator {
+object NotiflyUtils {
+
 
     private const val AUTHENTICATOR_URL = "https://cognito-idp.ap-northeast-2.amazonaws.com"
     private const val AUTHENTICATOR_CLIENT_ID = "2pc5pce21ec53csf8chafknqve"
@@ -56,12 +55,14 @@ object NotiflyAuthenticator {
         // Retrieve user id
         val projectId: String? = NotiflySharedPreferences.get(context, "notiflyProjectId", null)
         val externalUserId: String? = NotiflySharedPreferences.get(context, "notiflyExternalUserId", null)
-        val notiflyUserId = if (externalUserId != null) {
+        val notiflyUserUUID = if (externalUserId != null) {
             UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_REGISTERED_USER_ID, "${projectId}${externalUserId}")
         } else {
             UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_UNREGISTERED_USER_ID, "${projectId}${getFcmToken()}")
         }
-        return notiflyUserId.toString().also { NotiflySharedPreferences.put(context, "notiflyUserId", notiflyUserId) }
+
+        val notiflyUserId = notiflyUserUUID.toString().replace("-", "")
+        return notiflyUserId.also { NotiflySharedPreferences.put(context, "notiflyUserId", notiflyUserId) }
     }
 
     suspend fun getFcmToken(): String? {
@@ -70,5 +71,25 @@ object NotiflyAuthenticator {
         } catch (e: Exception) {
             null
         }
+    }
+
+    suspend fun getSystemVersion(): String = withContext(Dispatchers.IO) {
+        android.os.Build.VERSION.RELEASE
+    }
+
+    suspend fun getAppVersion(context: Context): String = withContext(Dispatchers.IO) {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        packageInfo.versionName
+    }
+
+    suspend fun getUniqueId(context: Context): String = withContext(Dispatchers.IO) {
+        android.provider.Settings.Secure.getString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        )
+    }
+
+    fun getPlatform(): String {
+        return Notifly.PLATFORM
     }
 }
