@@ -41,4 +41,26 @@ object NotiflyUserUtil {
             NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
         }
     }
+
+    fun sessionStart(context: Context) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val platform = NotiflyDeviceUtil.getPlatform()
+            val apiLevel = NotiflyDeviceUtil.getApiLevel()
+            val deviceBrand = NotiflyDeviceUtil.getBrand()
+            val deviceModel = NotiflyDeviceUtil.getModel()
+            val userAgent = System.getProperty("http.agent")
+
+            val openAppEventParams = mapOf(
+                "platform" to platform,
+                "device_model" to deviceModel,
+                "properties" to mapOf(
+                    "device_brand" to deviceBrand,
+                    "api_level" to apiLevel,
+                    "user_agent" to userAgent
+                )
+            )
+
+            NotiflyLogUtil.logEvent(context, "session_start", openAppEventParams)
+        }
+    }
 }

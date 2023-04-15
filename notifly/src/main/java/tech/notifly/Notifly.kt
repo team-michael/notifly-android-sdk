@@ -22,14 +22,17 @@ object Notifly {
         useCustomClickHandler: Boolean = false,
     ) {
         try {
+            // todo: handle in-app messaging
+            // todo: handle notification open
+            // todo: use useCustomClickHandler
+
+            // Set Required Properties from User
             NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
             NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
             NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
 
-            // todo: handle in-app messaging
-            // todo: handle notification open
-            // todo: handle session start
-            // todo: use useCustomClickHandler
+            // Start Session
+            NotiflyUserUtil.sessionStart(context)
         } catch (e: Exception) {
             Log.e(TAG, "Notifly initialization failed:", e)
         }

@@ -1,6 +1,7 @@
 package tech.notifly.utils
 
 import android.content.Context
+import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -24,5 +25,17 @@ internal object NotiflyDeviceUtil {
 
     fun getPlatform(): String {
         return N.PLATFORM
+    }
+
+    fun getApiLevel(): Int {
+        return Build.VERSION.SDK_INT
+    }
+
+    fun getBrand(): String {
+        return Build.BRAND
+    }
+
+    fun getModel(): String {
+        return Build.MODEL
     }
 }
