@@ -4,7 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-object NotiflyDeviceUtil {
+internal object NotiflyDeviceUtil {
 
     suspend fun getOsVersion(): String = withContext(Dispatchers.IO) {
         android.os.Build.VERSION.RELEASE

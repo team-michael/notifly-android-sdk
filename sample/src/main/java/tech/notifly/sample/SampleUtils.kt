@@ -43,18 +43,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import tech.notifly.Notifly
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
-import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.memberFunctions
-import kotlin.reflect.jvm.isAccessible
+import java.lang.reflect.Method
+import kotlin.reflect.full.declaredFunctions
 
-class SampleActivity : ComponentActivity() {
+class SampleUtils : ComponentActivity() {
 
     companion object {
         private const val TAG = "NotiflySample"
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         askNotificationPermission()
@@ -185,8 +181,16 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = idToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyUserUtil", "getCognitoIdToken")
-                    val token = function.callSuspend(instance, username, password) as String?
+                    // Access internal object function through reflection
+                    val internalObjectName = "tech.notifly.utils.NotiflyLogUtil"
+                    val internalObjectClass = Class.forName(internalObjectName)
+                    Log.d(TAG, "${internalObjectClass.kotlin.declaredFunctions}")
+                    val internalObjectInstance = internalObjectClass.getField("INSTANCE").get(null)
+                    val internalFunctionName = "getCognitoIdToken"
+                    val internalFunction: Method = internalObjectClass.getDeclaredMethod(internalFunctionName)
+                    internalFunction.isAccessible = true
+
+                    val token: String? = internalFunction.invoke(internalObjectInstance, username, password) as String?
 
                     if (token != null) {
                         idToken.value = token
@@ -205,8 +209,16 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = fcmToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyUserUtil", "getFcmToken")
-                    val token = function.callSuspend(instance) as String?
+                    // Access internal object function through reflection
+                    val internalObjectName = "tech.notifly.utils.NotiflyUserUtil"
+                    val internalObjectClass = Class.forName(internalObjectName)
+                    Log.d(TAG, "${internalObjectClass.kotlin.declaredFunctions}")
+                    val internalObjectInstance = internalObjectClass.getField("INSTANCE").get(null)
+                    val internalFunctionName = "getFcmToken"
+                    val internalFunction: Method = internalObjectClass.getDeclaredMethod(internalFunctionName)
+                    internalFunction.isAccessible = true
+
+                    val token: String? = internalFunction.invoke(internalObjectInstance) as String?
 
                     if (token != null) {
                         fcmToken.value = token
@@ -225,8 +237,16 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyUserUtil", "getNotiflyUserId")
-                    val userId = function.callSuspend(instance, context) as String
+                    // Access internal object function through reflection
+                    val internalObjectName = "tech.notifly.utils.NotiflyUserUtil"
+                    val internalObjectClass = Class.forName(internalObjectName)
+                    Log.d(TAG, "${internalObjectClass.kotlin.declaredFunctions}")
+                    val internalObjectInstance = internalObjectClass.getField("INSTANCE").get(null)
+                    val internalFunctionName = "getNotiflyUserId"
+                    val internalFunction: Method = internalObjectClass.getDeclaredMethod(internalFunctionName)
+                    internalFunction.isAccessible = true
+
+                    val userId: String = internalFunction.invoke(internalObjectInstance, context) as String
 
                     notiflyUserId.value = userId
                     Log.d(TAG, "Notifly User ID: $userId")
@@ -276,18 +296,25 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyLogUtil", "logEvent")
-                        function.call(
-                            instance,
+                        // Access internal object function through reflection
+                        val internalObjectName = "tech.notifly.utils.NotiflyLogUtil"
+                        val internalObjectClass = Class.forName(internalObjectName)
+                        Log.d(TAG, "${internalObjectClass.kotlin.declaredFunctions}")
+                        val internalObjectInstance = internalObjectClass.getField("INSTANCE").get(null)
+                        val internalFunctionName = "logEvent"
+                        val internalFunction: Method = internalObjectClass.getDeclaredMethod(internalFunctionName)
+                        internalFunction.isAccessible = true
+
+                        internalFunction.invoke(
+                            internalObjectInstance,
                             context,
-                            "Event Name",
+                            "EventName",
                             mapOf(
                                 "keyString" to "value1",
                                 "keyBoolean" to true,
                                 "keyInt" to 100,
                             ),
-                            listOf<String>(),
-                            true
+                            true,
                         )
                     },
                     modifier = Modifier.padding(top = 16.dp)
@@ -310,15 +337,5 @@ class SampleActivity : ComponentActivity() {
         val clip = ClipData.newPlainText(label, text)
         clipboard.setPrimaryClip(clip)
         Toast.makeText(context, "Copied <$label> to ClipBoard", LENGTH_SHORT).show()
-    }
-
-    private fun reflectObjectFunction(className: String, functionName: String): Pair<Any, KFunction<*>> {
-        val objectClass: KClass<out Any> = Class.forName(className).kotlin
-        val objectInstance: Any = objectClass.objectInstance ?: throw NullPointerException("Instance Not Found for $className")
-        val objectFunction: KFunction<*> = objectClass.memberFunctions.find { it.name == functionName }
-            ?: throw NullPointerException("Function Not Found for $functionName")
-        objectFunction.isAccessible = true
-
-        return objectInstance to objectFunction
     }
 }

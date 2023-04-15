@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 /**
  * JSON structure of data for in-app messaging
  */
-data class InAppMessageData(
+internal data class InAppMessageData(
     @SerializedName("campaign_id") val campaignId: String,
     @SerializedName("notifly_message_type") val notiflyMessageType: String,
     @SerializedName("url") val url: String,

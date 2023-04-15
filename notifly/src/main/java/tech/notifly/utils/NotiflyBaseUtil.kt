@@ -3,7 +3,7 @@ package tech.notifly.utils
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 
-object NotiflyBaseUtil {
+internal object NotiflyBaseUtil {
 
     const val PLATFORM = "Android"
 

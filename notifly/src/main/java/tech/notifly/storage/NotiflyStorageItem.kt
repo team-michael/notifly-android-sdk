@@ -1,7 +1,7 @@
 package tech.notifly.storage
 
 @Suppress("ClassName")
-sealed class NotiflyStorageItem<T> {
+internal sealed class NotiflyStorageItem<T> {
 
     abstract val key: String
     abstract val default: T
