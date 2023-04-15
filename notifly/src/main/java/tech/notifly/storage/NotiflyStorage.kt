@@ -79,7 +79,11 @@ internal object NotiflyStorage {
         }
     }
 
-    fun clear(context: Context) {
+    fun <T> clear(context: Context, item: NotiflyStorageItem<T?>) {
+        put(context, item, null)
+    }
+
+    fun clearAll(context: Context) {
         getSharedPreferences(context).edit().clear().apply()
     }
 }

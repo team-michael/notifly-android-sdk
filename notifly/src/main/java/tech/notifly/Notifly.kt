@@ -2,8 +2,13 @@ package tech.notifly
 
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.N.KEY_EXTERNAL_USER_ID
+import tech.notifly.utils.NotiflyUserUtil
 
 
 object Notifly {
@@ -27,6 +32,23 @@ object Notifly {
             // todo: use useCustomClickHandler
         } catch (e: Exception) {
             Log.e(TAG, "Notifly initialization failed:", e)
+        }
+    }
+
+    fun setUserId(
+        context: Context,
+        userId: String,
+    ) {
+        try {
+            CoroutineScope(Dispatchers.IO).launch {
+                val params = mapOf(
+                    KEY_EXTERNAL_USER_ID to userId,
+                )
+                NotiflyUserUtil.setUserProperties(context, params)
+                NotiflyUserUtil.removeUserId(context)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Notifly setUserId failed", e)
         }
     }
 }
