@@ -102,7 +102,7 @@ object NotiflyLogger {
                     .post(requestBody)
                     .build()
 
-                val response = NotiflyHttpClient.HTTP_CLIENT.newCall(request).execute()
+                val response = NotiflyStatic.HTTP_CLIENT.newCall(request).execute()
                 Log.d(Notifly.TAG, "response: $response")
                 val resultJson = response.body?.let { JSONObject(it.toString()) } ?: JSONObject()
                 Log.d(Notifly.TAG, "resultJson: $resultJson")

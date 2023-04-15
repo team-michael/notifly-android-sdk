@@ -6,7 +6,7 @@ import android.util.Log
 
 object Notifly {
     const val TAG = "Notifly"
-    const val PLATFORM = "Android"
+
     fun initialize(
         context: Context,
         projectId: String,

@@ -35,7 +35,7 @@ object NotiflyUtils {
 
         return withContext(Dispatchers.IO) {
             try {
-                val response = NotiflyHttpClient.HTTP_CLIENT.await(request)
+                val response = NotiflyStatic.HTTP_CLIENT.await(request)
                 val jsonResponse = JSONObject(response.body!!.string())
                 val authenticationResult = jsonResponse.getJSONObject("AuthenticationResult")
                 authenticationResult.getString("IdToken")
@@ -90,6 +90,6 @@ object NotiflyUtils {
     }
 
     fun getPlatform(): String {
-        return Notifly.PLATFORM
+        return NotiflyStatic.PLATFORM
     }
 }
