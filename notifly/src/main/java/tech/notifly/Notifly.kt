@@ -7,7 +7,7 @@ import tech.notifly.storage.NotiflyStorageItem
 
 
 object Notifly {
-    const val TAG = "Notifly"
+    internal const val TAG = "Notifly"
 
     fun initialize(
         context: Context,
