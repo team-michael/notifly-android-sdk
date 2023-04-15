@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.utils
 
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -7,7 +7,7 @@ import java.util.UUID
 /**
  * ID Generator for Notifly based on UUID v5 with namespaces, omitting "-" for simplicity
  */
-object NotiflyId {
+object NotiflyIdUtil {
 
     enum class Namespace(val uuid: UUID) {
         NAMESPACE_EVENT_ID(UUID.fromString("830b5f7b-e392-43db-a17b-d835f0bcab2b")),

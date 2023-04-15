@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.storage
 
 @Suppress("ClassName")
 sealed class NotiflyStorageItem<T> {

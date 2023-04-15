@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.storage
 
 import android.content.Context
 import android.content.SharedPreferences

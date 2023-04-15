@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.extensions
 
 import okhttp3.OkHttpClient
 import okhttp3.Request

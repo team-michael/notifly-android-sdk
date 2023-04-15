@@ -41,8 +41,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import tech.notifly.Notifly
-import tech.notifly.NotiflyLogger
-import tech.notifly.NotiflyUtils
+import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
 
 class SampleActivity : ComponentActivity() {
@@ -176,7 +176,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = idToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val token = NotiflyUtils.getCognitoIdToken(username, password)
+                    val token = NotiflyUserUtil.getCognitoIdToken(username, password)
 
                     if (token != null) {
                         idToken.value = token
@@ -195,7 +195,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = fcmToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val token = NotiflyUtils.getFcmToken()
+                    val token = NotiflyUserUtil.getFcmToken()
 
                     if (token != null) {
                         fcmToken.value = token
@@ -214,7 +214,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val userId = NotiflyUtils.getNotiflyUserId(context)
+                    val userId = NotiflyUserUtil.getNotiflyUserId(context)
 
                     notiflyUserId.value = userId
                     println("Notifly User ID: $userId")
@@ -264,7 +264,7 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        NotiflyLogger.logEvent(
+                        NotiflyLogUtil.logEvent(
                             context = context,
                             eventName = "EventName",
                             eventParams = mapOf(

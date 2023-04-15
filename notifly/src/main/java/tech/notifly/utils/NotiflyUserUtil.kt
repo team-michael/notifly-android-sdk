@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.utils
 
 import android.content.Context
 import android.util.Log
@@ -10,10 +10,14 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import tech.notifly.Notifly
+import tech.notifly.extensions.await
+import tech.notifly.storage.NotiflyStorage
+import tech.notifly.storage.NotiflyStorageItem
 import java.lang.IllegalStateException
 import kotlin.jvm.Throws
 
-object NotiflyUtils {
+object NotiflyUserUtil {
 
     private const val AUTHENTICATOR_URL = "https://cognito-idp.ap-northeast-2.amazonaws.com"
     private const val AUTHENTICATOR_CLIENT_ID = "2pc5pce21ec53csf8chafknqve"
@@ -44,7 +48,7 @@ object NotiflyUtils {
 
         return withContext(Dispatchers.IO) {
             try {
-                val response = NotiflyStatic.HTTP_CLIENT.await(request)
+                val response = NotiflyBaseUtil.HTTP_CLIENT.await(request)
                 val jsonResponse = JSONObject(response.body!!.string())
                 val authenticationResult = jsonResponse.getJSONObject("AuthenticationResult")
                 authenticationResult.getString("IdToken")
@@ -71,12 +75,12 @@ object NotiflyUtils {
         val externalUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
 
         val notiflyUserId = when {
-            externalUserId != null -> NotiflyId.generate(
-                NotiflyId.Namespace.NAMESPACE_REGISTERED_USER_ID,
+            externalUserId != null -> NotiflyIdUtil.generate(
+                NotiflyIdUtil.Namespace.NAMESPACE_REGISTERED_USER_ID,
                 "${projectId}${externalUserId}"
             )
-            else -> NotiflyId.generate(
-                NotiflyId.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
+            else -> NotiflyIdUtil.generate(
+                NotiflyIdUtil.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
                 "${projectId}${getFcmToken()}"
             )
         }
@@ -91,25 +95,5 @@ object NotiflyUtils {
         } catch (e: Exception) {
             null
         }
-    }
-
-    suspend fun getOsVersion(): String = withContext(Dispatchers.IO) {
-        android.os.Build.VERSION.RELEASE
-    }
-
-    suspend fun getAppVersion(context: Context): String = withContext(Dispatchers.IO) {
-        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        packageInfo.versionName
-    }
-
-    suspend fun getUniqueId(context: Context): String = withContext(Dispatchers.IO) {
-        android.provider.Settings.Secure.getString(
-            context.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID
-        )
-    }
-
-    fun getPlatform(): String {
-        return NotiflyStatic.PLATFORM
     }
 }
