@@ -38,7 +38,7 @@ internal object NotiflyLogUtil {
         /**
          * Required Parameters:
          * - Cognito ID Token: invalidate once when not found
-         * - User ID: [NotiflyUserUtil.getNotiflyUserId] ensures non-null
+         * - User ID: [NotiflyAuthUtil.getNotiflyUserId] ensures non-null
          * - Project ID: throw if null
          * - Event ID: [NotiflyIdUtil.generateUUIDv5] ensures non-null
          * - Unique ID: non-null is ensured by native-level API
@@ -51,7 +51,7 @@ internal object NotiflyLogUtil {
             try {
                 val notiflyCognitoIdToken: String = NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
                     ?: invalidateCognitoIdToken(context) // invalidate if not set
-                val notiflyUserId: String = NotiflyUserUtil.getNotiflyUserId(context)
+                val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
                 val notiflyExternalUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
                 val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
                     ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
@@ -63,7 +63,7 @@ internal object NotiflyLogUtil {
 
                 val osVersion: String = NotiflyDeviceUtil.getOsVersion()
                 val appVersion: String = NotiflyDeviceUtil.getAppVersion(context)
-                val fcmToken: String = NotiflyUserUtil.getFcmToken()
+                val fcmToken: String = NotiflyAuthUtil.getFcmToken()
                     ?: throw IllegalStateException("[Notifly] Required parameter <FCM Token> is missing")
 
                 val requestBody = createRequestBody(
@@ -123,7 +123,7 @@ internal object NotiflyLogUtil {
         val password: String = NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD)
             ?: throw IllegalStateException("[Notifly] password not found. You should call Notifly.initialize before this.")
 
-        val newCognitoIdToken = NotiflyUserUtil.getCognitoIdToken(username, password)
+        val newCognitoIdToken = NotiflyAuthUtil.getCognitoIdToken(username, password)
         NotiflyStorage.put(context, NotiflyStorageItem.COGNITO_ID_TOKEN, newCognitoIdToken)
         return newCognitoIdToken
     }

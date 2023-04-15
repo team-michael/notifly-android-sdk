@@ -17,7 +17,7 @@ import tech.notifly.storage.NotiflyStorageItem
 import java.lang.IllegalStateException
 import kotlin.jvm.Throws
 
-internal object NotiflyUserUtil {
+internal object NotiflyAuthUtil {
 
     private const val AUTHENTICATOR_URL = "https://cognito-idp.ap-northeast-2.amazonaws.com"
     private const val AUTHENTICATOR_CLIENT_ID = "2pc5pce21ec53csf8chafknqve"
