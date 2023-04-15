@@ -89,7 +89,7 @@ internal object NotiflyLogUtil {
                     .post(requestBody)
                     .build()
 
-                val response = NotiflyBaseUtil.HTTP_CLIENT.newCall(request).execute()
+                val response = N.HTTP_CLIENT.newCall(request).execute()
                 Log.d(Notifly.TAG, "response: $response")
                 val resultJson = response.body?.let { JSONObject(it.toString()) } ?: JSONObject()
                 Log.d(Notifly.TAG, "resultJson: $resultJson")

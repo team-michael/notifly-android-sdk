@@ -48,7 +48,7 @@ internal object NotiflyUserUtil {
 
         return withContext(Dispatchers.IO) {
             try {
-                val response = NotiflyBaseUtil.HTTP_CLIENT.await(request)
+                val response = N.HTTP_CLIENT.await(request)
                 val jsonResponse = JSONObject(response.body!!.string())
                 val authenticationResult = jsonResponse.getJSONObject("AuthenticationResult")
                 authenticationResult.getString("IdToken")

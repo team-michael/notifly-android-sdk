@@ -23,6 +23,6 @@ internal object NotiflyDeviceUtil {
     }
 
     fun getPlatform(): String {
-        return NotiflyBaseUtil.PLATFORM
+        return N.PLATFORM
     }
 }
