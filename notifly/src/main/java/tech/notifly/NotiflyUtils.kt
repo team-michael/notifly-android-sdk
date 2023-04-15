@@ -10,14 +10,23 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.lang.IllegalStateException
+import kotlin.jvm.Throws
 
 object NotiflyUtils {
-
 
     private const val AUTHENTICATOR_URL = "https://cognito-idp.ap-northeast-2.amazonaws.com"
     private const val AUTHENTICATOR_CLIENT_ID = "2pc5pce21ec53csf8chafknqve"
 
-    suspend fun getCognitoIdToken(username: String, password: String): String? {
+    /**
+     * Retrieves CognitoIdToken with given [username] and [password].
+     * This function never returns `null` even if
+     *
+     * @return Cognito ID Token by given [username] and [password]
+     * @throws NullPointerException if failed to retrieve Cognito ID Token.
+     */
+    @Throws(NullPointerException::class)
+    suspend fun getCognitoIdToken(username: String, password: String): String {
         val requestBody = JSONObject().apply {
             put("AuthFlow", "USER_PASSWORD_AUTH")
             put("AuthParameters", JSONObject().apply {
@@ -41,28 +50,39 @@ object NotiflyUtils {
                 authenticationResult.getString("IdToken")
             } catch (e: Exception) {
                 Log.e(Notifly.TAG, "Authentication Failed", e)
-                null
+                throw NullPointerException("Failed to Get Cognito ID Token")
             }
         }
     }
 
 
+    /**
+     * @throws IllegalStateException is thrown if <Project ID> not found.
+     */
+    @Throws(IllegalStateException::class)
     suspend fun getNotiflyUserId(context: Context): String {
-        // Get cached value if exists
-        val encodedUserId: String? = NotiflyStorage.get(context, "notiflyUserId", null)
+        // early-return cached value if exists
+        val encodedUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.USER_ID)
         if (encodedUserId != null) return encodedUserId
 
-        // Retrieve user id
-        val projectId: String? = NotiflyStorage.get(context, "notiflyProjectId", null)
-        val externalUserId: String? = NotiflyStorage.get(context, "notiflyExternalUserId", null)
-        val notiflyUserUUID = if (externalUserId != null) {
-            UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_REGISTERED_USER_ID, "${projectId}${externalUserId}")
-        } else {
-            UUIDv5.generate(UUIDv5.Namespace.NAMESPACE_UNREGISTERED_USER_ID, "${projectId}${getFcmToken()}")
+        // retrieve and put new user-id
+        val projectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+            ?: throw IllegalStateException("[Notifly] <Project ID> not found. You should call Notifly.initialize first")
+        val externalUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+
+        val notiflyUserId = when {
+            externalUserId != null -> NotiflyId.generate(
+                NotiflyId.Namespace.NAMESPACE_REGISTERED_USER_ID,
+                "${projectId}${externalUserId}"
+            )
+            else -> NotiflyId.generate(
+                NotiflyId.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
+                "${projectId}${getFcmToken()}"
+            )
         }
 
-        val notiflyUserId = notiflyUserUUID.toString().replace("-", "")
-        return notiflyUserId.also { NotiflyStorage.put(context, "notiflyUserId", notiflyUserId) }
+        NotiflyStorage.put(context, NotiflyStorageItem.USER_ID, notiflyUserId)
+        return notiflyUserId
     }
 
     suspend fun getFcmToken(): String? {
@@ -73,7 +93,7 @@ object NotiflyUtils {
         }
     }
 
-    suspend fun getSystemVersion(): String = withContext(Dispatchers.IO) {
+    suspend fun getOsVersion(): String = withContext(Dispatchers.IO) {
         android.os.Build.VERSION.RELEASE
     }
 

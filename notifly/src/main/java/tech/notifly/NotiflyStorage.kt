@@ -6,7 +6,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 
 object NotiflyStorage {
 
-    private const val PREFERENCES_NAME = "Notifly"
+    private const val PREFERENCES_NAME = "NotiflyAndroidSDK"
     private lateinit var notiflySharedPreferences: SharedPreferences
 
     private fun getSharedPreferences(context: Context): SharedPreferences {
@@ -46,20 +46,20 @@ object NotiflyStorage {
         return getSharedPreferences(context).getString(key, defaultValue)
     }
 
-    fun <T> put(context: Context, key: String, value: T) {
+    fun <T> put(context: Context, item: NotiflyStorageItem<T>, value: T) {
         with(getSharedPreferences(context)) {
             if (value == null) {
-                edit().remove(key).apply()
+                edit().remove(item.key).apply()
                 return
             }
 
             edit().run {
                 when (value) {
-                    is Int -> putInt(key, value)
-                    is Long -> putLong(key, value)
-                    is Float -> putFloat(key, value)
-                    is Boolean -> putBoolean(key, value)
-                    is String -> putString(key, value)
+                    is Int -> putInt(item.key, value)
+                    is Long -> putLong(item.key, value)
+                    is Float -> putFloat(item.key, value)
+                    is Boolean -> putBoolean(item.key, value)
+                    is String -> putString(item.key, value)
                     else -> this /* does nothing */
                 }.apply()
             }
@@ -67,15 +67,15 @@ object NotiflyStorage {
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> get(context: Context, key: String, default: Any?): T {
-        return when (default) {
-            is Int -> getInt(context, key, default) as T
-            is Long -> getLong(context, key, default) as T
-            is Float -> getFloat(context, key, default) as T
-            is Boolean -> getBoolean(context, key, default) as T
-            is String -> getString(context, key, default) as T
-            is String? -> getStringNullable(context, key, default) as T
-            else -> throw IllegalArgumentException("Invalid Type for 'default' parameter: ${default!!::javaClass}")
+    fun <T> get(context: Context, item: NotiflyStorageItem<T>): T {
+        return when (item.default) {
+            is Int -> getInt(context, item.key, item.default as Int) as T
+            is Long -> getLong(context, item.key, item.default as Long) as T
+            is Float -> getFloat(context, item.key, item.default as Float) as T
+            is Boolean -> getBoolean(context, item.key, item.default as Boolean) as T
+            is String -> getString(context, item.key, item.default as String) as T
+            is String? -> getStringNullable(context, item.key, item.default as String?) as T
+            else -> throw IllegalArgumentException("Type Inference Failed for item[${item.key}]")
         }
     }
 

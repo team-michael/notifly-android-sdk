@@ -15,9 +15,9 @@ object Notifly {
         useCustomClickHandler: Boolean = false,
     ) {
         try {
-            NotiflyStorage.put(context, "notiflyProjectId", projectId)
-            NotiflyStorage.put(context, "notiflyUsername", username)
-            NotiflyStorage.put(context, "notiflyPassword", password)
+            NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
+            NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
+            NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
 
             // todo: handle in-app messaging
             // todo: handle notification open

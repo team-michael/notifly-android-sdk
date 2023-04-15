@@ -4,7 +4,10 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.UUID
 
-object UUIDv5 {
+/**
+ * ID Generator for Notifly based on UUID v5 with namespaces, omitting "-" for simplicity
+ */
+object NotiflyId {
 
     enum class Namespace(val uuid: UUID) {
         NAMESPACE_EVENT_ID(UUID.fromString("830b5f7b-e392-43db-a17b-d835f0bcab2b")),
@@ -13,7 +16,7 @@ object UUIDv5 {
         NAMESPACE_DEVICE_ID(UUID.fromString("830848b3-2444-467d-9cd8-3430d2738c57")),
     }
 
-    fun generate(namespace: Namespace, name: String): UUID {
+    private fun generateUUIDv5(namespace: Namespace, name: String): UUID {
         val namespaceBytes = ByteBuffer.wrap(ByteArray(16))
             .putLong(namespace.uuid.mostSignificantBits)
             .putLong(namespace.uuid.leastSignificantBits)
@@ -37,5 +40,10 @@ object UUIDv5 {
         val leastSignificantBits = byteBuffer.long
 
         return UUID(mostSignificantBits, leastSignificantBits)
+    }
+
+    fun generate(namespace: Namespace, name: String): String {
+        val uuid = generateUUIDv5(namespace, name)
+        return uuid.toString().replace("-", "")
     }
 }

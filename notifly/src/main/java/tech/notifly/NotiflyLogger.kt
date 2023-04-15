@@ -11,12 +11,12 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import tech.notifly.UUIDv5.Namespace
+import tech.notifly.NotiflyId.Namespace
+import java.lang.IllegalStateException
 
 object NotiflyLogger {
 
-    private const val LOG_EVENT_URI =
-        "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
+    private const val LOG_EVENT_URI = "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -32,60 +32,44 @@ object NotiflyLogger {
             return
         }
 
+        /**
+         * Required Parameters:
+         * - Cognito ID Token: invalidate once when not found
+         * - User ID: [NotiflyUtils.getNotiflyUserId] ensures non-null
+         * - Project ID: throw if null
+         * - Event ID: [NotiflyId.generateUUIDv5] ensures non-null
+         * - Unique ID: non-null is ensured by native-level API
+         * - Device ID: non-null is ensured by native-level API
+         * - FCM Token: nullable if sdk-caller did not integrate nor set FCM and its token.
+         *
+         * [IllegalStateException] will be thrown if <Project ID> or <FCM Token> is null.
+         */
         GlobalScope.launch {
             try {
-                var notiflyCognitoIdToken: String? =
-                    NotiflyStorage.get(context, "notiflyCognitoIdToken", null)
+                val notiflyCognitoIdToken: String = NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
+                    ?: invalidateCognitoIdToken(context) // invalidate if not set
                 val notiflyUserId: String = NotiflyUtils.getNotiflyUserId(context)
-                val notiflyExternalUserId: String =
-                    NotiflyStorage.get(context, "notiflyExternalUserId", "")
-                val notiflyProjectId: String =
-                    NotiflyStorage.get(context, "notiflyProjectId", "")
-                val uniqueId: String = NotiflyUtils.getUniqueId(context)
-                val osVersion: String = NotiflyUtils.getSystemVersion()
+                val notiflyExternalUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+                val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                    ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
+
+                val notiflyUniqueId: String = NotiflyUtils.getUniqueId(context)
+                val notiflyEventId =
+                    NotiflyId.generate(Namespace.NAMESPACE_EVENT_ID, "$notiflyUserId$eventName${System.currentTimeMillis()}")
+                val notiflyDeviceId = NotiflyId.generate(Namespace.NAMESPACE_DEVICE_ID, notiflyUniqueId)
+
+                val osVersion: String = NotiflyUtils.getOsVersion()
                 val appVersion: String = NotiflyUtils.getAppVersion(context)
-                val fcmToken: String? = NotiflyUtils.getFcmToken()
-
-                val eventUUID = UUIDv5.generate(
-                    Namespace.NAMESPACE_EVENT_ID,
-                    "$notiflyUserId$eventName${System.currentTimeMillis()}"
-                )
-                val eventId = eventUUID.toString().replace("-", "")
-
-                val notiflyDeviceUUID = UUIDv5.generate(Namespace.NAMESPACE_DEVICE_ID, uniqueId)
-                val notiflyDeviceId = notiflyDeviceUUID.toString().replace("-", "")
-
-                // Retrieve & Set notiflyCognitoIdToken if not found
-                if (notiflyCognitoIdToken.isNullOrEmpty()) {
-                    notiflyCognitoIdToken = invalidateCognitoIdToken(context)
-                }
-
-                // Validate Required Parameters
-                if (notiflyCognitoIdToken.isNullOrEmpty() || notiflyUserId.isEmpty() || notiflyProjectId.isEmpty() ||
-                    eventId.isEmpty() || uniqueId.isEmpty() || notiflyDeviceId.isEmpty() || fcmToken.isNullOrEmpty()
-                ) {
-                    val requiredParameters = listOf(
-                        "Cognito ID Token" to notiflyCognitoIdToken,
-                        "User ID" to notiflyUserId,
-                        "Project ID" to notiflyProjectId,
-                        "Event ID" to eventId,
-                        "Unique ID" to uniqueId,
-                        "Device ID" to notiflyDeviceId,
-                        "FCM Token" to fcmToken,
-                    )
-                    requiredParameters.firstOrNull { it.second.isNullOrEmpty() }
-                        ?.let { (missingParamKey, _) ->
-                            throw IllegalArgumentException("[Notifly] Missing required parameter in logEvent: $missingParamKey")
-                        }
-                }
+                val fcmToken: String = NotiflyUtils.getFcmToken()
+                    ?: throw IllegalStateException("[Notifly] Required parameter <FCM Token> is missing")
 
                 val requestBody = createRequestBody(
                     notiflyUserId,
-                    eventId,
+                    notiflyEventId,
                     eventName,
                     notiflyDeviceId,
-                    uniqueId,
-                    fcmToken!!, // handled above
+                    notiflyUniqueId,
+                    fcmToken,
                     isInternalEvent,
                     segmentationEventParamKeys,
                     notiflyProjectId,
@@ -97,7 +81,7 @@ object NotiflyLogger {
 
                 val request = Request.Builder()
                     .url(LOG_EVENT_URI)
-                    .header("Authorization", notiflyCognitoIdToken!!)
+                    .header("Authorization", notiflyCognitoIdToken)
                     .header("Content-Type", "application/json")
                     .post(requestBody)
                     .build()
@@ -107,6 +91,8 @@ object NotiflyLogger {
                 val resultJson = response.body?.let { JSONObject(it.toString()) } ?: JSONObject()
                 Log.d(Notifly.TAG, "resultJson: $resultJson")
 
+                // invalidate and retry
+                // todo: 무한루프 가능성 있음. retryCount 를 가진 내부 함수를 별도로 만들어서 retryCount 제한을 두는게 어떨까 함.
                 if (resultJson.optString("message") == "The incoming token has expired") {
                     invalidateCognitoIdToken(context)
                     logEvent(
@@ -123,11 +109,19 @@ object NotiflyLogger {
         }
     }
 
-    private suspend fun invalidateCognitoIdToken(context: Context): String? {
-        val username: String = NotiflyStorage.get(context, "notiflyUsername", "")
-        val password: String = NotiflyStorage.get(context, "notiflyPassword", "")
+    /**
+     * Invalidates and save [NotiflyStorageItem.COGNITO_ID_TOKEN]
+     *
+     * @throws IllegalStateException if [NotiflyStorageItem.USERNAME] or [NotiflyStorageItem.PASSWORD] is null
+     */
+    private suspend fun invalidateCognitoIdToken(context: Context): String {
+        val username: String = NotiflyStorage.get(context, NotiflyStorageItem.USERNAME)
+            ?: throw IllegalStateException("[Notifly] username not found. You should call Notifly.initialize before this.")
+        val password: String = NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD)
+            ?: throw IllegalStateException("[Notifly] password not found. You should call Notifly.initialize before this.")
+
         val newCognitoIdToken = NotiflyUtils.getCognitoIdToken(username, password)
-        NotiflyStorage.put(context, "notiflyCognitoIdToken", newCognitoIdToken)
+        NotiflyStorage.put(context, NotiflyStorageItem.COGNITO_ID_TOKEN, newCognitoIdToken)
         return newCognitoIdToken
     }
 
@@ -143,7 +137,7 @@ object NotiflyLogger {
         prjId: String,
         osVersion: String,
         appVersion: String,
-        externalUserId: String,
+        externalUserId: String?,
         eventParams: Map<String, Any>
     ): RequestBody {
         val data = JSONObject()
@@ -161,7 +155,7 @@ object NotiflyLogger {
             .put("platform", NotiflyUtils.getPlatform())
             .put("os_version", osVersion)
             .put("app_version", appVersion)
-            .put("external_user_id", externalUserId.ifEmpty { JSONObject.NULL })
+            .put("external_user_id", if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId)
 
         val record = JSONObject()
             .put("data", data)
