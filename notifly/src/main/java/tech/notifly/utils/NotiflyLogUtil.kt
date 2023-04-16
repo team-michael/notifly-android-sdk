@@ -63,7 +63,7 @@ internal object NotiflyLogUtil {
 
                 val osVersion: String = NotiflyDeviceUtil.getOsVersion()
                 val appVersion: String = NotiflyDeviceUtil.getAppVersion(context)
-                val fcmToken: String = NotiflyAuthUtil.getFcmToken()
+                val fcmToken: String = NotiflyFirebaseUtil.getFcmToken()
                     ?: throw IllegalStateException("[Notifly] Required parameter <FCM Token> is missing")
 
                 val requestBody = createRequestBody(
@@ -91,7 +91,7 @@ internal object NotiflyLogUtil {
 
                 val response = N.HTTP_CLIENT.newCall(request).execute()
                 Log.d(Notifly.TAG, "response: $response")
-                val resultJson = response.body?.let { JSONObject(it.toString()) } ?: JSONObject()
+                val resultJson = response.body?.let { JSONObject(it.string()) } ?: JSONObject()
                 Log.d(Notifly.TAG, "resultJson: $resultJson")
 
                 // invalidate and retry
@@ -161,7 +161,7 @@ internal object NotiflyLogUtil {
             .put("external_user_id", if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId)
 
         val record = JSONObject()
-            .put("data", data)
+            .put("data", data.toString())
             .put("partitionKey", notiflyUserId)
 
         val records = JSONArray()

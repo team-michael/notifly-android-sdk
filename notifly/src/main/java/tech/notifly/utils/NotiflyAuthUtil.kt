@@ -2,9 +2,7 @@ package tech.notifly.utils
 
 import android.content.Context
 import android.util.Log
-import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -14,6 +12,7 @@ import tech.notifly.Notifly
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.NotiflyFirebaseUtil
 import java.lang.IllegalStateException
 import kotlin.jvm.Throws
 
@@ -81,19 +80,11 @@ internal object NotiflyAuthUtil {
             )
             else -> NotiflyIdUtil.generate(
                 NotiflyIdUtil.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
-                "${projectId}${getFcmToken()}"
+                "${projectId}${NotiflyFirebaseUtil.getFcmToken()}"
             )
         }
 
         NotiflyStorage.put(context, NotiflyStorageItem.USER_ID, notiflyUserId)
         return notiflyUserId
-    }
-
-    suspend fun getFcmToken(): String? {
-        return try {
-            FirebaseMessaging.getInstance().token.await()
-        } catch (e: Exception) {
-            null
-        }
     }
 }

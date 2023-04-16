@@ -185,7 +185,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = idToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyUserUtil", "getCognitoIdToken")
+                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyAuthUtil", "getCognitoIdToken")
                     val token = function.callSuspend(instance, username, password) as String?
 
                     if (token != null) {
@@ -205,7 +205,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = fcmToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyUserUtil", "getFcmToken")
+                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyFirebaseUtil", "getFcmToken")
                     val token = function.callSuspend(instance) as String?
 
                     if (token != null) {
@@ -225,7 +225,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyUserUtil", "getNotiflyUserId")
+                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyAuthUtil", "getNotiflyUserId")
                     val userId = function.callSuspend(instance, context) as String
 
                     notiflyUserId.value = userId
