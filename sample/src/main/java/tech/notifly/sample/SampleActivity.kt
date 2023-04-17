@@ -52,7 +52,7 @@ import kotlin.reflect.jvm.isAccessible
 class SampleActivity : ComponentActivity() {
 
     companion object {
-        private const val TAG = "NotiflySample"
+        const val TAG = "NotiflySample"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

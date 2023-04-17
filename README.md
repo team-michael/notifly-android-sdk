@@ -13,19 +13,19 @@ curl -X POST \
   -H 'Content-Type: application/json' \
   -d '{
     "notification": {
-        "title": "sdf",
-        "body": "sdf"
+        "title": "This is notification title",
+        "body": "This is notification body"
     },
     "data": {
         "campaign_id": "push_test_dsboard",
-        "link": "www.saladpet.com"
+        "link": "https://www.saladpet.com"
     },
     "priority": "high",
     "registration_ids": ["dr_JkT53QBOAidHYvYDClh:APA91bHaUKxrj50BUJV2rG8PIdXfrQdqR7H8uHPjv7NDRbKnmF4_oj7pW8b624XaRXXsxsqQL_h3Wd0uvZWD_6_6qowbXDQrg2cBNEztOwrpZlMaX5j2MIpNNzk_nEitZsG1RomBKKQk"]
 }'
 ```
 
-### In-App Messaging (via FCM)
+### In-App Message (via FCM)
 
 ```bash
 curl -X POST \

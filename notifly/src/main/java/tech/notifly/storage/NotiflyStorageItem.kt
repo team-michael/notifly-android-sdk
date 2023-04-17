@@ -30,4 +30,14 @@ internal sealed class NotiflyStorageItem<T> {
         override val key: String = "notifly_external_user_id"
         override val default: String? = null
     }
+
+    object IN_APP_MESSAGE_URL : NotiflyStorageItem<String>() {
+        override val key: String = "notifly_in_app_message_url"
+        override val default: String = ""
+    }
+
+    object IN_APP_MESSAGE_CAMPAIGN_ID : NotiflyStorageItem<String>() {
+        override val key: String = "notifly_in_app_message_campaign_id"
+        override val default: String = ""
+    }
 }
