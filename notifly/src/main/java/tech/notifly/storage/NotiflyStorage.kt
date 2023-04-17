@@ -48,11 +48,6 @@ internal object NotiflyStorage {
 
     fun <T> put(context: Context, item: NotiflyStorageItem<T>, value: T) {
         with(getSharedPreferences(context)) {
-            if (value == null) {
-                edit().remove(item.key).apply()
-                return
-            }
-
             edit().run {
                 when (value) {
                     is Int -> putInt(item.key, value)
@@ -79,8 +74,11 @@ internal object NotiflyStorage {
         }
     }
 
-    fun <T> clear(context: Context, item: NotiflyStorageItem<T?>) {
-        put(context, item, null)
+    fun <T> clear(context: Context, item: NotiflyStorageItem<T>) {
+        with(getSharedPreferences(context)) {
+            edit().remove(item.key).apply()
+            return
+        }
     }
 
     fun clearAll(context: Context) {
