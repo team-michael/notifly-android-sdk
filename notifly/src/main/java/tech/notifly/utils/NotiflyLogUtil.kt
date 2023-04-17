@@ -148,7 +148,7 @@ internal object NotiflyLogUtil {
             .put("id", eventId)
             .put("name", eventName)
             .put("notifly_user_id", notiflyUserId)
-            .put("time", System.currentTimeMillis())
+            .put("time", System.currentTimeMillis() / 1000)
             .put("notifly_device_id", notiflyDeviceId)
             .put("external_device_id", externalDeviceId)
             .put("device_token", deviceToken)
