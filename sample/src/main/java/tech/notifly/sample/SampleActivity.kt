@@ -264,7 +264,7 @@ class SampleActivity : ComponentActivity() {
                     onClick = {
                         Notifly.initialize(
                             context = context,
-                            projectId = "a0d696d1aba7535fad6710cddf3b1cab",
+                            projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",
                             username = "minyong",
                             password = "000000"
                         )
