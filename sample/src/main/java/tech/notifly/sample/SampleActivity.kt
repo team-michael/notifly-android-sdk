@@ -1,6 +1,7 @@
 package tech.notifly.sample
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -23,12 +24,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -58,6 +63,13 @@ class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         askNotificationPermission()
+
+        Notifly.initialize(
+            context = applicationContext,
+            projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",
+            username = "minyong",
+            password = "000000"
+        )
 
         setContent {
             NotiflyAndroidSDKTheme {
@@ -246,6 +258,7 @@ class SampleActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun SampleVerticalList(username: String, password: String) {
         Box(
@@ -262,25 +275,11 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        Notifly.initialize(
-                            context = context,
-                            projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",
-                            username = "minyong",
-                            password = "000000"
-                        )
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Initialize")
-                }
-
-                Button(
-                    onClick = {
                         val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyLogUtil", "logEvent")
                         function.call(
                             instance,
                             context,
-                            "Event Name",
+                            "click_button_1",
                             mapOf(
                                 "keyString" to "value1",
                                 "keyBoolean" to true,
@@ -292,7 +291,41 @@ class SampleActivity : ComponentActivity() {
                     },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
-                    Text(text = "Internal Event")
+                    Text(text = "click_button_1 (logEvent)")
+                }
+
+                var userId: String by remember { mutableStateOf("") }
+
+                TextField(
+                    value = userId,
+                    onValueChange = { userId = it },
+                    label = { Text("User ID") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        if (userId.isNotEmpty()) {
+                            val (instance, function) = reflectObjectFunction("tech.notifly.Notifly", "setUserId")
+                            function.call(
+                                instance,
+                                context,
+                                userId
+                            )
+                        } else {
+                            Log.w(TAG, "Empty user ID input")
+                            // Show alert for empty user ID input
+                            val builder = AlertDialog.Builder(context)
+                            builder.setTitle("Error")
+                            builder.setMessage("Please enter a user ID.")
+                            builder.setPositiveButton("OK", null)
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "set user id")
                 }
 
                 Button(

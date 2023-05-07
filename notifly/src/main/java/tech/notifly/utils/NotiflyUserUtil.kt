@@ -16,12 +16,14 @@ object NotiflyUserUtil {
             if (params.containsKey(N.KEY_EXTERNAL_USER_ID)) {
                 val previousNotiflyUserId = NotiflyAuthUtil.getNotiflyUserId(context)
                 val previousExternalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-                    ?: throw IllegalStateException("[Notifly] <External User ID> not found. You should call Notifly.initialize first")
+                if (previousExternalUserId == null) {
+                    Log.i(Notifly.TAG, "[Notifly] <External User ID> not found.")
+                }
 
                 NotiflyStorage.put(context, NotiflyStorageItem.EXTERNAL_USER_ID, params[N.KEY_EXTERNAL_USER_ID])
                 NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
 
-                val newParams = mapOf<String, Any>(
+                val newParams = params + mapOf<String, Any?>(
                     N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
                     N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
                 )
@@ -29,7 +31,7 @@ object NotiflyUserUtil {
                 NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
             }
         } catch(e: Exception) {
-            Log.w(Notifly.TAG, "[Notifly] Failed to set user properties")
+            Log.w(Notifly.TAG, "[Notifly] Failed to set user properties", e)
         }
     }
 
