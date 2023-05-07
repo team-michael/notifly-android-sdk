@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -197,7 +198,10 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = idToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyAuthUtil", "getCognitoIdToken")
+                    val (instance, function) = reflectObjectFunction(
+                        "tech.notifly.utils.NotiflyAuthUtil",
+                        "getCognitoIdToken"
+                    )
                     val token = function.callSuspend(instance, username, password) as String?
 
                     if (token != null) {
@@ -217,7 +221,10 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = fcmToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyFirebaseUtil", "getFcmToken")
+                    val (instance, function) = reflectObjectFunction(
+                        "tech.notifly.utils.NotiflyFirebaseUtil",
+                        "getFcmToken"
+                    )
                     val token = function.callSuspend(instance) as String?
 
                     if (token != null) {
@@ -237,7 +244,10 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyAuthUtil", "getNotiflyUserId")
+                    val (instance, function) = reflectObjectFunction(
+                        "tech.notifly.utils.NotiflyAuthUtil",
+                        "getNotiflyUserId"
+                    )
                     val userId = function.callSuspend(instance, context) as String
 
                     notiflyUserId.value = userId
@@ -267,6 +277,9 @@ class SampleActivity : ComponentActivity() {
                 .verticalScroll(rememberScrollState())
         ) {
             val context = LocalContext.current
+            var userId: String by remember { mutableStateOf("") }
+            var propertyName by remember { mutableStateOf("") }
+            var propertyValue by remember { mutableStateOf("") }
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Notifly", fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -275,7 +288,10 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        val (instance, function) = reflectObjectFunction("tech.notifly.utils.NotiflyLogUtil", "logEvent")
+                        val (instance, function) = reflectObjectFunction(
+                            "tech.notifly.utils.NotiflyLogUtil",
+                            "logEvent"
+                        )
                         function.call(
                             instance,
                             context,
@@ -294,8 +310,6 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "click_button_1 (logEvent)")
                 }
 
-                var userId: String by remember { mutableStateOf("") }
-
                 TextField(
                     value = userId,
                     onValueChange = { userId = it },
@@ -306,7 +320,10 @@ class SampleActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         if (userId.isNotEmpty()) {
-                            val (instance, function) = reflectObjectFunction("tech.notifly.Notifly", "setUserId")
+                            val (instance, function) = reflectObjectFunction(
+                                "tech.notifly.Notifly",
+                                "setUserId"
+                            )
                             function.call(
                                 instance,
                                 context,
@@ -328,11 +345,46 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "set user id")
                 }
 
+                OutlinedTextField(
+                    value = propertyName,
+                    onValueChange = { propertyName = it },
+                    label = { Text("User Property Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = propertyValue,
+                    onValueChange = { propertyValue = it },
+                    label = { Text("User Property Value") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(
+                    onClick = {
+                        if (propertyName.isEmpty() || propertyValue.isEmpty()) {
+                            Log.w(TAG, "Empty user property input")
+                            // Show alert for empty user property input
+                            val builder = AlertDialog.Builder(context)
+                            builder.setTitle("Error")
+                            builder.setMessage("Please enter a user property name and value.")
+                            builder.setPositiveButton("OK", null)
+                            val dialog = builder.create()
+                            dialog.show()
+                        } else {
+                            Notifly.setUserProperties(
+                                context,
+                                mapOf(propertyName to propertyValue)
+                            )
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Set User Property")
+                }
+
                 Button(
                     onClick = { /* Handle button click */ },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text(text = "Button 3")
+                    Text(text = "Dummy Button")
                 }
             }
         }
@@ -345,11 +397,16 @@ class SampleActivity : ComponentActivity() {
         Toast.makeText(context, "Copied <$label> to ClipBoard", LENGTH_SHORT).show()
     }
 
-    private fun reflectObjectFunction(className: String, functionName: String): Pair<Any, KFunction<*>> {
+    private fun reflectObjectFunction(
+        className: String,
+        functionName: String
+    ): Pair<Any, KFunction<*>> {
         val objectClass: KClass<out Any> = Class.forName(className).kotlin
-        val objectInstance: Any = objectClass.objectInstance ?: throw NullPointerException("Instance Not Found for $className")
-        val objectFunction: KFunction<*> = objectClass.memberFunctions.find { it.name == functionName }
-            ?: throw NullPointerException("Function Not Found for $functionName")
+        val objectInstance: Any = objectClass.objectInstance
+            ?: throw NullPointerException("Instance Not Found for $className")
+        val objectFunction: KFunction<*> =
+            objectClass.memberFunctions.find { it.name == functionName }
+                ?: throw NullPointerException("Function Not Found for $functionName")
         objectFunction.isAccessible = true
 
         return objectInstance to objectFunction

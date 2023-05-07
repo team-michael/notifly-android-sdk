@@ -162,4 +162,15 @@ object Notifly {
             return false
         }
     }
+
+    fun setUserProperties(context: Context, params: Map<String, String>) {
+        // delegate to NotiflyUserUtil
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                NotiflyUserUtil.setUserProperties(context, params)
+            } catch (e: Exception) {
+                Log.w(TAG, "Notifly setUserProperties failed", e)
+            }
+        }
+    }
 }
