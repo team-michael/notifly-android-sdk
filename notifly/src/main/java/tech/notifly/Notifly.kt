@@ -61,13 +61,18 @@ object Notifly {
             NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
 
             // Show In-App Message
-            val inAppMessageCampaignId = NotiflyStorage.get(context, NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID)
+            val inAppMessageCampaignId =
+                NotiflyStorage.get(context, NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID)
             val inAppMessageUrl = NotiflyStorage.get(context, NotiflyStorageItem.IN_APP_MESSAGE_URL)
             if (inAppMessageCampaignId.isNotBlank() && inAppMessageUrl.isNotBlank()) {
-                context.startActivity(Intent(context, NotiflyInAppMessageActivity::class.java).apply {
-                    putExtra("in_app_message_campaign_id", inAppMessageCampaignId)
-                    putExtra("in_app_message_url", inAppMessageUrl)
-                })
+                context.startActivity(
+                    Intent(
+                        context,
+                        NotiflyInAppMessageActivity::class.java
+                    ).apply {
+                        putExtra("in_app_message_campaign_id", inAppMessageCampaignId)
+                        putExtra("in_app_message_url", inAppMessageUrl)
+                    })
             }
 
             // Start Session
@@ -89,7 +94,11 @@ object Notifly {
                 }
                 message.data["campaign_id"]?.let { campaignId ->
                     Log.d(TAG, "campaign_id: $campaignId")
-                    NotiflyStorage.put(context, NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID, campaignId)
+                    NotiflyStorage.put(
+                        context,
+                        NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID,
+                        campaignId
+                    )
                 }
             }
             isInAppMessage
@@ -111,7 +120,12 @@ object Notifly {
             val intent = Intent(context, NotiflyBroadcastReceiver::class.java)
                 .putExtra(NotiflyBroadcastReceiver.KEY_LINK, message.data["link"])
                 .putExtra(NotiflyBroadcastReceiver.KEY_CAMPAIGN_ID, message.data["campaign_id"])
-            val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channelName = "Notifly Notification Channel"
@@ -134,7 +148,11 @@ object Notifly {
                 .build()
 
             // Show the notification
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
                 NotificationManagerCompat.from(context).notify(notificationId, notification)
                 return true
             }
