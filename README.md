@@ -9,7 +9,7 @@
 ```bash
 curl -X POST \
   https://fcm.googleapis.com/fcm/send \
-  -H 'Authorization: key=AAAAc0VpeVc:APA91bHye9A8uc5hjc0IwEeqk2hEeiEBQ63ndVdeQ_YZaTL3_CLgN7I0hqGnJywEFetX5YZSDxnLmTQjziFJ-DyowtJLjLmbrltVDc-tHGPzlM6BV7XefhrgSGXnrXM7pbntpEn6AqHC' \
+  -H 'Authorization: key=AAAA071qs2o:APA91bEgUVz05Nca-uUIo2lK8vJl4SuiJIfZs-dqEhAYJgnO6C_gpVnfs2OVOvXgDp-IwVCmIHDQ2rSIrFAdDhQUTvDx_szpdeTAuQL8wx77nJV2BHtEW4cOk56t5YMXDKs8CvQ1ffIj' \
   -H 'Content-Type: application/json' \
   -d '{
     "notification": {
@@ -21,7 +21,7 @@ curl -X POST \
         "link": "https://www.saladpet.com"
     },
     "priority": "high",
-    "registration_ids": ["dr_JkT53QBOAidHYvYDClh:APA91bHaUKxrj50BUJV2rG8PIdXfrQdqR7H8uHPjv7NDRbKnmF4_oj7pW8b624XaRXXsxsqQL_h3Wd0uvZWD_6_6qowbXDQrg2cBNEztOwrpZlMaX5j2MIpNNzk_nEitZsG1RomBKKQk"]
+    "registration_ids": ["fut-o8kNTcyZf9BoGyXGsC:APA91bHELQ6_L-zhhDZrw4tahn95PFAslEwYPOvsXNClPgPT1X0zsFMr0Rv2fgxJ7RaRx2HKh5I3rzAhr1Vriov30pPQ-HguTByRnp2bLafO-2QVwtJTyv6hXNaTsFvDpe3YKu3iYLJM"]
 }'
 ```
 

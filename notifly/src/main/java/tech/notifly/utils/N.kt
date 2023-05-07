@@ -12,7 +12,7 @@ internal object N {
     /**
      * Regardless of [NotiflySdkType], Platform Information is fixed to "Android"
      */
-    const val PLATFORM = "Android"
+    const val PLATFORM = "android"
 
     /**
      * Reserved Key for backward compatibility based on User Property or Event Logging.
