@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -64,13 +65,6 @@ class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         askNotificationPermission()
-
-        Notifly.initialize(
-            context = applicationContext,
-            projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",
-            username = "minyong",
-            password = "000000"
-        )
 
         setContent {
             NotiflyAndroidSDKTheme {
@@ -378,6 +372,13 @@ class SampleActivity : ComponentActivity() {
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Set User Property")
+                }
+
+                Button(
+                    onClick = { startActivity(Intent(context, PlaygroundActivity::class.java))  },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Go to Playground page")
                 }
 
                 Button(
