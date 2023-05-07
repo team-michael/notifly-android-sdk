@@ -26,7 +26,7 @@ internal object NotiflyLogUtil {
     fun logEvent(
         context: Context,
         eventName: String,
-        eventParams: Map<String, Any>,
+        eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String> = listOf(),
         isInternalEvent: Boolean = false
     ) {
@@ -141,10 +141,13 @@ internal object NotiflyLogUtil {
         osVersion: String,
         appVersion: String,
         externalUserId: String?,
-        eventParams: Map<String, Any>
+        eventParams: Map<String, Any?>
     ): RequestBody {
+        // Replace any null values in eventParams with JSONObject.NULL
+        val sanitizedParams = eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
+
         val data = JSONObject()
-            .put("event_params", JSONObject(eventParams))
+            .put("event_params", JSONObject(sanitizedParams))
             .put("id", eventId)
             .put("name", eventName)
             .put("notifly_user_id", notiflyUserId)

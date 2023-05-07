@@ -31,16 +31,19 @@ object Notifly {
         context: Context,
         userId: String,
     ) {
-        try {
-            CoroutineScope(Dispatchers.IO).launch {
-                val params = mapOf(
-                    KEY_EXTERNAL_USER_ID to userId,
-                )
-                NotiflyUserUtil.setUserProperties(context, params)
-                NotiflyUserUtil.removeUserId(context)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (userId.isNullOrEmpty()) {
+                    NotiflyUserUtil.removeUserId(context)
+                } else {
+                    val params = mapOf(
+                        KEY_EXTERNAL_USER_ID to userId
+                    )
+                    NotiflyUserUtil.setUserProperties(context, params)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Notifly setUserId failed", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Notifly setUserId failed", e)
         }
     }
 
