@@ -375,7 +375,7 @@ class SampleActivity : ComponentActivity() {
                 }
 
                 Button(
-                    onClick = { startActivity(Intent(context, PlaygroundActivity::class.java))  },
+                    onClick = { startActivity(Intent(context, PlaygroundActivity::class.java)) },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Go to Playground page")

@@ -3,7 +3,7 @@ package tech.notifly.sample
 import android.app.Application
 import tech.notifly.Notifly
 
-class SampleApplication: Application() {
+class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifly.initialize(
