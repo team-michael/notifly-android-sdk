@@ -163,7 +163,7 @@ object Notifly {
         }
     }
 
-    fun setUserProperties(context: Context, params: Map<String, String>) {
+    fun setUserProperties(context: Context, params: Map<String, Any?>) {
         // delegate to NotiflyUserUtil
         CoroutineScope(Dispatchers.IO).launch {
             try {
