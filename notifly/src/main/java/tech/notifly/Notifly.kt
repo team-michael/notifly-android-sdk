@@ -82,6 +82,7 @@ object Notifly {
         }
     }
 
+    // TODO: replace with FCMBroadcastReceiver
     fun handleInAppMessage(context: Context, message: RemoteMessage): Boolean {
         Log.d(TAG, "handleInAppMessage(${message.data})")
         return try {
@@ -105,62 +106,6 @@ object Notifly {
         } catch (err: Exception) {
             println("[Notifly] In-app message handling failed: $err")
             false
-        }
-    }
-
-    fun handlePushNotification(context: Context, message: RemoteMessage): Boolean {
-        Log.d(TAG, "handlePushNotification: data=${message.data}")
-        Log.d(TAG, "handlePushNotification: notification=${message.notification}")
-        Log.d(TAG, "handlePushNotification: notification details={title=${message.notification?.title}, body=${message.notification?.body}, clickAction=${message.notification?.clickAction}}")
-
-        try {
-            // do nothing if it's not notification
-            if (message.notification == null) return false
-
-            val notificationId = 1 // Any Unique ID
-            val intent = Intent(context, NotiflyBroadcastReceiver::class.java)
-                .putExtra(NotiflyBroadcastReceiver.KEY_LINK, message.data["link"])
-                .putExtra(NotiflyBroadcastReceiver.KEY_CAMPAIGN_ID, message.data["campaign_id"])
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channelName = "Notifly Notification Channel"
-                val channelDescription = "This is the Notifly Notification Channel"
-                val importance = NotificationManager.IMPORTANCE_DEFAULT
-                val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, importance)
-                channel.description = channelDescription
-
-                val notificationManager = context.getSystemService(NotificationManager::class.java)
-                notificationManager.createNotificationChannel(channel)
-            }
-
-            // Customize the notification appearance
-            val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_delete) // todo: get icon from customer
-                .setContentTitle(message.notification?.title.orEmpty())
-                .setContentText(message.notification?.body.orEmpty())
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .build()
-
-            // Show the notification
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                NotificationManagerCompat.from(context).notify(notificationId, notification)
-                return true
-            }
-            return false
-        } catch (err: Exception) {
-            println("[Notifly] Notification opened handling failed: $err")
-            return false
         }
     }
 
