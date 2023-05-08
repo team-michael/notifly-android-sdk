@@ -109,7 +109,10 @@ object Notifly {
     }
 
     fun handlePushNotification(context: Context, message: RemoteMessage): Boolean {
-        Log.d(TAG, "handlePushNotification(${message.data})")
+        Log.d(TAG, "handlePushNotification: data=${message.data}")
+        Log.d(TAG, "handlePushNotification: notification=${message.notification}")
+        Log.d(TAG, "handlePushNotification: notification details={title=${message.notification?.title}, body=${message.notification?.body}, clickAction=${message.notification?.clickAction}}")
+
         try {
             // do nothing if it's not notification
             if (message.notification == null) return false
