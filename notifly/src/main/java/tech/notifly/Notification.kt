@@ -7,6 +7,7 @@ data class Notification(
     val title: String,
     val url: String? = null,
 ) {
+    // TODO: define more optional fields
     constructor(notiflyJsonObject: JSONObject) : this(
         body = notiflyJsonObject.getString("bd"),
         title = notiflyJsonObject.getString("ti"),

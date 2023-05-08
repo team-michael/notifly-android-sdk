@@ -57,6 +57,8 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val notificationId = 1 // Any Unique ID TODO: use notificationId from server
 
         val url = notiflyNotification.url
+
+        // TODO: implement push_click logging
         val launchIntent = if (url != null) {
             Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -87,18 +89,19 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val builder = NotificationCompat.Builder(context)
+        val builder = NotificationCompat.Builder(context, Notifly.NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_delete) // TODO: replace with a default icon
-            .setContentText(notiflyNotification.body)
             .setContentTitle(
                 notiflyNotification.title
                     ?: context.applicationInfo.loadLabel(context.packageManager).toString()
             )
+            .setContentText(notiflyNotification.body)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
+        // TODO: set style
         // builder.setStyle(NotificationCompat.BigTextStyle().bigText(notiflyNotification.body))
 
         val notification = builder.build()
@@ -111,9 +114,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            // log
-            Log.d(Notifly.TAG, "FCMBroadcastReceiver permission granted")
-            // TODO(minyong): figure out why notification is not showing
             NotificationManagerCompat.from(context).notify(notificationId, notification)
         } else {
             Log.w(Notifly.TAG, "POST_NOTIFICATIONS permission is not granted")
