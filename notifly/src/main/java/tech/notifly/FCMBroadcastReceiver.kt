@@ -24,6 +24,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Thread {
             try {
+                // TODO: log push_delivered event
                 showNotification(context, intent)
             } catch (e: Exception) {
                 Log.e(Notifly.TAG, "onReceive failed", e)
@@ -38,14 +39,12 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             return
         }
 
-        // console log extras
         val keys = extras.keySet()
         for (key in keys) {
             Log.d(Notifly.TAG, "FCMBroadcastReceiver intent key: $key, value: " + extras.get(key))
         }
 
         val jsonObject = bundleAsJSONObject(extras)
-        // check if jsonObject has notifly key
         if (!jsonObject.has("notifly")) {
             Log.d(Notifly.TAG, "FCMBroadcastReceiver intent extras does not have notifly key")
             return
@@ -54,11 +53,12 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val notiflyJSONObject = JSONObject(notiflyString)
 
         val notiflyNotification = Notification(notiflyJSONObject)
-        val notificationId = 1 // Any Unique ID TODO: use notificationId from server
+        // TODO: use notificationId from server
+        val notificationId = 1
 
         val url = notiflyNotification.url
 
-        // TODO: implement push_click logging
+        // TODO: log push_click event
         val launchIntent = if (url != null) {
             Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
