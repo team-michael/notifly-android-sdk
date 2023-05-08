@@ -13,8 +13,9 @@ class SampleFirebaseMessagingService : FirebaseMessagingService() {
         val inAppMessageHandled = Notifly.handleInAppMessage(this, message)
         if (inAppMessageHandled) return
 
-        val isPushNotificationHandled = Notifly.handlePushNotification(this, message)
-        if (isPushNotificationHandled) return
+        // Deprecated: push notifications handled by default
+        // val isPushNotificationHandled = Notifly.handlePushNotification(this, message)
+        // if (isPushNotificationHandled) return
     }
 
     override fun onNewToken(token: String) {
