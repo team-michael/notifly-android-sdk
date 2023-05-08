@@ -8,6 +8,7 @@ import tech.notifly.Notifly
 class SampleFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+        Log.d("Sample", "onMessageReceived: $message")
 
         val inAppMessageHandled = Notifly.handleInAppMessage(this, message)
         if (inAppMessageHandled) return

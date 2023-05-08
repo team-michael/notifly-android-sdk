@@ -111,10 +111,8 @@ object Notifly {
     fun handlePushNotification(context: Context, message: RemoteMessage): Boolean {
         Log.d(TAG, "handlePushNotification(${message.data})")
         try {
-            // do nothing if it's not notification nor link is empty
-            Log.d(TAG, "message.notification: ${message.notification}")
-            Log.d(TAG, "message.data.link: ${message.data["link"]}")
-            if (message.notification == null || message.data["link"].isNullOrBlank()) return false
+            // do nothing if it's not notification
+            if (message.notification == null) return false
 
             val notificationId = 1 // Any Unique ID
             val intent = Intent(context, NotiflyBroadcastReceiver::class.java)
