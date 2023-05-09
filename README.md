@@ -35,15 +35,8 @@ curl -X POST \
   -H 'Authorization: key=AAAA071qs2o:APA91bEgUVz05Nca-uUIo2lK8vJl4SuiJIfZs-dqEhAYJgnO6C_gpVnfs2OVOvXgDp-IwVCmIHDQ2rSIrFAdDhQUTvDx_szpdeTAuQL8wx77nJV2BHtEW4cOk56t5YMXDKs8CvQ1ffIj' \
   -d '{
     "data": {
-        "campaign_id": "TestCampaignMinyong",
         "notifly_message_type": "in-app-message",
-        "url": "https://d2vabyracdcb46.cloudfront.net/common-htmls/full_media.html",
-        "modal_properties": {
-            "template_name": "modal_full_image",
-            "width_vw": 100,
-            "height_vh": 100,
-            "position": "full"
-        }
+        "notifly_in_app_message_data":"eyJjYW1wYWlnbl9pZCI6ImluX2FwcF9tZXNzYWdlX3Rlc3RfYW5kcm9pZC1zaW11bGF0b3IiLCJ1cmwiOiJodHRwczovL2QydmFieXJhY2RjYjQ2LmNsb3VkZnJvbnQubmV0L2I4MGMzZjBlMmZiZDVlYjk4NmRmNGYxZDMyZWEyODcxL2luLWFwcC1tZXNzYWdlLXRlc3QvaW5fYXBwX21lc3NhZ2VfdGVzdF9hbmRyb2lkLXNpbXVsYXRvcl8yMDIzLTA1LTA5VDA2OjM0OjE4LjExOVouaHRtbCIsIm1vZGFsX3Byb3BlcnRpZXMiOnsidGVtcGxhdGVfbmFtZSI6ImZ1bGxfbWVkaWEiLCJ3aWR0aF92dyI6MTAwLCJoZWlnaHRfdmgiOjEwMCwicG9zaXRpb24iOiJmdWxsIn19"
     },
     "registration_ids": ["eVMJArGL85pJyyTsaAxCgq:APA91bGg3NhWmaxwT0SZ2TLQKCCRWIMp7tCLSZZ10S5zbsEKnmaGL2YkSFHrpPdfWQXvb6DZBzmPKZ6budB9iMUPbg3WfgU4iQAM77iENtzo8pYkNOgkK53bUEJmeZhsF9z8IjFnXm5p"]
 }'

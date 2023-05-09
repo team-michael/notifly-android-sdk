@@ -76,8 +76,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     private fun extractInAppMessage(jsonObject: JSONObject): InAppMessage? {
         if (!jsonObject.has("notifly_message_type")
             || jsonObject.getString("notifly_message_type") != "in-app-message"
-            || !jsonObject.has("url")
-            || !jsonObject.has("campaign_id")
+            || !jsonObject.has("notifly_in_app_message_data")
         ) {
             Log.d(
                 Notifly.TAG,
@@ -86,7 +85,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             return null
         }
 
-        return InAppMessage(jsonObject)
+        return InAppMessage.fromFCMPayload(jsonObject)
     }
 
     private fun logPushDelivered(
