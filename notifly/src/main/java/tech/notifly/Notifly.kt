@@ -1,22 +1,10 @@
 package tech.notifly
 
-import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.util.Log
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import tech.notifly.inapp.NotiflyInAppMessageActivity
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.N.KEY_EXTERNAL_USER_ID
@@ -60,21 +48,6 @@ object Notifly {
             NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
             NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
 
-            // Show In-App Message
-            val inAppMessageCampaignId =
-                NotiflyStorage.get(context, NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID)
-            val inAppMessageUrl = NotiflyStorage.get(context, NotiflyStorageItem.IN_APP_MESSAGE_URL)
-            if (inAppMessageCampaignId.isNotBlank() && inAppMessageUrl.isNotBlank()) {
-                context.startActivity(
-                    Intent(
-                        context,
-                        NotiflyInAppMessageActivity::class.java
-                    ).apply {
-                        putExtra("in_app_message_campaign_id", inAppMessageCampaignId)
-                        putExtra("in_app_message_url", inAppMessageUrl)
-                    })
-            }
-
             // Start Session
             NotiflyUserUtil.sessionStart(context)
         } catch (e: Exception) {
@@ -82,32 +55,6 @@ object Notifly {
         }
     }
 
-    // TODO: replace with FCMBroadcastReceiver
-    fun handleInAppMessage(context: Context, message: RemoteMessage): Boolean {
-        Log.d(TAG, "handleInAppMessage(${message.data})")
-        return try {
-            val isInAppMessage = message.data["notifly_message_type"] == "in-app-message"
-            Log.d(TAG, "isInAppMessage: $isInAppMessage")
-            if (isInAppMessage) {
-                message.data["url"]?.let { url ->
-                    Log.d(TAG, "url: $url")
-                    NotiflyStorage.put(context, NotiflyStorageItem.IN_APP_MESSAGE_URL, url)
-                }
-                message.data["campaign_id"]?.let { campaignId ->
-                    Log.d(TAG, "campaign_id: $campaignId")
-                    NotiflyStorage.put(
-                        context,
-                        NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID,
-                        campaignId
-                    )
-                }
-            }
-            isInAppMessage
-        } catch (err: Exception) {
-            println("[Notifly] In-app message handling failed: $err")
-            false
-        }
-    }
 
     fun setUserProperties(context: Context, params: Map<String, Any?>) {
         // delegate to NotiflyUserUtil
