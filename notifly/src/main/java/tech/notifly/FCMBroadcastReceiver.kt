@@ -51,12 +51,11 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             val isAppInForeground = OSUtils.isAppInForeground(context)
             logPushDelivered(context, pushNotification, isAppInForeground)
             showPushNotification(context, pushNotification, isAppInForeground)
-            return
+        } else if (OSUtils.isAppInForeground(context)) {
+            extractInAppMessage(jsonObject)?.let { inAppMessage ->
+                showInAppMessage(context, inAppMessage)
+            }
         }
-
-        if (!OSUtils.isAppInForeground(context)) return
-        val inAppMessage = extractInAppMessage(jsonObject) ?: return
-        showInAppMessage(context, inAppMessage)
 
     }
 
