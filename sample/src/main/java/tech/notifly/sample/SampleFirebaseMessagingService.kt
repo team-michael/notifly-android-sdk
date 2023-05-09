@@ -3,16 +3,11 @@ package tech.notifly.sample
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import tech.notifly.Notifly
 
 class SampleFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         Log.d("Sample", "onMessageReceived: $message")
-
-        // TODO: replace with FCM BroadcastReceiver
-        val inAppMessageHandled = Notifly.handleInAppMessage(this, message)
-        if (inAppMessageHandled) return
 
     }
 

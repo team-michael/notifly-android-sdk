@@ -25,8 +25,10 @@ class NotiflyInAppMessageActivity : Activity() {
         Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
 
         val webView: WebView = findViewById(R.id.webView)
+        val intent = intent
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val url = intent.getStringExtra("in_app_message_url")
+        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
         url?.let {
             webView.loadUrl(it)
             NotiflyLogUtil.logEvent(
@@ -36,12 +38,11 @@ class NotiflyInAppMessageActivity : Activity() {
                     "type" to "message_event",
                     "channel" to "in-app-message",
                     "campaign" to campaignId,
+                    "notifly_message_id" to notiflyMessageId,
                 ),
                 listOf(),
                 true
             ); // logging in app messaging delivered
-            NotiflyStorage.clear(this, NotiflyStorageItem.IN_APP_MESSAGE_CAMPAIGN_ID)
-            NotiflyStorage.clear(this, NotiflyStorageItem.IN_APP_MESSAGE_URL)
         }
     }
 

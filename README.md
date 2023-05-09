@@ -37,7 +37,7 @@ curl -X POST \
     "data": {
         "campaign_id": "TestCampaignMinyong",
         "notifly_message_type": "in-app-message",
-        "url": "https://d2vabyracdcb46.cloudfront.net/common-htmls/modal_full_image.html",
+        "url": "https://d2vabyracdcb46.cloudfront.net/common-htmls/full_media.html",
         "modal_properties": {
             "template_name": "modal_full_image",
             "width_vw": 100,
