@@ -21,6 +21,7 @@ import androidx.legacy.content.WakefulBroadcastReceiver
 import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.OSUtils
 
 class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -55,45 +56,39 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val notiflyJSONObject = JSONObject(notiflyString)
 
         val notiflyNotification = Notification(notiflyJSONObject)
+        val title = notiflyNotification.title
+        val body = notiflyNotification.body
+        val url = notiflyNotification?.url
+        val campaignId = notiflyNotification?.campaign_id
+        val notiflyMessageId = notiflyNotification?.notifly_message_id
 
-        val isAppInForeground = isAppInForeground(context)
+        val isAppInForeground = OSUtils.isAppInForeground(context)
         NotiflyLogUtil.logEvent(
             context,
             "push_delivered",
             mapOf(
                 "type" to "message_event",
                 "channel" to "push-notification",
-                "campaign_id" to notiflyNotification.campaign_id,
-                "notifly_message_id" to notiflyNotification.notifly_message_id,
-                // It's not straightforward to distinguish between background and quit
-                // so we log quit state as background
+                "campaign_id" to campaignId,
+                "notifly_message_id" to notiflyMessageId,
                 "status" to if (isAppInForeground) "foreground" else "background"
             ),
             listOf(),
             true
         )
 
-        // TODO: use notificationId from server
-        val notificationId = 1
-
-        val url = notiflyNotification.url
-
-        // TODO: log push_click event
-        val launchIntent = if (url != null) {
-            Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        } else {
-            context.packageManager.getLaunchIntentForPackage(context.packageName)
-                ?.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val notificationOpenIntent = Intent(context, NotificationOpenReceiver::class.java).apply {
+            putExtra("title", title)
+            putExtra("body", body)
+            putExtra("url", url)
+            putExtra("campaign_id", campaignId)
+            putExtra("notifly_message_id", notiflyMessageId)
         }
 
-        launchIntent?.putExtra("title", notiflyNotification.title)
-        launchIntent?.putExtra("body", notiflyNotification.body)
-
-        val pendingIntent = PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getBroadcast(
             context,
             0,
-            launchIntent,
+            notificationOpenIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -111,23 +106,21 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
         val builder = NotificationCompat.Builder(context, Notifly.NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_delete) // TODO: replace with a default icon
-            .setContentTitle(
-                notiflyNotification.title
-                    ?: context.applicationInfo.loadLabel(context.packageManager).toString()
-            )
-            .setContentText(notiflyNotification.body)
+            .setContentTitle(title)
+            .setContentText(body)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         // TODO: set style
-        // builder.setStyle(NotificationCompat.BigTextStyle().bigText(notiflyNotification.body))
+        // builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
 
         val notification = builder.build()
         // log
         Log.d(Notifly.TAG, "FCMBroadcastReceiver notification: $notification")
 
+        val notificationId = notiflyMessageId?.toIntOrNull() ?: 1
         // Show the notification
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -152,20 +145,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             }
         }
         return json
-    }
-
-    fun isAppInForeground(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val appProcesses = activityManager.runningAppProcesses
-        if (appProcesses != null) {
-            val packageName = context.packageName
-            for (appProcess in appProcesses) {
-                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
-                    return true
-                }
-            }
-        }
-        return false
     }
 
 }
