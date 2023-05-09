@@ -3,6 +3,7 @@
 package tech.notifly
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -19,12 +20,12 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.legacy.content.WakefulBroadcastReceiver
 import org.json.JSONException
 import org.json.JSONObject
+import tech.notifly.utils.NotiflyLogUtil
 
 class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Thread {
             try {
-                // TODO: log push_delivered event
                 showNotification(context, intent)
             } catch (e: Exception) {
                 Log.e(Notifly.TAG, "onReceive failed", e)
@@ -49,10 +50,29 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             Log.d(Notifly.TAG, "FCMBroadcastReceiver intent extras does not have notifly key")
             return
         }
+
         val notiflyString = jsonObject.getString("notifly")
         val notiflyJSONObject = JSONObject(notiflyString)
 
         val notiflyNotification = Notification(notiflyJSONObject)
+
+        val isAppInForeground = isAppInForeground(context)
+        NotiflyLogUtil.logEvent(
+            context,
+            "push_delivered",
+            mapOf(
+                "type" to "message_event",
+                "channel" to "push-notification",
+                "campaign_id" to notiflyNotification.campaign_id,
+                "notifly_message_id" to notiflyNotification.notifly_message_id,
+                // It's not straightforward to distinguish between background and quit
+                // so we log quit state as background
+                "status" to if (isAppInForeground) "foreground" else "background"
+            ),
+            listOf(),
+            true
+        )
+
         // TODO: use notificationId from server
         val notificationId = 1
 
@@ -132,6 +152,20 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             }
         }
         return json
+    }
+
+    fun isAppInForeground(context: Context): Boolean {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appProcesses = activityManager.runningAppProcesses
+        if (appProcesses != null) {
+            val packageName = context.packageName
+            for (appProcess in appProcesses) {
+                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
 }
