@@ -8,6 +8,10 @@
             android:name=".inapp.NotiflyInAppMessageActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".NotificationOpenActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".FCMBroadcastReceiver"
             android:exported="true"
@@ -17,10 +21,6 @@
                 <category android:name="${applicationId}" />
             </intent-filter>
         </receiver>
-
-        <receiver
-            android:name=".NotificationOpenReceiver"
-            android:exported="false" />
     </application>
 
 </manifest>

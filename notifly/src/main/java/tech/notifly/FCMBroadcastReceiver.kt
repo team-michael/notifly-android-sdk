@@ -3,14 +3,12 @@
 package tech.notifly
 
 import android.Manifest
-import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -77,15 +75,16 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             true
         )
 
-        val notificationOpenIntent = Intent(context, NotificationOpenReceiver::class.java).apply {
+        val notificationOpenIntent = Intent(context, NotificationOpenActivity::class.java).apply {
             putExtra("title", title)
             putExtra("body", body)
             putExtra("url", url)
             putExtra("campaign_id", campaignId)
             putExtra("notifly_message_id", notiflyMessageId)
+            putExtra("was_app_in_foreground", isAppInForeground)
         }
 
-        val pendingIntent = PendingIntent.getBroadcast(
+        val pendingIntent = PendingIntent.getActivity(
             context,
             0,
             notificationOpenIntent,
