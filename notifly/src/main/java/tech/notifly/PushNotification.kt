@@ -2,7 +2,7 @@ package tech.notifly
 
 import org.json.JSONObject
 
-data class Notification(
+data class PushNotification(
     val body: String,
     val title: String,
     val campaign_id: String,

@@ -25,7 +25,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Thread {
             try {
-                showNotification(context, intent)
+                handleFCMMessage(context, intent)
             } catch (e: Exception) {
                 Log.e(Notifly.TAG, "onReceive failed", e)
             }
@@ -33,7 +33,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     }
 
     @Throws(Exception::class)
-    private fun showNotification(context: Context, intent: Intent) {
+    private fun handleFCMMessage(context: Context, intent: Intent) {
         val extras = intent.extras ?: run {
             Log.e(Notifly.TAG, "intent extras is NULL")
             return
@@ -45,22 +45,34 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
 
         val jsonObject = bundleAsJSONObject(extras)
+        // TODO: handle in-app message
+        val pushNotification = extractPushNotification(jsonObject) ?: return
+
+        val isAppInForeground = OSUtils.isAppInForeground(context)
+        logPushDelivered(context, pushNotification, isAppInForeground)
+        showPushNotification(context, pushNotification, isAppInForeground)
+
+    }
+
+    private fun extractPushNotification(jsonObject: JSONObject): PushNotification? {
         if (!jsonObject.has("notifly")) {
             Log.d(Notifly.TAG, "FCMBroadcastReceiver intent extras does not have notifly key")
-            return
+            return null
         }
 
         val notiflyString = jsonObject.getString("notifly")
         val notiflyJSONObject = JSONObject(notiflyString)
+        return PushNotification(notiflyJSONObject)
+    }
 
-        val notiflyNotification = Notification(notiflyJSONObject)
-        val title = notiflyNotification.title
-        val body = notiflyNotification.body
-        val url = notiflyNotification?.url
-        val campaignId = notiflyNotification?.campaign_id
-        val notiflyMessageId = notiflyNotification?.notifly_message_id
+    private fun logPushDelivered(
+        context: Context,
+        pushNotification: PushNotification,
+        isAppInForeground: Boolean
+    ) {
+        val campaignId = pushNotification.campaign_id
+        val notiflyMessageId = pushNotification.notifly_message_id
 
-        val isAppInForeground = OSUtils.isAppInForeground(context)
         NotiflyLogUtil.logEvent(
             context,
             "push_delivered",
@@ -74,8 +86,20 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             listOf(),
             true
         )
+    }
 
-        val notificationOpenIntent = Intent(context, NotificationOpenActivity::class.java).apply {
+    private fun showPushNotification(
+        context: Context,
+        pushNotification: PushNotification,
+        isAppInForeground: Boolean
+    ) {
+        val title = pushNotification.title
+        val body = pushNotification.body
+        val url = pushNotification.url
+        val campaignId = pushNotification.campaign_id
+        val notiflyMessageId = pushNotification.notifly_message_id
+
+        val notificationOpenIntent = Intent(context, PushNotificationOpenActivity::class.java).apply {
             putExtra("title", title)
             putExtra("body", body)
             putExtra("url", url)
