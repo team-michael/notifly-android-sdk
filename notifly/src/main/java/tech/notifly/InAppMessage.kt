@@ -19,7 +19,7 @@ data class InAppMessage(
                 val jsonObject = JSONObject(decodedJsonString)
                 parseInAppMessageJson(jsonObject)
             } catch (e: Exception) {
-                Log.e("InAppMessage", "Failed to decode or parse JSON", e)
+                Log.e(Notifly.TAG, "InAppMessage: Failed to decode or parse JSON", e)
                 null
             }
         }
