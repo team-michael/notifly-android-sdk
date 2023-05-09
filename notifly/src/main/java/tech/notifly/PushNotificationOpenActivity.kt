@@ -5,9 +5,8 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import tech.notifly.utils.NotiflyLogUtil
-import tech.notifly.utils.OSUtils
 
-class NotificationOpenActivity : AppCompatActivity() {
+class PushNotificationOpenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

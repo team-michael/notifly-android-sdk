@@ -9,7 +9,7 @@
             android:exported="false" />
 
         <activity
-            android:name=".NotificationOpenActivity"
+            android:name=".PushNotificationOpenActivity"
             android:exported="false" />
 
         <receiver
