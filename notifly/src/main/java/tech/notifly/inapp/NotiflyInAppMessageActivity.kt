@@ -118,17 +118,13 @@ class NotiflyInAppMessageActivity : Activity() {
                 layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
             }
 
-            "center" -> {
+            else -> { // default to center. same as full.
                 layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
                 layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
                 layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
                 layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
             }
 
-            else -> { // Default to full screen
-                layoutParams.width = 1080
-                layoutParams.height = 2201
-            }
         }
 
         webView.layoutParams = layoutParams
