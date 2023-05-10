@@ -4,22 +4,25 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
-import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
 import org.json.JSONObject
 import tech.notifly.Notifly
 import tech.notifly.R
 import tech.notifly.utils.NotiflyLogUtil
 import kotlin.math.roundToInt
 
+
 class NotiflyInAppMessageActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_notifly_in_app_message)
         Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
 
@@ -51,6 +54,7 @@ class NotiflyInAppMessageActivity : Activity() {
 
         modalProperties?.let { properties ->
             val position = properties.optString("position", "full")
+            Log.d(Notifly.TAG, "In-app message position: $position")
             setPositionAndSize(webView, widthPx, heightPx, position)
         }
 
@@ -77,17 +81,47 @@ class NotiflyInAppMessageActivity : Activity() {
         heightPx: Float,
         position: String
     ) {
-        val layoutParams = FrameLayout.LayoutParams(widthPx.roundToInt(), heightPx.roundToInt())
+
+        val layoutParams = ConstraintLayout.LayoutParams(
+            widthPx.roundToInt(),
+            heightPx.roundToInt()
+        )
 
         when (position) {
-            "top" -> layoutParams.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            "bottom" -> layoutParams.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            "left" -> layoutParams.gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            "right" -> layoutParams.gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            "center" -> layoutParams.gravity = Gravity.CENTER
+            "top" -> {
+                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+
+            "bottom" -> {
+                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+
+            "left" -> {
+                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+
+            "right" -> {
+                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+
+            "center" -> {
+                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+
             else -> { // Default to full screen
-                layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT
-                layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT
+                layoutParams.width = 1080
+                layoutParams.height = 2201
             }
         }
 
