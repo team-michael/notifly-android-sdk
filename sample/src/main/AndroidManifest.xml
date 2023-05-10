@@ -38,9 +38,6 @@
                     android:scheme="notiflyandroidtestapp" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".SampleWebviewActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <service
             android:name=".SampleFirebaseMessagingService"
