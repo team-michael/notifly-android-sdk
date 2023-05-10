@@ -6,6 +6,7 @@
     <application>
         <activity
             android:name=".inapp.NotiflyInAppMessageActivity"
+            android:theme="@style/Theme.CustomTransparent"
             android:exported="false" />
 
         <activity

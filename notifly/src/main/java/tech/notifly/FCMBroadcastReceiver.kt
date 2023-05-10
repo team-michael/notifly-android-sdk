@@ -184,6 +184,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val campaignId = inAppMessage.campaign_id
         val url = inAppMessage.url
         val notiflyMessageId = inAppMessage.notifly_message_id
+        val modalProperties = inAppMessage.modal_properties
 
         val inAppMessageShowIntent = Intent(
             context,
@@ -192,6 +193,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             putExtra("in_app_message_campaign_id", campaignId)
             putExtra("in_app_message_url", url)
             putExtra("notifly_message_id", notiflyMessageId)
+            putExtra("modal_properties", modalProperties)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 

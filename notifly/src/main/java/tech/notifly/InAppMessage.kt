@@ -9,7 +9,7 @@ data class InAppMessage(
     val campaign_id: String,
     val url: String,
     val notifly_message_id: String? = null,
-    val modal_properties: JSONObject? = null,
+    val modal_properties: String? = null,
 ) {
     companion object {
         fun fromFCMPayload(payload: JSONObject): InAppMessage? {
@@ -34,16 +34,7 @@ data class InAppMessage(
                 campaign_id = jsonObject.getString("campaign_id"),
                 url = jsonObject.getString("url"),
                 notifly_message_id = if (jsonObject.has("mid")) jsonObject.getString("mid") else null,
-                modal_properties = if (jsonObject.has("modal_properties")) {
-                    try {
-                        JSONObject(jsonObject.getString("modal_properties"))
-                    } catch (e: JSONException) {
-                        Log.e(Notifly.TAG, "Failed to parse modal_properties JSON", e)
-                        null
-                    }
-                } else {
-                    null
-                }
+                modal_properties = if (jsonObject.has("modal_properties")) jsonObject.getString("modal_properties") else null,
             )
         }
     }
