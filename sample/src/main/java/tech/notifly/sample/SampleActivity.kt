@@ -2,14 +2,20 @@ package tech.notifly.sample
 
 import android.Manifest
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.ComponentActivity
@@ -382,6 +388,13 @@ class SampleActivity : ComponentActivity() {
                 }
 
                 Button(
+                    onClick = { showWebViewDialog() },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Webview open")
+                }
+
+                Button(
                     onClick = { /* Handle button click */ },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
@@ -411,5 +424,33 @@ class SampleActivity : ComponentActivity() {
         objectFunction.isAccessible = true
 
         return objectInstance to objectFunction
+    }
+
+    private fun showWebViewDialog() {
+        val webViewDialog = Dialog(this)
+        webViewDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        webViewDialog.setContentView(R.layout.dialog_webview)
+
+        val webView = webViewDialog.findViewById<WebView>(R.id.webView)
+        initWebView(webView)
+        loadContent(webView)
+
+        webViewDialog.show()
+    }
+
+    private fun initWebView(webView: WebView) {
+        val webSettings = webView.settings
+        webSettings.javaScriptEnabled = true
+        webSettings.loadWithOverviewMode = true
+        webSettings.useWideViewPort = true
+        webView.webViewClient = WebViewClient()
+
+        webView.setBackgroundColor(Color.TRANSPARENT)
+        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+    }
+
+    private fun loadContent(webView: WebView) {
+        val htmlContent = "<html><body style=\"background-color: white;\"><h1>Hello, world!</h1></body></html>"
+        webView.loadData(htmlContent, "text/html", "UTF-8")
     }
 }

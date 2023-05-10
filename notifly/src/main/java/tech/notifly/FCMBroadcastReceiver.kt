@@ -18,7 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.legacy.content.WakefulBroadcastReceiver
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.inapp.NotiflyInAppMessageActivity
+import tech.notifly.inapp.NotiflyInAppMessageBroadcastReceiver
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.OSUtils
 
@@ -188,7 +188,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
         val inAppMessageShowIntent = Intent(
             context,
-            NotiflyInAppMessageActivity::class.java
+            NotiflyInAppMessageBroadcastReceiver::class.java
         ).apply {
             putExtra("in_app_message_campaign_id", campaignId)
             putExtra("in_app_message_url", url)
@@ -197,7 +197,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        context.startActivity(inAppMessageShowIntent)
+        context.sendBroadcast(inAppMessageShowIntent)
     }
 
     private fun bundleAsJSONObject(bundle: Bundle): JSONObject {

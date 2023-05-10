@@ -1,29 +1,25 @@
 package tech.notifly.inapp
 
 import android.app.Activity
-import android.content.Context
+import android.app.Dialog
 import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.util.Log
 import android.view.Gravity
-import android.webkit.JavascriptInterface
+import android.view.View
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import androidx.appcompat.app.AlertDialog
 import org.json.JSONObject
 import tech.notifly.Notifly
 import tech.notifly.R
 import tech.notifly.utils.NotiflyLogUtil
 import kotlin.math.roundToInt
 
-class NotiflyInAppMessageActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_notifly_in_app_message)
-        Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
+class InAppMessageHandler {
+    fun handleInAppMessage(activity: Activity, intent: Intent) {
 
-        val webView: WebView = findViewById(R.id.webView)
         val intent = intent
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val url = intent.getStringExtra("in_app_message_url")
@@ -40,7 +36,7 @@ class NotiflyInAppMessageActivity : Activity() {
             null
         }
 
-        val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(this)
+        val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(activity)
         val (widthPx, heightPx) = InAppMessageUtils.getViewDimensions(
             modalProperties,
             screenWidth,
@@ -49,15 +45,12 @@ class NotiflyInAppMessageActivity : Activity() {
         Log.d(Notifly.TAG, "screenWidth: $screenWidth, screenHeight: $screenHeight")
         Log.d(Notifly.TAG, "In-app message widthPx: $widthPx, heightPx: $heightPx")
 
-        modalProperties?.let { properties ->
-            val position = properties.optString("position", "full")
-            setPositionAndSize(webView, widthPx, heightPx, position)
-        }
+        val position = modalProperties?.optString("position") ?: "full"
 
         url?.let {
-            webView.loadUrl(it)
+            showWebViewDialog(activity, it, widthPx, heightPx, position)
             NotiflyLogUtil.logEvent(
-                this,
+                activity,
                 "in_app_message_show",
                 mapOf(
                     "type" to "message_event",
@@ -69,6 +62,19 @@ class NotiflyInAppMessageActivity : Activity() {
                 true
             ) // logging in app messaging delivered
         }
+    }
+
+    private fun showWebViewDialog(activity: Activity, url: String, widthPx: Float, heightPx: Float, position: String) {
+        val webViewDialog = Dialog(activity)
+        webViewDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        webViewDialog.setContentView(R.layout.activity_notifly_in_app_message)
+
+        val webView = webViewDialog.findViewById<WebView>(R.id.webView)
+        initWebView(webView)
+        setPositionAndSize(webView, widthPx, heightPx, position)
+        webView.loadUrl(url)
+
+        webViewDialog.show()
     }
 
     private fun setPositionAndSize(
@@ -95,33 +101,15 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
 
-    private class InAppMessageJSInterface(
-        private val context: Context,
-        private val webView: WebView,
-    ) {
-        @JavascriptInterface
-        fun handleButtonClick(type: String, buttonName: String, link: String?) {
-            when (type) {
-                "close" -> {
-                    (context as Activity).runOnUiThread {
-                        (webView.parent.parent as? AlertDialog)?.dismiss()
-                    }
-                }
+    private fun initWebView(webView: WebView) {
+        val webSettings = webView.settings
+        webSettings.javaScriptEnabled = true
+        webSettings.loadWithOverviewMode = true
+        webSettings.useWideViewPort = true
+        webView.webViewClient = WebViewClient()
 
-                "main_button" -> {
-                    if (link != null) {
-                        (context as Activity).runOnUiThread {
-                            (webView.parent.parent as? AlertDialog)?.dismiss()
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(link)).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                            )
-                        }
-                    }
-                }
-                // Handle other button types if necessary
-            }
-        }
+        // Set background transparent
+        webView.setBackgroundColor(Color.TRANSPARENT)
+        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     }
 }

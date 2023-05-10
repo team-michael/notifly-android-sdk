@@ -5,10 +5,6 @@
 
     <application>
         <activity
-            android:name=".inapp.NotiflyInAppMessageActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".PushNotificationOpenActivity"
             android:exported="false" />
 
@@ -19,6 +15,13 @@
             <intent-filter android:priority="999">
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
                 <category android:name="${applicationId}" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".inapp.NotiflyInAppMessageBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="tech.notifly.show_in_app_message" />
             </intent-filter>
         </receiver>
     </application>

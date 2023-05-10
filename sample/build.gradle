@@ -69,6 +69,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging'
 
     implementation 'com.onesignal:OneSignal:[4.0.0, 4.99.99]'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
     testImplementation 'junit:junit:4.13.2'
 
