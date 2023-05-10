@@ -4,10 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.appcompat.app.AlertDialog
@@ -43,19 +41,22 @@ class NotiflyInAppMessageActivity : Activity() {
             null
         }
 
-        val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(this)
-        val (widthPx, heightPx) = InAppMessageUtils.getViewDimensions(
+        val density = getDensity()
+        Log.d(Notifly.TAG, "density: $density")
+
+        val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(this, density)
+        val (widthDp, heightDp) = InAppMessageUtils.getViewDimensions(
             modalProperties,
             screenWidth,
-            screenHeight
+            screenHeight,
         )
         Log.d(Notifly.TAG, "screenWidth: $screenWidth, screenHeight: $screenHeight")
-        Log.d(Notifly.TAG, "In-app message widthPx: $widthPx, heightPx: $heightPx")
+        Log.d(Notifly.TAG, "In-app message widthDp: $widthDp, heightDp: $heightDp")
 
         modalProperties?.let { properties ->
             val position = properties.optString("position", "full")
             Log.d(Notifly.TAG, "In-app message position: $position")
-            setPositionAndSize(webView, widthPx, heightPx, position)
+            setPositionAndSize(webView, widthDp, heightDp, density, position)
         }
 
         url?.let {
@@ -75,16 +76,21 @@ class NotiflyInAppMessageActivity : Activity() {
         }
     }
 
+    private fun getDensity(): Float {
+        return resources.displayMetrics.density
+    }
+
     private fun setPositionAndSize(
         webView: WebView,
-        widthPx: Float,
-        heightPx: Float,
+        widthDp: Float,
+        heightDp: Float,
+        density: Float,
         position: String
     ) {
 
         val layoutParams = ConstraintLayout.LayoutParams(
-            widthPx.roundToInt(),
-            heightPx.roundToInt()
+            (widthDp * density).roundToInt(),
+            (heightDp * density).roundToInt()
         )
 
         when (position) {

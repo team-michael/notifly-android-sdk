@@ -1,6 +1,7 @@
 package tech.notifly.inapp
 
 import android.app.Activity
+import android.graphics.Point
 import android.os.Build
 import android.util.DisplayMetrics
 import android.view.WindowInsets
@@ -10,8 +11,8 @@ object InAppMessageUtils {
 
     fun getViewDimensions(
         modalProps: JSONObject?,
-        screenWidth: Int,
-        screenHeight: Int
+        screenWidth: Float,
+        screenHeight: Float
     ): Pair<Float, Float> {
 
         val viewWidth: Float = when {
@@ -56,18 +57,23 @@ object InAppMessageUtils {
     }
 
     @Suppress("DEPRECATION")
-    fun getScreenWidthAndHeight(activity: Activity): Pair<Int, Int> {
+    fun getScreenWidthAndHeight(activity: Activity, density: Float): Pair<Float, Float> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val windowMetrics = activity.windowManager.currentWindowMetrics
             val insets =
                 windowMetrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
-            val screenWidth = windowMetrics.bounds.width() - insets.left - insets.right
-            val screenHeight = windowMetrics.bounds.height() - insets.top - insets.bottom
-            Pair(screenWidth, screenHeight)
+            val screenWidthPx = windowMetrics.bounds.width() - insets.left - insets.right
+            val screenHeightPx = windowMetrics.bounds.height() - insets.top - insets.bottom
+            val screenWidthDp = (screenWidthPx / density)
+            val screenHeightDp = (screenHeightPx / density)
+            Pair(screenWidthDp, screenHeightDp)
         } else {
-            val displayMetrics = DisplayMetrics()
-            activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
-            Pair(displayMetrics.widthPixels, displayMetrics.heightPixels)
+            val screenSize = Point()
+            activity.windowManager.defaultDisplay.getSize(screenSize)
+            val screenWidthDp = (screenSize.x / density)
+            val screenHeightDp = (screenSize.y / density)
+            Pair(screenWidthDp, screenHeightDp)
         }
     }
+
 }
