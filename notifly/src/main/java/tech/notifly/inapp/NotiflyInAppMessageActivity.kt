@@ -1,5 +1,6 @@
 package tech.notifly.inapp
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -39,6 +40,47 @@ class NotiflyInAppMessageActivity : Activity() {
 
         setContentView(R.layout.activity_notifly_in_app_message)
         val webView: WebView = findViewById(R.id.webView)
+        setupWebView(webView)
+
+        val intent = intent
+        val (url, modalProperties) = handleIntent(intent)
+        if (url == null) {
+            return
+        }
+
+        val density = getDensity()
+        Log.d(Notifly.TAG, "density: $density")
+
+        handleViewDimensions(webView, modalProperties, density)
+
+        webView.loadUrl(url)
+        setupTouchInterceptorLayout()
+
+        val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
+        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
+        NotiflyLogUtil.logEvent(
+            this,
+            "in_app_message_show",
+            mapOf(
+                "type" to "message_event",
+                "channel" to "in-app-message",
+                "campaign" to campaignId,
+                "notifly_message_id" to notiflyMessageId,
+            ),
+            listOf(),
+            true
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Clear the flag to indicate the activity is no longer running
+        isActivityRunning = false
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView(webView: WebView) {
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
@@ -64,40 +106,51 @@ class NotiflyInAppMessageActivity : Activity() {
         webView.addJavascriptInterface(
             InAppMessageJSInterface(
                 this,
-                webView,
             ),
             "Android"
         )
+    }
 
-        val intent = intent
-        val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
+    private fun setupTouchInterceptorLayout() {
+        val touchInterceptorLayout =
+            findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
+        touchInterceptorLayout.onTouchOutsideWebView = {
+            finish()
+        }
+    }
+
+    private fun handleIntent(intent: Intent): Pair<String?, JSONObject?> {
         val url = intent.getStringExtra("in_app_message_url")
         if (url == null) {
             Log.e(Notifly.TAG, "Error parsing in app message url")
-            return
+            return Pair(null, null)
         }
-        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
-        val modalPropertiesString = intent.getStringExtra("modal_properties")
-        val modalProperties = try {
-            if (modalPropertiesString != null) {
-                JSONObject(modalPropertiesString)
-            } else {
-                null
+
+        val modalProperties =
+            intent.getStringExtra("modal_properties")?.let { modalPropertiesString ->
+                try {
+                    JSONObject(modalPropertiesString)
+                } catch (e: Exception) {
+                    Log.e(Notifly.TAG, "Error parsing modal properties of the in app message", e)
+                    null
+                }
             }
-        } catch (e: Exception) {
-            Log.e(Notifly.TAG, "Error parsing modal properties of the in app message", e)
-            null
-        }
 
-        val density = getDensity()
-        Log.d(Notifly.TAG, "density: $density")
+        return Pair(url, modalProperties)
+    }
 
+    private fun handleViewDimensions(
+        webView: WebView,
+        modalProperties: JSONObject?,
+        density: Float
+    ) {
         val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(this, density)
         val (widthDp, heightDp) = InAppMessageUtils.getViewDimensions(
             modalProperties,
             screenWidth,
             screenHeight,
         )
+
         Log.d(Notifly.TAG, "screenWidth: $screenWidth, screenHeight: $screenHeight")
         Log.d(Notifly.TAG, "In-app message widthDp: $widthDp, heightDp: $heightDp")
 
@@ -106,33 +159,6 @@ class NotiflyInAppMessageActivity : Activity() {
             Log.d(Notifly.TAG, "In-app message position: $position")
             setPositionAndSize(webView, widthDp, heightDp, density, position)
         }
-
-        webView.loadUrl(url)
-        val touchInterceptorLayout =
-            findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
-        touchInterceptorLayout.onTouchOutsideWebView = {
-            finish()
-        }
-
-        NotiflyLogUtil.logEvent(
-            this,
-            "in_app_message_show",
-            mapOf(
-                "type" to "message_event",
-                "channel" to "in-app-message",
-                "campaign" to campaignId,
-                "notifly_message_id" to notiflyMessageId,
-            ),
-            listOf(),
-            true
-        )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        // Clear the flag to indicate the activity is no longer running
-        isActivityRunning = false
     }
 
     private fun getDensity(): Float {
@@ -192,7 +218,6 @@ class NotiflyInAppMessageActivity : Activity() {
 
     private class InAppMessageJSInterface(
         private val context: Context,
-        private val webView: WebView,
     ) {
         @JavascriptInterface
         @Suppress("unused")
@@ -201,7 +226,7 @@ class NotiflyInAppMessageActivity : Activity() {
             val data = JSONObject(json)
             val type = data.getString("type")
             val buttonName = data.getString("button_name")
-            val link = data.optString("link", null)
+            val link = data.optString("link", null.toString())
             handleButtonClick(type, buttonName, link)
         }
 
