@@ -44,15 +44,16 @@ class NotiflyInAppMessageActivity : Activity() {
 
         isActivityRunning = true
 
-        setContentView(R.layout.activity_notifly_in_app_message)
-        val webView: WebView = findViewById(R.id.webView)
-        setupWebView(webView)
-
         val intent = intent
         val (url, modalProperties) = handleIntent(intent)
         if (url == null) {
             return
         }
+        val eventLogData = getEventLogData(intent)
+
+        setContentView(R.layout.activity_notifly_in_app_message)
+        val webView: WebView = findViewById(R.id.webView)
+        setupWebView(webView, eventLogData)
 
         val density = getDensity()
         Log.d(Notifly.TAG, "density: $density")
@@ -62,16 +63,14 @@ class NotiflyInAppMessageActivity : Activity() {
         webView.loadUrl(url)
         setupTouchInterceptorLayout(modalProperties?.optDouble("backdrop_opacity", 0.0))
 
-        val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
-        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
         NotiflyLogUtil.logEvent(
             this,
             "in_app_message_show",
             mapOf(
                 "type" to "message_event",
                 "channel" to "in-app-message",
-                "campaign" to campaignId,
-                "notifly_message_id" to notiflyMessageId,
+                "campaign" to eventLogData.campaignId,
+                "notifly_message_id" to eventLogData.notiflyMessageId,
             ),
             listOf(),
             true
@@ -92,7 +91,7 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView(webView: WebView) {
+    private fun setupWebView(webView: WebView, eventLogData: EventLogData) {
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
@@ -118,6 +117,7 @@ class NotiflyInAppMessageActivity : Activity() {
         webView.addJavascriptInterface(
             InAppMessageJSInterface(
                 this,
+                eventLogData,
             ),
             "Android"
         )
@@ -158,6 +158,20 @@ class NotiflyInAppMessageActivity : Activity() {
             }
 
         return Pair(url, modalProperties)
+    }
+
+    data class EventLogData(
+        val campaignId: String,
+        val notiflyMessageId: String?,
+        val notiflyExtraData: String?,
+    )
+
+    fun getEventLogData(intent: Intent): EventLogData {
+        val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
+        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
+        val notiflyExtraData = intent.getStringExtra("notifly_extra_data")
+
+        return EventLogData(campaignId, notiflyMessageId, notiflyExtraData)
     }
 
     private fun handleViewDimensions(
@@ -281,6 +295,7 @@ class NotiflyInAppMessageActivity : Activity() {
 
     private class InAppMessageJSInterface(
         private val context: Context,
+        val eventLogData: EventLogData,
     ) {
         @JavascriptInterface
         @Suppress("unused")
@@ -297,13 +312,13 @@ class NotiflyInAppMessageActivity : Activity() {
             when (type) {
                 "close" -> {
                     Log.d(Notifly.TAG, "In-app message close button clicked")
+                    logInAppMessageButtonClick("close_button_click", buttonName)
                     (context as Activity).finish()
-                    // TODO: log close_button_click event
                 }
 
                 "main_button" -> {
                     Log.d(Notifly.TAG, "In-app message main button clicked")
-                    // TODO: log main_button_click event
+                    logInAppMessageButtonClick("main_button_click", buttonName)
                     if (link != null && link != "null") {
                         Log.d(Notifly.TAG, "In-app message main button link: link")
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
@@ -314,18 +329,37 @@ class NotiflyInAppMessageActivity : Activity() {
 
                 "hide_in_app_message" -> {
                     Log.d(Notifly.TAG, "In-app message hide button clicked")
+                    logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
                     (context as Activity).finish()
                     // TODO: handle hide_in_app_message
-                    // TODO: log hide_in_app_message_button_click event
                 }
 
                 "survey_submit_button" -> {
                     Log.d(Notifly.TAG, "In-app message survey submit button clicked")
+                    logInAppMessageButtonClick("survey_submit_button_click", buttonName)
                     (context as Activity).finish()
-                    // TODO: handle survey_submit_button
-                    // TODO: log survey_submit_button_click event
                 }
             }
+        }
+
+        fun logInAppMessageButtonClick(eventName: String, buttonName: String) {
+            val eventParams = mutableMapOf(
+                "type" to "message_event",
+                "channel" to "in-app-message",
+                "button_name" to buttonName,
+                "campaign_id" to eventLogData.campaignId,
+                "notifly_message_id" to eventLogData.notiflyMessageId,
+            )
+            if (eventName == "survey_submit_button_click") {
+                eventParams["notifly_extra_data"] = eventLogData.notiflyExtraData
+            }
+            NotiflyLogUtil.logEvent(
+                context,
+                eventName,
+                eventParams,
+                listOf(),
+                true,
+            )
         }
     }
 }
