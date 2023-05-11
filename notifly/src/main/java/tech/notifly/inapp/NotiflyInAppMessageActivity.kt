@@ -55,7 +55,7 @@ class NotiflyInAppMessageActivity : Activity() {
         handleViewDimensions(webView, modalProperties, density)
 
         webView.loadUrl(url)
-        setupTouchInterceptorLayout(modalProperties?.optDouble("backdrop_opacity", 0.5))
+        setupTouchInterceptorLayout(modalProperties?.optDouble("backdrop_opacity", 0.0))
 
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
@@ -122,12 +122,12 @@ class NotiflyInAppMessageActivity : Activity() {
         val touchInterceptorLayout =
             findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
 
+        val cappedOpacity = backdropOpacity?.coerceIn(0.0, 1.0) ?: 0.0
         val backgroundColor = Color.argb(
-            ((backdropOpacity ?: 0.0) * 255).roundToInt(),
+            (cappedOpacity * 255).roundToInt(),
             0,
             0,
             0
-
         )
         touchInterceptorLayout.setBackgroundColor(backgroundColor)
         touchInterceptorLayout.onTouchOutsideWebView = {
