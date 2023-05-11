@@ -19,7 +19,8 @@ import java.lang.IllegalStateException
 
 object NotiflyLogUtil {
 
-    private const val LOG_EVENT_URI = "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
+    private const val LOG_EVENT_URI =
+        "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -50,17 +51,24 @@ object NotiflyLogUtil {
          */
         GlobalScope.launch {
             try {
-                val notiflyCognitoIdToken: String = NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
-                    ?: invalidateCognitoIdToken(context) // invalidate if not set
+                val notiflyCognitoIdToken: String =
+                    NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
+                        ?: invalidateCognitoIdToken(context) // invalidate if not set
                 val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
-                val notiflyExternalUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-                val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
-                    ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
+                val notiflyExternalUserId: String? =
+                    NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+                val notiflyProjectId: String =
+                    NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                        ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
 
                 val externalDeviceId: String = NotiflyDeviceUtil.getExternalDeviceId(context)
                 val notiflyEventId =
-                    NotiflyIdUtil.generate(Namespace.NAMESPACE_EVENT_ID, "$notiflyUserId$eventName${System.currentTimeMillis()}")
-                val notiflyDeviceId = NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
+                    NotiflyIdUtil.generate(
+                        Namespace.NAMESPACE_EVENT_ID,
+                        "$notiflyUserId$eventName${System.currentTimeMillis()}"
+                    )
+                val notiflyDeviceId =
+                    NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
 
                 val osVersion: String = NotiflyDeviceUtil.getOsVersion()
                 val appVersion: String = NotiflyDeviceUtil.getAppVersion(context)
@@ -145,7 +153,8 @@ object NotiflyLogUtil {
         eventParams: Map<String, Any?>
     ): RequestBody {
         // Replace any null values in eventParams with JSONObject.NULL
-        val sanitizedParams = eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
+        val sanitizedParams =
+            eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
 
         val data = JSONObject()
             .put("event_params", JSONObject(sanitizedParams))
@@ -164,7 +173,10 @@ object NotiflyLogUtil {
             .put("app_version", appVersion)
             .put("sdk_version", Notifly.VERSION)
             .put("sdk_type", Notifly.SDK_TYPE.toLowerCaseName())
-            .put("external_user_id", if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId)
+            .put(
+                "external_user_id",
+                if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId
+            )
 
         val record = JSONObject()
             .put("data", data.toString())
