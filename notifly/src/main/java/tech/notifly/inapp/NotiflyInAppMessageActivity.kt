@@ -63,17 +63,14 @@ class NotiflyInAppMessageActivity : Activity() {
         webView.loadUrl(url)
         setupTouchInterceptorLayout(modalProperties?.optDouble("backdrop_opacity", 0.0))
 
-        val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
-        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
-        val notiflyExtraData = intent.getStringExtra("notifly_extra_data")
         NotiflyLogUtil.logEvent(
             this,
             "in_app_message_show",
             mapOf(
                 "type" to "message_event",
                 "channel" to "in-app-message",
-                "campaign" to campaignId,
-                "notifly_message_id" to notiflyMessageId,
+                "campaign" to eventLogData.campaignId,
+                "notifly_message_id" to eventLogData.notiflyMessageId,
             ),
             listOf(),
             true
@@ -120,7 +117,7 @@ class NotiflyInAppMessageActivity : Activity() {
         webView.addJavascriptInterface(
             InAppMessageJSInterface(
                 this,
-                eventLogData
+                eventLogData,
             ),
             "Android"
         )
