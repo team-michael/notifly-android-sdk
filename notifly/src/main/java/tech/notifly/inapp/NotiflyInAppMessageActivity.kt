@@ -22,9 +22,9 @@ import kotlin.math.roundToInt
 class NotiflyInAppMessageActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
 
         setContentView(R.layout.activity_notifly_in_app_message)
-        Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
 
         val webView: WebView = findViewById(R.id.webView)
         webView.settings.javaScriptEnabled = true
@@ -108,7 +108,7 @@ class NotiflyInAppMessageActivity : Activity() {
             ),
             listOf(),
             true
-        ) // logging in app messaging delivered
+        )
     }
 
     private fun getDensity(): Float {
@@ -201,18 +201,14 @@ class NotiflyInAppMessageActivity : Activity() {
 
                 "hide_in_app_message" -> {
                     Log.d(Notifly.TAG, "In-app message hide button clicked")
-                    (context as Activity).runOnUiThread {
-                        (webView.parent.parent as? AlertDialog)?.dismiss()
-                    }
+                    (context as Activity).finish()
                     // TODO: handle hide_in_app_message
                     // TODO: log hide_in_app_message_button_click event
                 }
 
                 "survey_submit_button" -> {
                     Log.d(Notifly.TAG, "In-app message survey submit button clicked")
-                    (context as Activity).runOnUiThread {
-                        (webView.parent.parent as? AlertDialog)?.dismiss()
-                    }
+                    (context as Activity).finish()
                     // TODO: handle survey_submit_button
                     // TODO: log survey_submit_button_click event
                 }
