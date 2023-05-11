@@ -10,7 +10,6 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import org.json.JSONObject
 import tech.notifly.Notifly
@@ -96,6 +95,10 @@ class NotiflyInAppMessageActivity : Activity() {
         }
 
         webView.loadUrl(url)
+        val touchInterceptorLayout = findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
+        touchInterceptorLayout.onTouchOutsideWebView = {
+            finish()
+        }
 
         NotiflyLogUtil.logEvent(
             this,
@@ -171,6 +174,7 @@ class NotiflyInAppMessageActivity : Activity() {
         private val webView: WebView,
     ) {
         @JavascriptInterface
+        @Suppress("unused")
         fun postMessage(json: String) {
             Log.d(Notifly.TAG, "In-app message postMessage: $json")
             val data = JSONObject(json)
