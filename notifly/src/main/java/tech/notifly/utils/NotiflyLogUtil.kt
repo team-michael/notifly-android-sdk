@@ -17,7 +17,7 @@ import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import java.lang.IllegalStateException
 
-internal object NotiflyLogUtil {
+object NotiflyLogUtil {
 
     private const val LOG_EVENT_URI = "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
