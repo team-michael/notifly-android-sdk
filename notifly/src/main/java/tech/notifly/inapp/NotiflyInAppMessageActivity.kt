@@ -7,7 +7,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import org.json.JSONObject
@@ -25,9 +27,43 @@ class NotiflyInAppMessageActivity : Activity() {
         Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
 
         val webView: WebView = findViewById(R.id.webView)
+        webView.settings.javaScriptEnabled = true
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                // Inject JavaScript after page loaded, otherwise it will not be able to find the button trigger
+                val injectedJavaScript = """
+                    console.log('Injected JavaScript is running');
+                    const button_trigger = document.getElementById('notifly-button-trigger');
+                    button_trigger.addEventListener('click', function(event){
+                        if (!event.notifly_button_click_type) return;
+                        window.Android.postMessage(JSON.stringify({
+                            type: event.notifly_button_click_type,
+                            button_name: event.notifly_button_name,
+                            link: event.notifly_button_click_link ?? null,
+                        }));
+                    });
+                """.trimIndent()
+
+                webView.evaluateJavascript(injectedJavaScript, null)
+            }
+        }
+        webView.webChromeClient = WebChromeClient()
+        webView.addJavascriptInterface(
+            InAppMessageJSInterface(
+                this,
+                webView,
+            ),
+            "Android"
+        )
+
         val intent = intent
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val url = intent.getStringExtra("in_app_message_url")
+        if (url == null) {
+            Log.e(Notifly.TAG, "Error parsing in app message url")
+            return
+        }
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
         val modalPropertiesString = intent.getStringExtra("modal_properties")
         val modalProperties = try {
@@ -59,21 +95,20 @@ class NotiflyInAppMessageActivity : Activity() {
             setPositionAndSize(webView, widthDp, heightDp, density, position)
         }
 
-        url?.let {
-            webView.loadUrl(it)
-            NotiflyLogUtil.logEvent(
-                this,
-                "in_app_message_show",
-                mapOf(
-                    "type" to "message_event",
-                    "channel" to "in-app-message",
-                    "campaign" to campaignId,
-                    "notifly_message_id" to notiflyMessageId,
-                ),
-                listOf(),
-                true
-            ) // logging in app messaging delivered
-        }
+        webView.loadUrl(url)
+
+        NotiflyLogUtil.logEvent(
+            this,
+            "in_app_message_show",
+            mapOf(
+                "type" to "message_event",
+                "channel" to "in-app-message",
+                "campaign" to campaignId,
+                "notifly_message_id" to notiflyMessageId,
+            ),
+            listOf(),
+            true
+        ) // logging in app messaging delivered
     }
 
     private fun getDensity(): Float {
@@ -136,27 +171,51 @@ class NotiflyInAppMessageActivity : Activity() {
         private val webView: WebView,
     ) {
         @JavascriptInterface
+        fun postMessage(json: String) {
+            Log.d(Notifly.TAG, "In-app message postMessage: $json")
+            val data = JSONObject(json)
+            val type = data.getString("type")
+            val buttonName = data.getString("button_name")
+            val link = data.optString("link", null)
+            handleButtonClick(type, buttonName, link)
+        }
+
         fun handleButtonClick(type: String, buttonName: String, link: String?) {
             when (type) {
                 "close" -> {
-                    (context as Activity).runOnUiThread {
-                        (webView.parent.parent as? AlertDialog)?.dismiss()
-                    }
+                    Log.d(Notifly.TAG, "In-app message close button clicked")
+                    (context as Activity).finish()
+                    // TODO: log close_button_click event
                 }
 
                 "main_button" -> {
-                    if (link != null) {
-                        (context as Activity).runOnUiThread {
-                            (webView.parent.parent as? AlertDialog)?.dismiss()
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(link)).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                            )
-                        }
+                    Log.d(Notifly.TAG, "In-app message main button clicked")
+                    // TODO: log main_button_click event
+                    if (link != null && link != "null") {
+                        Log.d(Notifly.TAG, "In-app message main button link: link")
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                        context.startActivity(intent)
                     }
+                    (context as Activity).finish()
                 }
-                // Handle other button types if necessary
+
+                "hide_in_app_message" -> {
+                    Log.d(Notifly.TAG, "In-app message hide button clicked")
+                    (context as Activity).runOnUiThread {
+                        (webView.parent.parent as? AlertDialog)?.dismiss()
+                    }
+                    // TODO: handle hide_in_app_message
+                    // TODO: log hide_in_app_message_button_click event
+                }
+
+                "survey_submit_button" -> {
+                    Log.d(Notifly.TAG, "In-app message survey submit button clicked")
+                    (context as Activity).runOnUiThread {
+                        (webView.parent.parent as? AlertDialog)?.dismiss()
+                    }
+                    // TODO: handle survey_submit_button
+                    // TODO: log survey_submit_button_click event
+                }
             }
         }
     }
