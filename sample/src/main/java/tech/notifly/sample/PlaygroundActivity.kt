@@ -1,5 +1,6 @@
 package tech.notifly.sample
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,11 +16,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 
 // deeplink: notiflyandroidtestapp://playground
 class PlaygroundActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val hasNotificationPermission = hasNotificationPermission(this)
 
         setContent {
             NotiflyAndroidSDKTheme {
@@ -32,6 +38,10 @@ class PlaygroundActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        Text(text = "Notifly Playground", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+                        Text(text = "Notification Permission: $hasNotificationPermission")
+
                         Button(onClick = { /* do something */ }) {
                             Text("Dummy Button")
                         }
@@ -50,5 +60,9 @@ class PlaygroundActivity : ComponentActivity() {
     private fun launchSampleActivity() {
         val intent = Intent(this, SampleActivity::class.java)
         startActivity(intent)
+    }
+
+    private fun hasNotificationPermission(context: Context): Boolean {
+        return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 }

@@ -2,9 +2,11 @@ package tech.notifly.utils
 
 import android.content.Context
 import android.util.Log
+import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import tech.notifly.NotificationAuthorizationStatus
 import tech.notifly.Notifly
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -56,6 +58,7 @@ object NotiflyUserUtil {
             val deviceBrand = NotiflyDeviceUtil.getBrand()
             val deviceModel = NotiflyDeviceUtil.getModel()
             val userAgent = System.getProperty("http.agent")
+            val notifAuthStatus = getNotifAuthStatus(context).value
 
             val openAppEventParams = mapOf(
                 "platform" to platform,
@@ -64,10 +67,19 @@ object NotiflyUserUtil {
                     "device_brand" to deviceBrand,
                     "api_level" to apiLevel,
                     "user_agent" to userAgent
-                )
+                ),
+                "notif_auth_status" to notifAuthStatus
             )
 
             NotiflyLogUtil.logEvent(context, "session_start", openAppEventParams)
+        }
+    }
+
+    private fun getNotifAuthStatus(context: Context): NotificationAuthorizationStatus {
+        return if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            NotificationAuthorizationStatus.AUTHORIZED
+        } else {
+            NotificationAuthorizationStatus.DENIED
         }
     }
 }
