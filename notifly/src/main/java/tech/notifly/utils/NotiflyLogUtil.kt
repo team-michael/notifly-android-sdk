@@ -19,7 +19,8 @@ import java.lang.IllegalStateException
 
 object NotiflyLogUtil {
 
-    private const val LOG_EVENT_URI = "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
+    private const val LOG_EVENT_URI =
+        "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -28,7 +29,8 @@ object NotiflyLogUtil {
         eventName: String,
         eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String> = listOf(),
-        isInternalEvent: Boolean = false
+        isInternalEvent: Boolean = false,
+        retryCount: Int = 0,
     ) {
         if (eventName.isEmpty()) {
             println("[Notifly] eventName must be provided.")
@@ -49,17 +51,24 @@ object NotiflyLogUtil {
          */
         GlobalScope.launch {
             try {
-                val notiflyCognitoIdToken: String = NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
-                    ?: invalidateCognitoIdToken(context) // invalidate if not set
+                val notiflyCognitoIdToken: String =
+                    NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
+                        ?: invalidateCognitoIdToken(context) // invalidate if not set
                 val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
-                val notiflyExternalUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-                val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
-                    ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
+                val notiflyExternalUserId: String? =
+                    NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+                val notiflyProjectId: String =
+                    NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                        ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
 
                 val externalDeviceId: String = NotiflyDeviceUtil.getExternalDeviceId(context)
                 val notiflyEventId =
-                    NotiflyIdUtil.generate(Namespace.NAMESPACE_EVENT_ID, "$notiflyUserId$eventName${System.currentTimeMillis()}")
-                val notiflyDeviceId = NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
+                    NotiflyIdUtil.generate(
+                        Namespace.NAMESPACE_EVENT_ID,
+                        "$notiflyUserId$eventName${System.currentTimeMillis()}"
+                    )
+                val notiflyDeviceId =
+                    NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
 
                 val osVersion: String = NotiflyDeviceUtil.getOsVersion()
                 val appVersion: String = NotiflyDeviceUtil.getAppVersion(context)
@@ -95,15 +104,15 @@ object NotiflyLogUtil {
                 Log.d(Notifly.TAG, "resultJson: $resultJson")
 
                 // invalidate and retry
-                // todo: 무한루프 가능성 있음. retryCount 를 가진 내부 함수를 별도로 만들어서 retryCount 제한을 두는게 어떨까 함.
-                if (resultJson.optString("message") == "The incoming token has expired") {
+                if (resultJson.optString("message") == "The incoming token has expired" && retryCount < 1) {
                     invalidateCognitoIdToken(context)
                     logEvent(
                         context,
                         eventName,
                         eventParams,
                         segmentationEventParamKeys,
-                        isInternalEvent
+                        isInternalEvent,
+                        retryCount + 1
                     )
                 }
             } catch (e: Exception) {
@@ -144,7 +153,8 @@ object NotiflyLogUtil {
         eventParams: Map<String, Any?>
     ): RequestBody {
         // Replace any null values in eventParams with JSONObject.NULL
-        val sanitizedParams = eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
+        val sanitizedParams =
+            eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
 
         val data = JSONObject()
             .put("event_params", JSONObject(sanitizedParams))
@@ -163,7 +173,10 @@ object NotiflyLogUtil {
             .put("app_version", appVersion)
             .put("sdk_version", Notifly.VERSION)
             .put("sdk_type", Notifly.SDK_TYPE.toLowerCaseName())
-            .put("external_user_id", if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId)
+            .put(
+                "external_user_id",
+                if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId
+            )
 
         val record = JSONObject()
             .put("data", data.toString())
