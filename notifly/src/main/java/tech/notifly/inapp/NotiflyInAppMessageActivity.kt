@@ -19,12 +19,25 @@ import kotlin.math.roundToInt
 
 
 class NotiflyInAppMessageActivity : Activity() {
+    companion object {
+        var isActivityRunning = false
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
+        if (isActivityRunning) {
+            Log.d(
+                Notifly.TAG,
+                "NotiflyInAppMessageActivity is already running, ignoring onCreate."
+            )
+            finish()
+            return
+        }
+
+        isActivityRunning = true
 
         setContentView(R.layout.activity_notifly_in_app_message)
-
         val webView: WebView = findViewById(R.id.webView)
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = object : WebViewClient() {
@@ -95,7 +108,8 @@ class NotiflyInAppMessageActivity : Activity() {
         }
 
         webView.loadUrl(url)
-        val touchInterceptorLayout = findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
+        val touchInterceptorLayout =
+            findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
         touchInterceptorLayout.onTouchOutsideWebView = {
             finish()
         }
@@ -112,6 +126,13 @@ class NotiflyInAppMessageActivity : Activity() {
             listOf(),
             true
         )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Clear the flag to indicate the activity is no longer running
+        isActivityRunning = false
     }
 
     private fun getDensity(): Float {
