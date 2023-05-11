@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -54,7 +55,7 @@ class NotiflyInAppMessageActivity : Activity() {
         handleViewDimensions(webView, modalProperties, density)
 
         webView.loadUrl(url)
-        setupTouchInterceptorLayout()
+        setupTouchInterceptorLayout(modalProperties?.optDouble("backdrop_opacity", 0.5))
 
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
@@ -77,6 +78,12 @@ class NotiflyInAppMessageActivity : Activity() {
 
         // Clear the flag to indicate the activity is no longer running
         isActivityRunning = false
+    }
+
+    override fun finish() {
+        super.finish()
+        // Remove the animation when the activity gets destroyed
+        overridePendingTransition(0, 0)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -111,9 +118,18 @@ class NotiflyInAppMessageActivity : Activity() {
         )
     }
 
-    private fun setupTouchInterceptorLayout() {
+    private fun setupTouchInterceptorLayout(backdropOpacity: Double?) {
         val touchInterceptorLayout =
             findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
+
+        val backgroundColor = Color.argb(
+            ((backdropOpacity ?: 0.0) * 255).roundToInt(),
+            0,
+            0,
+            0
+
+        )
+        touchInterceptorLayout.setBackgroundColor(backgroundColor)
         touchInterceptorLayout.onTouchOutsideWebView = {
             finish()
         }
