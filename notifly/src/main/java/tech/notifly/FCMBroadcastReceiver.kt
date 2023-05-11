@@ -152,7 +152,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
 
         val builder = NotificationCompat.Builder(context, Notifly.NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_delete) // TODO: replace with a default icon
+            .setSmallIcon(R.drawable.baseline_notifications_24)  // TODO: replace with the app icon if possible
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(pendingIntent)
