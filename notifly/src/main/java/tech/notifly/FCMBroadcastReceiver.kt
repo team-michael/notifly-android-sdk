@@ -151,8 +151,9 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        val notificationIcon = getNotificationIcon(context)
         val builder = NotificationCompat.Builder(context, Notifly.NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.baseline_notifications_24)  // TODO: replace with the app icon if possible
+            .setSmallIcon(notificationIcon)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(pendingIntent)
@@ -212,6 +213,28 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             }
         }
         return json
+    }
+
+    private fun getNotificationIcon(context: Context): Int {
+        val res = context.resources
+        val packageName = context.packageName
+        val notificationIconName = "ic_stat_notifly_default2"
+        val notificationIconResId = res.getIdentifier(notificationIconName, "drawable", packageName)
+        return if (notificationIconResId != 0) {
+            notificationIconResId
+        } else {
+            // return launcher icon
+            val appInfo = context.packageManager.getApplicationInfo(
+                context.packageName,
+                PackageManager.GET_META_DATA
+            )
+            val launcherIcon = appInfo.icon
+            if (launcherIcon != 0) {
+                launcherIcon
+            } else {
+                R.drawable.baseline_notifications_24 // bell icon
+            }
+        }
     }
 
 }
