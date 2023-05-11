@@ -28,7 +28,8 @@ object NotiflyLogUtil {
         eventName: String,
         eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String> = listOf(),
-        isInternalEvent: Boolean = false
+        isInternalEvent: Boolean = false,
+        retryCount: Int = 0,
     ) {
         if (eventName.isEmpty()) {
             println("[Notifly] eventName must be provided.")
@@ -95,15 +96,15 @@ object NotiflyLogUtil {
                 Log.d(Notifly.TAG, "resultJson: $resultJson")
 
                 // invalidate and retry
-                // todo: 무한루프 가능성 있음. retryCount 를 가진 내부 함수를 별도로 만들어서 retryCount 제한을 두는게 어떨까 함.
-                if (resultJson.optString("message") == "The incoming token has expired") {
+                if (resultJson.optString("message") == "The incoming token has expired" && retryCount < 1) {
                     invalidateCognitoIdToken(context)
                     logEvent(
                         context,
                         eventName,
                         eventParams,
                         segmentationEventParamKeys,
-                        isInternalEvent
+                        isInternalEvent,
+                        retryCount + 1
                     )
                 }
             } catch (e: Exception) {
