@@ -25,7 +25,6 @@ data class PushNotification(
     /** The sound to play when the notification is shown. This is usually the name of a sound resource. */
     val sound: String? = null,
 ) {
-    // TODO: define more optional fields
     constructor(notiflyJsonObject: JSONObject) : this(
         body = notiflyJsonObject.getString("bd"),
         title = notiflyJsonObject.getString("ti"),
