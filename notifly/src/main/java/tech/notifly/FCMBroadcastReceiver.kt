@@ -156,13 +156,11 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             .setSmallIcon(notificationIcon)
             .setContentTitle(title)
             .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-
-        // TODO: set style
-        // builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
 
         val notification = builder.build()
         // log
