@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.N.KEY_EXTERNAL_USER_ID
+import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyUserUtil
 
 
@@ -65,5 +66,21 @@ object Notifly {
                 Log.w(TAG, "Notifly setUserProperties failed", e)
             }
         }
+    }
+
+    fun trackEvent(
+        context: Context,
+        eventName: String,
+        eventParams: Map<String, Any?>,
+        segmentationEventParamKeys: List<String> = listOf(),
+        isInternalEvent: Boolean = false
+    ) {
+        NotiflyLogUtil.logEvent(
+            context,
+            eventName,
+            eventParams,
+            segmentationEventParamKeys,
+            isInternalEvent
+        )
     }
 }

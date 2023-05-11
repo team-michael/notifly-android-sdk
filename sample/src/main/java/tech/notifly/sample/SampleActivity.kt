@@ -282,12 +282,7 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        val (instance, function) = reflectObjectFunction(
-                            "tech.notifly.utils.NotiflyLogUtil",
-                            "logEvent"
-                        )
-                        function.call(
-                            instance,
+                        Notifly.trackEvent(
                             context,
                             "click_button_1",
                             mapOf(
