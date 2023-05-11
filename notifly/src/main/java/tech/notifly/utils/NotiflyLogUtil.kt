@@ -161,6 +161,8 @@ object NotiflyLogUtil {
             .put("platform", NotiflyDeviceUtil.getPlatform())
             .put("os_version", osVersion)
             .put("app_version", appVersion)
+            .put("sdk_version", Notifly.VERSION)
+            .put("sdk_type", Notifly.SDK_TYPE.toLowerCaseName())
             .put("external_user_id", if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId)
 
         val record = JSONObject()
