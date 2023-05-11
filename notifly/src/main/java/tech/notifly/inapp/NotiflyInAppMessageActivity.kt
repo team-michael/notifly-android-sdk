@@ -18,10 +18,14 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.constraintlayout.widget.ConstraintLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import tech.notifly.Notifly
 import tech.notifly.R
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.NotiflyUserUtil
 import kotlin.math.roundToInt
 
 
@@ -50,10 +54,11 @@ class NotiflyInAppMessageActivity : Activity() {
             return
         }
         val eventLogData = getEventLogData(intent)
+        val templateName: String? = modalProperties?.optString("template_name")
 
         setContentView(R.layout.activity_notifly_in_app_message)
         val webView: WebView = findViewById(R.id.webView)
-        setupWebView(webView, eventLogData)
+        setupWebView(webView, eventLogData, templateName)
 
         val density = getDensity()
         Log.d(Notifly.TAG, "density: $density")
@@ -91,7 +96,7 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView(webView: WebView, eventLogData: EventLogData) {
+    private fun setupWebView(webView: WebView, eventLogData: EventLogData, templateName: String?) {
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
@@ -118,6 +123,7 @@ class NotiflyInAppMessageActivity : Activity() {
             InAppMessageJSInterface(
                 this,
                 eventLogData,
+                templateName,
             ),
             "Android"
         )
@@ -166,7 +172,7 @@ class NotiflyInAppMessageActivity : Activity() {
         val notiflyExtraData: String?,
     )
 
-    fun getEventLogData(intent: Intent): EventLogData {
+    private fun getEventLogData(intent: Intent): EventLogData {
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
         val notiflyExtraData = intent.getStringExtra("notifly_extra_data")
@@ -296,6 +302,7 @@ class NotiflyInAppMessageActivity : Activity() {
     private class InAppMessageJSInterface(
         private val context: Context,
         val eventLogData: EventLogData,
+        val templateName: String?
     ) {
         @JavascriptInterface
         @Suppress("unused")
@@ -305,10 +312,15 @@ class NotiflyInAppMessageActivity : Activity() {
             val type = data.getString("type")
             val buttonName = data.getString("button_name")
             val link = data.optString("link", null.toString())
-            handleButtonClick(type, buttonName, link)
+            handleButtonClick(type, buttonName, link, templateName)
         }
 
-        fun handleButtonClick(type: String, buttonName: String, link: String?) {
+        fun handleButtonClick(
+            type: String,
+            buttonName: String,
+            link: String?,
+            templateName: String?
+        ) {
             when (type) {
                 "close" -> {
                     Log.d(Notifly.TAG, "In-app message close button clicked")
@@ -330,8 +342,13 @@ class NotiflyInAppMessageActivity : Activity() {
                 "hide_in_app_message" -> {
                     Log.d(Notifly.TAG, "In-app message hide button clicked")
                     logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
+                    templateName?.let {
+                        val key = "hide_in_app_message_$it"
+                        CoroutineScope(Dispatchers.IO).launch {
+                            NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
+                        }
+                    }
                     (context as Activity).finish()
-                    // TODO: handle hide_in_app_message
                 }
 
                 "survey_submit_button" -> {
