@@ -5,9 +5,14 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Outline
+import android.graphics.Path
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.ViewOutlineProvider
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -174,6 +179,7 @@ class NotiflyInAppMessageActivity : Activity() {
             val position = properties.optString("position", "full")
             Log.d(Notifly.TAG, "In-app message position: $position")
             setPositionAndSize(webView, widthDp, heightDp, density, position)
+            setBorderRadius(webView, properties, density)
         }
     }
 
@@ -229,6 +235,47 @@ class NotiflyInAppMessageActivity : Activity() {
         }
 
         webView.layoutParams = layoutParams
+    }
+
+    private fun setBorderRadius(
+        webView: WebView,
+        modalProperties: JSONObject,
+        density: Float
+    ) {
+        val topLeftRadiusDp = modalProperties.optInt("borderTopLeftRadius", 0)
+        val topRightRadiusDp = modalProperties.optInt("borderTopRightRadius", 0)
+        val bottomLeftRadiusDp = modalProperties.optInt("borderBottomLeftRadius", 0)
+        val bottomRightRadiusDp = modalProperties.optInt("borderBottomRightRadius", 0)
+        if (topLeftRadiusDp > 0 || topRightRadiusDp > 0 || bottomLeftRadiusDp > 0 || bottomRightRadiusDp > 0) {
+            webView.clipToOutline = true
+            webView.outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(view: View?, outline: Outline?) {
+                    view?.let {
+                        val topLeftRadiusPx = (topLeftRadiusDp * density).roundToInt()
+                        val topRightRadiusPx = (topRightRadiusDp * density).roundToInt()
+                        val bottomLeftRadiusPx = (bottomLeftRadiusDp * density).roundToInt()
+                        val bottomRightRadiusPx = (bottomRightRadiusDp * density).roundToInt()
+                        val path = Path()
+                        path.addRoundRect(
+                            0f, 0f, it.width.toFloat(), it.height.toFloat(),
+                            floatArrayOf(
+                                topLeftRadiusPx.toFloat(), topLeftRadiusPx.toFloat(),
+                                topRightRadiusPx.toFloat(), topRightRadiusPx.toFloat(),
+                                bottomRightRadiusPx.toFloat(), bottomRightRadiusPx.toFloat(),
+                                bottomLeftRadiusPx.toFloat(), bottomLeftRadiusPx.toFloat()
+                            ),
+                            Path.Direction.CW
+                        )
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            outline?.setPath(path)
+                        } else {
+                            outline?.setConvexPath(path)
+                        }
+                    }
+                }
+            }
+        }
     }
 
 
