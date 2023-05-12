@@ -32,3 +32,5 @@
 -keepclassmembers class * {
     public protected private *;
 }
+# To keep methods in Notifly
+-keep class tech.notifly.Notifly { *; }
