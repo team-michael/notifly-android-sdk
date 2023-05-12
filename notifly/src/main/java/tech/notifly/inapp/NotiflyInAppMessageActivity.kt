@@ -103,16 +103,17 @@ class NotiflyInAppMessageActivity : Activity() {
                 super.onPageFinished(view, url)
                 // Inject JavaScript after page loaded, otherwise it will not be able to find the button trigger
                 val injectedJavaScript = """
-                    console.log('Injected JavaScript is running');
-                    const button_trigger = document.getElementById('notifly-button-trigger');
-                    button_trigger.addEventListener('click', function(event){
-                        if (!event.notifly_button_click_type) return;
-                        window.Android.postMessage(JSON.stringify({
-                            type: event.notifly_button_click_type,
-                            button_name: event.notifly_button_name,
-                            link: event.notifly_button_click_link ?? null,
-                        }));
-                    });
+                    const notifly_button_trigger = document.getElementById('notifly-button-trigger');
+                    if (notifly_button_trigger) {
+                        notifly_button_trigger.addEventListener('click', function(event){
+                            if (!event.notifly_button_click_type) return;
+                            window.Android.postMessage(JSON.stringify({
+                                type: event.notifly_button_click_type,
+                                button_name: event.notifly_button_name,
+                                link: event.notifly_button_click_link ?? null,
+                            }));
+                        });
+                    }
                 """.trimIndent()
 
                 webView.evaluateJavascript(injectedJavaScript, null)
