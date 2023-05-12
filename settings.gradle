@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "NotiflyAndroidSDK"
 include ':notifly'
-// include ':sample'
+include ':sample'
