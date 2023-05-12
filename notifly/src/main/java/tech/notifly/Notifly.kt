@@ -38,13 +38,11 @@ object Notifly {
         }
     }
 
-    // TODO: Add support for custom click handler
     fun initialize(
         context: Context,
         projectId: String,
         username: String,
         password: String,
-        useCustomClickHandler: Boolean = false,
     ) {
         try {
             // Set Required Properties from User
