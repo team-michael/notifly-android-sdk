@@ -29,7 +29,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             try {
                 handleFCMMessage(context, intent)
             } catch (e: Exception) {
-                Log.e(Notifly.TAG, "onReceive failed", e)
+                Log.e(Notifly.TAG, "FCMBroadcastReceiver onReceive failed", e)
             }
         }.start()
     }
@@ -37,16 +37,13 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     @Throws(Exception::class)
     private fun handleFCMMessage(context: Context, intent: Intent) {
         val extras = intent.extras ?: run {
-            Log.e(Notifly.TAG, "intent extras is NULL")
+            Log.d(Notifly.TAG, "FCM message does not have data field")
             return
         }
 
-        val keys = extras.keySet()
-        for (key in keys) {
-            Log.d(Notifly.TAG, "FCMBroadcastReceiver intent key: $key, value: " + extras.get(key))
-        }
-
         val jsonObject = bundleAsJSONObject(extras)
+        Log.d(Notifly.TAG, "FCMBroadcastReceiver intent: $jsonObject")
+
         val pushNotification = extractPushNotification(jsonObject)
         if (pushNotification != null) {
             val isAppInForeground = OSUtils.isAppInForeground(context)
@@ -164,7 +161,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         val notification = builder.build()
-        // log
         Log.d(Notifly.TAG, "FCMBroadcastReceiver notification: $notification")
 
         val notificationId = notiflyMessageId?.toIntOrNull() ?: 1

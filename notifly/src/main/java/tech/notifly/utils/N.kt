@@ -3,6 +3,7 @@ package tech.notifly.utils
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import tech.notifly.NotiflySdkType
+import tech.notifly.BuildConfig
 
 /**
  * Static values used internally
@@ -18,10 +19,12 @@ internal object N {
      * Reserved Key for backward compatibility based on User Property or Event Logging.
      */
     const val KEY_EXTERNAL_USER_ID = "external_user_id"
+
     /**
      * Reserved Key for backward compatibility based on User Property or Event Logging.
      */
     const val KEY_PREVIOUS_NOTIFLY_USER_ID = "previous_notifly_user_id"
+
     /**
      * Reserved Key for backward compatibility based on User Property or Event Logging.
      */
@@ -30,8 +33,14 @@ internal object N {
     val HTTP_CLIENT = OkHttpClient().newBuilder()
         .followRedirects(true) // Ensure that redirects are followed
         .followSslRedirects(true) // Ensure that SSL redirects are followed
-        .addNetworkInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY // TODO: Disable when publish
-        })
+        .let { builder ->
+            if (BuildConfig.DEBUG) {
+                builder.addNetworkInterceptor(
+                    HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.BODY
+                    })
+            }
+            builder
+        }
         .build()
 }

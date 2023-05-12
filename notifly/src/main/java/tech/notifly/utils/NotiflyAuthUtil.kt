@@ -23,7 +23,7 @@ internal object NotiflyAuthUtil {
 
     /**
      * Retrieves CognitoIdToken with given [username] and [password].
-     * This function never returns `null` even if
+     * This function never returns `null` even if failed to retrieve Cognito ID Token.
      *
      * @return Cognito ID Token by given [username] and [password]
      * @throws NullPointerException if failed to retrieve Cognito ID Token.
