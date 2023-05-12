@@ -10,6 +10,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,11 +19,20 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.legacy.content.WakefulBroadcastReceiver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.inapp.NotiflyInAppMessageActivity
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.OSUtils
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -119,6 +130,8 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val url = pushNotification.url
         val campaignId = pushNotification.campaign_id
         val notiflyMessageId = pushNotification.notifly_message_id
+        val imageUrl = pushNotification.image_url
+        val bitmap = runBlocking { loadImage(context, imageUrl) }
 
         val notificationOpenIntent =
             Intent(context, PushNotificationOpenActivity::class.java).apply {
@@ -159,6 +172,14 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+
+        if (bitmap != null) {
+            builder.setStyle(
+                NotificationCompat.BigPictureStyle()
+                    .bigPicture(bitmap)
+                    .bigLargeIcon(null as Bitmap?)
+            )
+        }
 
         val notification = builder.build()
         Log.d(Notifly.TAG, "FCMBroadcastReceiver notification: $notification")
@@ -214,6 +235,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val res = context.resources
         val packageName = context.packageName
         val notificationIconName = "ic_stat_notifly_default2"
+
         @SuppressLint("ResourceType")
         val notificationIconResId = res.getIdentifier(notificationIconName, "drawable", packageName)
         return if (notificationIconResId != 0) {
@@ -232,5 +254,34 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             }
         }
     }
+
+    private suspend fun getBitmapFromURL(src: String): Bitmap? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL(src)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.connect()
+                val input = connection.inputStream
+                BitmapFactory.decodeStream(input)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    suspend fun loadImage(context: Context, imageUrl: String?): Bitmap? =
+        suspendCoroutine { continuation ->
+            if (imageUrl != null) {
+                GlobalScope.launch {
+                    val bitmap = getBitmapFromURL(imageUrl)
+                    Log.d(Notifly.TAG, "FCMBroadcastReceiver bitmap: $bitmap")
+                    continuation.resume(bitmap)
+                }
+            } else {
+                continuation.resume(null)
+            }
+        }
 
 }
