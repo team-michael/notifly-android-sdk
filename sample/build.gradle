@@ -27,8 +27,10 @@ android {
             useSupportLibrary true
         }
 
-        buildConfigField "String", "NOTIFLY_USERNAME", "\"${project.property('NOTIFLY_USERNAME')}\""
-        buildConfigField "String", "NOTIFLY_PASSWORD", "\"${project.property('NOTIFLY_PASSWORD')}\""
+        String notiflyUsername = project.hasProperty('NOTIFLY_USERNAME') ? project.findProperty('NOTIFLY_USERNAME') : "unknown"
+        String notiflyPassword = project.hasProperty('NOTIFLY_PASSWORD') ? project.findProperty('NOTIFLY_PASSWORD') : "unknown"
+        buildConfigField "String", "NOTIFLY_USERNAME", "\"${notiflyUsername}\""
+        buildConfigField "String", "NOTIFLY_PASSWORD", "\"${notiflyPassword}\""
     }
 
     buildTypes {
