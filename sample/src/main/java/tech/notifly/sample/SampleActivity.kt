@@ -73,7 +73,7 @@ class SampleActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    SampleVerticalList("minyong", "000000")
+                    SampleVerticalList(BuildConfig.NOTIFLY_USERNAME, BuildConfig.NOTIFLY_PASSWORD)
                 }
             }
         }
@@ -290,7 +290,7 @@ class SampleActivity : ComponentActivity() {
                                 "keyBoolean" to true,
                                 "keyInt" to 100,
                             ),
-                            listOf<String>(),
+                            listOf(),
                             true
                         )
                     },

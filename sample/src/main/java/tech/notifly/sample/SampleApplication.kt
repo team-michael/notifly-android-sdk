@@ -14,14 +14,14 @@ class SampleApplication : Application() {
         Notifly.initialize(
             context = applicationContext,
             projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",
-            username = "minyong",
-            password = "000000"
+            username = BuildConfig.NOTIFLY_USERNAME,
+            password = BuildConfig.NOTIFLY_PASSWORD,
         )
 
         // OneSignal Initialization
         OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)
         OneSignal.initWithContext(this)
         OneSignal.setAppId(ONESIGNAL_APP_ID)
-        OneSignal.promptForPushNotifications();
+        OneSignal.promptForPushNotifications()
     }
 }

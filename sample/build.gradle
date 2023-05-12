@@ -5,6 +5,8 @@ plugins {
 }
 
 apply from: "$rootDir/constants.gradle"
+Properties properties = new Properties()
+properties.load(project.rootProject.file('sample/gradle.properties').newDataInputStream())
 
 android {
     namespace 'tech.notifly.sample'
@@ -21,6 +23,9 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        buildConfigField "String", "NOTIFLY_USERNAME", "\"${project.property('NOTIFLY_USERNAME')}\""
+        buildConfigField "String", "NOTIFLY_PASSWORD", "\"${project.property('NOTIFLY_PASSWORD')}\""
     }
 
     buildTypes {
@@ -37,6 +42,7 @@ android {
         jvmTarget = '1.8'
     }
     buildFeatures {
+        buildConfig = true
         compose true
     }
     composeOptions {
