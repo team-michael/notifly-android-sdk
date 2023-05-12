@@ -1,5 +1,6 @@
 package tech.notifly.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
@@ -11,11 +12,14 @@ internal object NotiflyDeviceUtil {
         android.os.Build.VERSION.RELEASE
     }
 
+    @Suppress("DEPRECATION")
+
     suspend fun getAppVersion(context: Context): String = withContext(Dispatchers.IO) {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         packageInfo.versionName
     }
 
+    @SuppressLint("HardwareIds")
     suspend fun getExternalDeviceId(context: Context): String = withContext(Dispatchers.IO) {
         android.provider.Settings.Secure.getString(
             context.contentResolver,
