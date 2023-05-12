@@ -38,6 +38,7 @@ object Notifly {
         }
     }
 
+    // TODO: Add support for custom click handler
     fun initialize(
         context: Context,
         projectId: String,

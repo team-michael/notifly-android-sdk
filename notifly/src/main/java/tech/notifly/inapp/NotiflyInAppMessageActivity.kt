@@ -257,6 +257,7 @@ class NotiflyInAppMessageActivity : Activity() {
         webView.layoutParams = layoutParams
     }
 
+    @Suppress("DEPRECATION")
     private fun setBorderRadius(
         webView: WebView,
         modalProperties: JSONObject,

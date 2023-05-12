@@ -3,6 +3,7 @@
 package tech.notifly
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -217,6 +218,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val res = context.resources
         val packageName = context.packageName
         val notificationIconName = "ic_stat_notifly_default2"
+        @SuppressLint("ResourceType")
         val notificationIconResId = res.getIdentifier(notificationIconName, "drawable", packageName)
         return if (notificationIconResId != 0) {
             notificationIconResId
