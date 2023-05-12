@@ -6,7 +6,10 @@ plugins {
 
 apply from: "$rootDir/constants.gradle"
 Properties properties = new Properties()
-properties.load(project.rootProject.file('sample/gradle.properties').newDataInputStream())
+File propertiesFile = project.rootProject.file('sample/gradle.properties')
+if (propertiesFile.exists()) {
+    properties.load(propertiesFile.newDataInputStream())
+}
 
 android {
     namespace 'tech.notifly.sample'
