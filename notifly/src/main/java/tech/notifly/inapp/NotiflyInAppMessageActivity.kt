@@ -158,7 +158,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 try {
                     JSONObject(modalPropertiesString)
                 } catch (e: Exception) {
-                    Log.e(Notifly.TAG, "Error parsing modal properties of the in app message", e)
+                    Log.e(Notifly.TAG, "Error parsing properties of the in app message", e)
                     null
                 }
             }

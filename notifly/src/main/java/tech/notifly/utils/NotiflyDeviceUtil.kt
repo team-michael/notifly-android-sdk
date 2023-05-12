@@ -13,7 +13,6 @@ internal object NotiflyDeviceUtil {
     }
 
     @Suppress("DEPRECATION")
-
     suspend fun getAppVersion(context: Context): String = withContext(Dispatchers.IO) {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         packageInfo.versionName
