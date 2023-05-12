@@ -61,7 +61,8 @@ android {
 }
 
 dependencies {
-    implementation project(':notifly')
+    // implementation project(':notifly')
+    implementation 'com.github.team-michael:notifly-android-sdk:v0.0.1'
 
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10'
     implementation 'org.jetbrains.kotlin:kotlin-reflect:1.8.10'
