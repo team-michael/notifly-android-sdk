@@ -15,4 +15,7 @@ dependencyResolutionManagement {
 }
 rootProject.name = "NotiflyAndroidSDK"
 include ':notifly'
-include ':sample'
+
+if (System.getenv("JITPACK") == null) {
+    include ':sample'
+}
