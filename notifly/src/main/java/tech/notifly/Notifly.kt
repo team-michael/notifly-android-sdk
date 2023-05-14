@@ -14,7 +14,9 @@ import tech.notifly.utils.NotiflyUserUtil
 
 object Notifly {
     internal const val TAG = "Notifly"
-    internal const val VERSION = "0.0.7"
+    internal const val VERSION: String = BuildConfig.VERSION
+
+
     internal val SDK_TYPE = NotiflySdkType.NATIVE
     internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
 
