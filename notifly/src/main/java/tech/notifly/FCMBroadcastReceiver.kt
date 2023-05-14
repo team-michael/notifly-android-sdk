@@ -131,7 +131,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val campaignId = pushNotification.campaign_id
         val notiflyMessageId = pushNotification.notifly_message_id
         val imageUrl = pushNotification.image_url
-        val bitmap = runBlocking { loadImage(context, imageUrl) }
+        val bitmap = runBlocking { loadImage(imageUrl) }
 
         val notificationOpenIntent =
             Intent(context, PushNotificationOpenActivity::class.java).apply {
@@ -271,7 +271,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
     }
 
-    suspend fun loadImage(context: Context, imageUrl: String?): Bitmap? =
+    private suspend fun loadImage(imageUrl: String?): Bitmap? =
         suspendCoroutine { continuation ->
             if (imageUrl != null) {
                 GlobalScope.launch {
