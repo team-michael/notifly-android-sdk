@@ -4,11 +4,11 @@ import org.json.JSONObject
 
 data class PushNotification(
     /** The body text of the notification */
-    val body: String,
+    val body: String? = null,
     /** The title text of the notification */
-    val title: String,
+    val title: String? = null,
     /** The Notifly campaign ID of the notification */
-    val campaign_id: String,
+    val campaign_id: String? = null,
     /** The Notifly message ID of the notification */
     val notifly_message_id: String? = null,
     /** The URL to open when the notification is clicked */
@@ -25,9 +25,9 @@ data class PushNotification(
     val sound: String? = null,
 ) {
     constructor(notiflyJsonObject: JSONObject) : this(
-        body = notiflyJsonObject.getString("bd"),
-        title = notiflyJsonObject.getString("ti"),
-        campaign_id = notiflyJsonObject.getString("cid"),
+        body = if (notiflyJsonObject.has("bd")) notiflyJsonObject.getString("bd") else null,
+        title = if (notiflyJsonObject.has("ti")) notiflyJsonObject.getString("ti") else null,
+        campaign_id = if (notiflyJsonObject.has("cid")) notiflyJsonObject.getString("cid") else null,
         notifly_message_id = if (notiflyJsonObject.has("mid")) notiflyJsonObject.getString("mid") else null,
         url = if (notiflyJsonObject.has("u")) notiflyJsonObject.getString("u") else null,
         image_url = if (notiflyJsonObject.has("iu")) notiflyJsonObject.getString("iu") else null,
