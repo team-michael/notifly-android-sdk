@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +61,7 @@ class SampleActivity : ComponentActivity() {
 
     companion object {
         const val TAG = "NotiflySample"
+        private const val PERMISSION_REQUEST_CODE = 101
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,6 +89,14 @@ class SampleActivity : ComponentActivity() {
             // FCM SDK (and your app) can post notifications.
         } else {
             // TODO: Inform user that that your app will not show notifications.
+            // Show alert dialog
+            AlertDialog.Builder(this)
+                .setTitle("Notification permission")
+                .setMessage("Michael requires notification permission to work properly.")
+                .setPositiveButton("OK") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
         }
     }
 
@@ -99,17 +109,30 @@ class SampleActivity : ComponentActivity() {
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 // FCM SDK (and your app) can post notifications.
+                Toast.makeText(this, "Notification permission already granted!", Toast.LENGTH_SHORT).show()
             } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                // TODO: display an educational UI explaining to the user the features that will be enabled
-                //       by them granting the POST_NOTIFICATION permission. This UI should provide the user
-                //       "OK" and "No thanks" buttons. If the user selects "OK," directly request the permission.
-                //       If the user selects "No thanks," allow the user to continue without notifications.
+                // Display an educational UI explaining to the user the features that will be enabled
+                // by them granting the POST_NOTIFICATION permission. This UI should provide the user
+                // "OK" and "No thanks" buttons. If the user selects "OK," directly request the permission.
+                // If the user selects "No thanks," allow the user to continue without notifications.
+                AlertDialog.Builder(this)
+                    .setTitle("Permission needed")
+                    .setMessage("This app needs the notification permission to send you notifications.")
+                    .setPositiveButton("ok") { _, _ ->
+                        // directly request the permission
+                        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_REQUEST_CODE)
+                    }
+                    .setNegativeButton("No thanks") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .create().show()
             } else {
                 // Directly ask for the permission
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_REQUEST_CODE)
             }
         }
     }
+
 
     @Composable
     fun LabelTextRow(label: String, text: String) {
