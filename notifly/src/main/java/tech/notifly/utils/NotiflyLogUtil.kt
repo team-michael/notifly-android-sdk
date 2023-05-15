@@ -28,7 +28,7 @@ object NotiflyLogUtil {
         context: Context,
         eventName: String,
         eventParams: Map<String, Any?> = emptyMap(),
-        segmentationEventParamKeys: List<String> = listOf(),
+        segmentationEventParamKeys: List<String>? = null,
         isInternalEvent: Boolean = false,
         retryCount: Int = 0,
     ) {
@@ -145,7 +145,7 @@ object NotiflyLogUtil {
         externalDeviceId: String,
         deviceToken: String,
         isInternalEvent: Boolean,
-        segmentationEventParamKeys: List<String>,
+        segmentationEventParamKeys: List<String>?,
         prjId: String,
         osVersion: String,
         appVersion: String,
@@ -166,7 +166,12 @@ object NotiflyLogUtil {
             .put("external_device_id", externalDeviceId)
             .put("device_token", deviceToken)
             .put("is_internal_event", isInternalEvent)
-            .put("segmentation_event_param_keys", segmentationEventParamKeys)
+            .put(
+                "segmentation_event_param_keys",
+                if (segmentationEventParamKeys.isNullOrEmpty()) JSONObject.NULL else JSONArray(
+                    segmentationEventParamKeys
+                )
+            )
             .put("project_id", prjId)
             .put("platform", NotiflyDeviceUtil.getPlatform())
             .put("os_version", osVersion)
