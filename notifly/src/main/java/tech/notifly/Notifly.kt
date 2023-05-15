@@ -20,9 +20,10 @@ object Notifly {
     internal val SDK_TYPE = NotiflySdkType.NATIVE
     internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
 
+    @JvmOverloads
     fun setUserId(
         context: Context,
-        userId: String,
+        userId: String? = null,
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -71,10 +72,11 @@ object Notifly {
         }
     }
 
+    @JvmOverloads
     fun trackEvent(
         context: Context,
         eventName: String,
-        eventParams: Map<String, Any?>,
+        eventParams: Map<String, Any?> = emptyMap(),
         segmentationEventParamKeys: List<String> = listOf(),
         isInternalEvent: Boolean = false
     ) {

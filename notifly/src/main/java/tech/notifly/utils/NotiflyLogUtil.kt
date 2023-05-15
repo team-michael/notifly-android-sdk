@@ -27,7 +27,7 @@ object NotiflyLogUtil {
     fun logEvent(
         context: Context,
         eventName: String,
-        eventParams: Map<String, Any?>,
+        eventParams: Map<String, Any?> = emptyMap(),
         segmentationEventParamKeys: List<String> = listOf(),
         isInternalEvent: Boolean = false,
         retryCount: Int = 0,
