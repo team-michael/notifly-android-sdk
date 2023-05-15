@@ -234,7 +234,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     private fun getNotificationIcon(context: Context): Int {
         val res = context.resources
         val packageName = context.packageName
-        val notificationIconName = "ic_stat_notifly_default2"
+        val notificationIconName = "ic_stat_notifly_default"
 
         @SuppressLint("ResourceType")
         val notificationIconResId = res.getIdentifier(notificationIconName, "drawable", packageName)
