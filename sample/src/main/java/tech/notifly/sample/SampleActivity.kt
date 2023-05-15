@@ -296,7 +296,31 @@ class SampleActivity : ComponentActivity() {
                     },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
-                    Text(text = "click_button_1 (logEvent)")
+                    Text(text = "click_button_1 (trackEvent)")
+                }
+
+                Button(
+                    onClick = { Notifly.trackEvent(
+                        context,
+                        "click_button_2",
+                    ) },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "click_button_2 (trackEvent)")
+                }
+
+                Button(
+                    onClick = { Notifly.trackEvent(
+                        context,
+                        "click_button_3",
+                        emptyMap(),
+                        listOf(
+                            "very_important_field"
+                        ),
+                    ) },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "click_button_3 (trackEvent)")
                 }
 
                 TextField(

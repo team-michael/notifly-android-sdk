@@ -77,7 +77,7 @@ object Notifly {
         context: Context,
         eventName: String,
         eventParams: Map<String, Any?> = emptyMap(),
-        segmentationEventParamKeys: List<String> = listOf(),
+        segmentationEventParamKeys: List<String>? = null,
         isInternalEvent: Boolean = false
     ) {
         NotiflyLogUtil.logEvent(
