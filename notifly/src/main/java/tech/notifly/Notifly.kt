@@ -20,6 +20,7 @@ object Notifly {
     internal val SDK_TYPE = NotiflySdkType.NATIVE
     internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
 
+    @JvmStatic
     @JvmOverloads
     fun setUserId(
         context: Context,
@@ -41,6 +42,7 @@ object Notifly {
         }
     }
 
+    @JvmStatic
     fun initialize(
         context: Context,
         projectId: String,
@@ -61,6 +63,7 @@ object Notifly {
     }
 
 
+    @JvmStatic
     fun setUserProperties(context: Context, params: Map<String, Any?>) {
         // delegate to NotiflyUserUtil
         CoroutineScope(Dispatchers.IO).launch {
@@ -72,6 +75,7 @@ object Notifly {
         }
     }
 
+    @JvmStatic
     @JvmOverloads
     fun trackEvent(
         context: Context,
