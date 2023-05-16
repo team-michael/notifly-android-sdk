@@ -111,6 +111,7 @@ class NotiflyInAppMessageActivity : Activity() {
                                 type: event.notifly_button_click_type,
                                 button_name: event.notifly_button_name,
                                 link: event.notifly_button_click_link ?? null,
+                                extra_data: event.notifly_extra_data ?? null,
                             }));
                         });
                     }
@@ -170,15 +171,13 @@ class NotiflyInAppMessageActivity : Activity() {
     data class EventLogData(
         val campaignId: String,
         val notiflyMessageId: String?,
-        val notiflyExtraData: String?,
     )
 
     private fun getEventLogData(intent: Intent): EventLogData {
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
-        val notiflyExtraData = intent.getStringExtra("notifly_extra_data")
 
-        return EventLogData(campaignId, notiflyMessageId, notiflyExtraData)
+        return EventLogData(campaignId, notiflyMessageId)
     }
 
     private fun handleViewDimensions(
@@ -314,13 +313,15 @@ class NotiflyInAppMessageActivity : Activity() {
             val type = data.getString("type")
             val buttonName = data.getString("button_name")
             val link = data.optString("link", null.toString())
-            handleButtonClick(type, buttonName, link, templateName)
+            val extraData = data.optJSONObject("extra_data")
+            handleButtonClick(type, buttonName, link, extraData, templateName)
         }
 
         fun handleButtonClick(
             type: String,
             buttonName: String,
             link: String?,
+            extraData: JSONObject?,
             templateName: String?
         ) {
             when (type) {
@@ -355,22 +356,26 @@ class NotiflyInAppMessageActivity : Activity() {
 
                 "survey_submit_button" -> {
                     Log.d(Notifly.TAG, "In-app message survey submit button clicked")
-                    logInAppMessageButtonClick("survey_submit_button_click", buttonName)
+                    logInAppMessageButtonClick("survey_submit_button_click", buttonName, extraData)
                     (context as Activity).finish()
                 }
             }
         }
 
-        fun logInAppMessageButtonClick(eventName: String, buttonName: String) {
-            val eventParams = mutableMapOf(
+        fun logInAppMessageButtonClick(
+            eventName: String,
+            buttonName: String,
+            extraData: JSONObject? = null
+        ) {
+            val eventParams = mutableMapOf<String, Any?>(
                 "type" to "message_event",
                 "channel" to "in-app-message",
                 "button_name" to buttonName,
                 "campaign_id" to eventLogData.campaignId,
                 "notifly_message_id" to eventLogData.notiflyMessageId,
             )
-            if (eventName == "survey_submit_button_click") {
-                eventParams["notifly_extra_data"] = eventLogData.notiflyExtraData
+            if (eventName == "survey_submit_button_click" && extraData != null) {
+                eventParams["notifly_extra_data"] = extraData
             }
             NotiflyLogUtil.logEvent(
                 context,
