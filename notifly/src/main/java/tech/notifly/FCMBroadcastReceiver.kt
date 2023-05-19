@@ -79,6 +79,15 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
         val notiflyString = jsonObject.getString("notifly")
         val notiflyJSONObject = JSONObject(notiflyString)
+        if (!notiflyJSONObject.has("type")
+            || notiflyJSONObject.getString("type") != "push-notification"
+        ) {
+            Log.d(
+                Notifly.TAG,
+                "FCM message is not a Notifly push notification"
+            )
+            return null
+        }
         return PushNotification(notiflyJSONObject)
     }
 
