@@ -20,6 +20,9 @@ object Notifly {
     internal val SDK_TYPE = NotiflySdkType.NATIVE
     internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
 
+    @Volatile
+    private var isNotiflyInitialized = false
+
     @JvmStatic
     @JvmOverloads
     fun setUserId(
@@ -49,6 +52,11 @@ object Notifly {
         username: String,
         password: String,
     ) {
+        if (isNotiflyInitialized) {
+            Log.w(TAG, "Notifly is already initialized.")
+            return
+        }
+
         try {
             // Set Required Properties from User
             NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
