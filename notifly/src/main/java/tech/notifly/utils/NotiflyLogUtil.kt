@@ -33,7 +33,7 @@ object NotiflyLogUtil {
         retryCount: Int = 0,
     ) {
         if (eventName.isEmpty()) {
-            println("[Notifly] eventName must be provided.")
+            Log.e(Notifly.TAG, "[Notifly] eventName must be provided.")
             return
         }
 
@@ -116,7 +116,7 @@ object NotiflyLogUtil {
                     )
                 }
             } catch (e: Exception) {
-                println("[Notifly] Failed logging the event. Please retry the initialization. $e")
+                Log.e(Notifly.TAG, "[Notifly] Failed logging the event. Please retry the initialization. $e")
             }
         }
     }
