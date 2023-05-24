@@ -11,7 +11,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import tech.notifly.Logger
-import tech.notifly.Notifly
 import tech.notifly.utils.NotiflyIdUtil.Namespace
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -152,6 +151,8 @@ object NotiflyLogUtil {
         externalUserId: String?,
         eventParams: Map<String, Any?>
     ): RequestBody {
+        val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
+        val sdkType = NotiflySDKInfoUtil.getSdkType()
         // Replace any null values in eventParams with JSONObject.NULL
         val sanitizedParams =
             eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
@@ -176,8 +177,8 @@ object NotiflyLogUtil {
             .put("platform", NotiflyDeviceUtil.getPlatform())
             .put("os_version", osVersion)
             .put("app_version", appVersion)
-            .put("sdk_version", Notifly.VERSION)
-            .put("sdk_type", Notifly.SDK_TYPE.toLowerCaseName())
+            .put("sdk_version", sdkVersion)
+            .put("sdk_type", sdkType.toLowerCaseName())
             .put(
                 "external_user_id",
                 if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId

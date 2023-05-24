@@ -7,15 +7,13 @@ import kotlinx.coroutines.launch
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.N.KEY_EXTERNAL_USER_ID
+import tech.notifly.utils.NotiflyControlToken
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.NotiflySDKInfoUtil
+import tech.notifly.utils.NotiflySdkType
 import tech.notifly.utils.NotiflyUserUtil
 
-
 object Notifly {
-    internal const val VERSION: String = BuildConfig.VERSION
-
-
-    internal val SDK_TYPE = NotiflySdkType.NATIVE
     internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
 
     @Volatile
@@ -102,5 +100,17 @@ object Notifly {
     @JvmStatic
     fun setLogLevel(level: Int) {
         Logger.setLogLevel(level)
+    }
+
+    @JvmStatic
+    @Suppress("UNUSED_PARAMETER")
+    fun setSdkVersion(token: NotiflyControlToken, version: String) {
+        NotiflySDKInfoUtil.setSdkVersion(version)
+    }
+
+    @JvmStatic
+    @Suppress("UNUSED_PARAMETER")
+    fun setSdkType(token: NotiflyControlToken, type: NotiflySdkType) {
+        NotiflySDKInfoUtil.setSdkType(type)
     }
 }
