@@ -71,8 +71,10 @@ object NotiflyLogUtil {
 
                 val osVersion: String = NotiflyDeviceUtil.getOsVersion()
                 val appVersion: String = NotiflyDeviceUtil.getAppVersion(context)
-                val fcmToken: String = NotiflyFirebaseUtil.getFcmToken()
-                    ?: throw IllegalStateException("[Notifly] Required parameter <FCM Token> is missing")
+                val fcmToken: String? = NotiflyFirebaseUtil.getFcmToken()
+                if (fcmToken == null) {
+                    Logger.w("[Notifly] Required parameter <FCM Token> is missing")
+                }
 
                 val requestBody = createRequestBody(
                     notiflyUserId,
@@ -142,7 +144,7 @@ object NotiflyLogUtil {
         eventName: String,
         notiflyDeviceId: String,
         externalDeviceId: String,
-        deviceToken: String,
+        deviceToken: String?,
         isInternalEvent: Boolean,
         segmentationEventParamKeys: List<String>?,
         prjId: String,
@@ -165,7 +167,9 @@ object NotiflyLogUtil {
             .put("time", System.currentTimeMillis() / 1000)
             .put("notifly_device_id", notiflyDeviceId)
             .put("external_device_id", externalDeviceId)
-            .put("device_token", deviceToken)
+            .put("device_token",
+                if (deviceToken.isNullOrEmpty()) JSONObject.NULL else deviceToken
+            )
             .put("is_internal_event", isInternalEvent)
             .put(
                 "segmentation_event_param_keys",

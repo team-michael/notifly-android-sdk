@@ -12,13 +12,13 @@ import tech.notifly.Notifly
 class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        Notifly.setLogLevel(Log.VERBOSE)
         Notifly.initialize(
             context = applicationContext,
             projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",
             username = BuildConfig.NOTIFLY_USERNAME,
             password = BuildConfig.NOTIFLY_PASSWORD,
         )
-        Notifly.setLogLevel(Log.VERBOSE)
 
         // OneSignal Initialization
         /*OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)
