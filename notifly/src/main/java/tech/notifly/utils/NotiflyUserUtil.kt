@@ -70,7 +70,13 @@ object NotiflyUserUtil {
                 "notif_auth_status" to notifAuthStatus
             )
 
-            NotiflyLogUtil.logEvent(context, "session_start", openAppEventParams)
+            NotiflyLogUtil.logEvent(
+                context,
+                "session_start",
+                openAppEventParams,
+                listOf(),
+                true,
+            )
         }
     }
 
