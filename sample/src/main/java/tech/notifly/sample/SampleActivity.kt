@@ -56,7 +56,6 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.isAccessible
-
 class SampleActivity : ComponentActivity() {
 
     companion object {
