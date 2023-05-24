@@ -58,7 +58,6 @@ object NotiflyUserUtil {
             val deviceModel = NotiflyDeviceUtil.getModel()
             val userAgent = System.getProperty("http.agent")
             val notifAuthStatus = getNotifAuthStatus(context).value
-            Logger.w("[Notifly] NotifAuthStatus: $notifAuthStatus")
 
             val openAppEventParams = mapOf(
                 "platform" to platform,
