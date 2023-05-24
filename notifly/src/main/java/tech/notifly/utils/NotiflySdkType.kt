@@ -1,6 +1,6 @@
-package tech.notifly
+package tech.notifly.utils
 
-internal enum class NotiflySdkType {
+enum class NotiflySdkType {
     NATIVE,
     REACT_NATIVE,
     FLUTTER;

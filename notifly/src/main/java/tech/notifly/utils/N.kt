@@ -2,8 +2,6 @@ package tech.notifly.utils
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import tech.notifly.NotiflySdkType
-import tech.notifly.BuildConfig
 import tech.notifly.Logger
 
 /**
