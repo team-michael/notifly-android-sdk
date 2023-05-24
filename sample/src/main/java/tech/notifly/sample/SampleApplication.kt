@@ -2,6 +2,7 @@ package tech.notifly.sample
 
 
 import android.app.Application
+import android.util.Log
 import tech.notifly.Notifly
 
 // import com.onesignal.OneSignal
@@ -17,6 +18,7 @@ class SampleApplication : Application() {
             username = BuildConfig.NOTIFLY_USERNAME,
             password = BuildConfig.NOTIFLY_PASSWORD,
         )
+        Notifly.setLogLevel(Log.VERBOSE)
 
         // OneSignal Initialization
         /*OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)
