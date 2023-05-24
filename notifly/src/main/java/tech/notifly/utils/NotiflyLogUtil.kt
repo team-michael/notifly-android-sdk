@@ -1,7 +1,6 @@
 package tech.notifly.utils
 
 import android.content.Context
-import android.util.Log
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -11,6 +10,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import tech.notifly.Logger
 import tech.notifly.Notifly
 import tech.notifly.utils.NotiflyIdUtil.Namespace
 import tech.notifly.storage.NotiflyStorage
@@ -33,7 +33,7 @@ object NotiflyLogUtil {
         retryCount: Int = 0,
     ) {
         if (eventName.isEmpty()) {
-            Log.e(Notifly.TAG, "[Notifly] eventName must be provided.")
+            Logger.e("[Notifly] eventName must be provided.")
             return
         }
 
@@ -99,9 +99,9 @@ object NotiflyLogUtil {
                     .build()
 
                 val response = N.HTTP_CLIENT.newCall(request).execute()
-                Log.d(Notifly.TAG, "response: $response")
+                Logger.d("response: $response")
                 val resultJson = response.body?.let { JSONObject(it.string()) } ?: JSONObject()
-                Log.d(Notifly.TAG, "resultJson: $resultJson")
+                Logger.d("resultJson: $resultJson")
 
                 // invalidate and retry
                 if (resultJson.optString("message") == "The incoming token has expired" && retryCount < 1) {
@@ -116,7 +116,7 @@ object NotiflyLogUtil {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(Notifly.TAG, "[Notifly] Failed logging the event. Please retry the initialization. $e")
+                Logger.e("[Notifly] Failed logging the event. Please retry the initialization. $e")
             }
         }
     }
@@ -192,7 +192,7 @@ object NotiflyLogUtil {
 
         val body = JSONObject().put("records", records)
 
-        Log.d(Notifly.TAG, body.toString())
+        Logger.d(body.toString())
         return body.toString().toRequestBody(JSON_MEDIA_TYPE)
     }
 }

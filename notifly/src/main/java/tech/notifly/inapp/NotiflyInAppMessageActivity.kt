@@ -10,7 +10,6 @@ import android.graphics.Path
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.webkit.JavascriptInterface
@@ -22,7 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import tech.notifly.Notifly
+import tech.notifly.Logger
 import tech.notifly.R
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyUserUtil
@@ -36,10 +35,9 @@ class NotiflyInAppMessageActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(Notifly.TAG, "NotiflyInAppMessageActivity.onCreate")
+        Logger.d("NotiflyInAppMessageActivity.onCreate")
         if (isActivityRunning) {
-            Log.d(
-                Notifly.TAG,
+            Logger.d(
                 "NotiflyInAppMessageActivity is already running, ignoring onCreate."
             )
             finish()
@@ -61,7 +59,7 @@ class NotiflyInAppMessageActivity : Activity() {
         setupWebView(webView, eventLogData, templateName)
 
         val density = getDensity()
-        Log.d(Notifly.TAG, "density: $density")
+        Logger.d("density: $density")
 
         handleViewDimensions(webView, modalProperties, density)
 
@@ -151,7 +149,7 @@ class NotiflyInAppMessageActivity : Activity() {
     private fun handleIntent(intent: Intent): Pair<String?, JSONObject?> {
         val url = intent.getStringExtra("in_app_message_url")
         if (url == null) {
-            Log.e(Notifly.TAG, "Error parsing in app message url")
+            Logger.e("Error parsing in app message url")
             return Pair(null, null)
         }
 
@@ -160,7 +158,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 try {
                     JSONObject(modalPropertiesString)
                 } catch (e: Exception) {
-                    Log.e(Notifly.TAG, "Error parsing properties of the in app message", e)
+                    Logger.e("Error parsing properties of the in app message", e)
                     null
                 }
             }
@@ -192,12 +190,12 @@ class NotiflyInAppMessageActivity : Activity() {
             screenHeight,
         )
 
-        Log.d(Notifly.TAG, "screenWidth: $screenWidth, screenHeight: $screenHeight")
-        Log.d(Notifly.TAG, "In-app message widthDp: $widthDp, heightDp: $heightDp")
+        Logger.d("screenWidth: $screenWidth, screenHeight: $screenHeight")
+        Logger.d("In-app message widthDp: $widthDp, heightDp: $heightDp")
 
         modalProperties?.let { properties ->
             val position = properties.optString("position", "full")
-            Log.d(Notifly.TAG, "In-app message position: $position")
+            Logger.d("In-app message position: $position")
             setPositionAndSize(webView, widthDp, heightDp, density, position)
             setBorderRadius(webView, properties, density)
         }
@@ -308,7 +306,7 @@ class NotiflyInAppMessageActivity : Activity() {
         @JavascriptInterface
         @Suppress("unused")
         fun postMessage(json: String) {
-            Log.d(Notifly.TAG, "In-app message postMessage: $json")
+            Logger.d("In-app message postMessage: $json")
             val data = JSONObject(json)
             val type = data.getString("type")
             val buttonName = data.getString("button_name")
@@ -326,16 +324,16 @@ class NotiflyInAppMessageActivity : Activity() {
         ) {
             when (type) {
                 "close" -> {
-                    Log.d(Notifly.TAG, "In-app message close button clicked")
+                    Logger.d("In-app message close button clicked")
                     logInAppMessageButtonClick("close_button_click", buttonName)
                     (context as Activity).finish()
                 }
 
                 "main_button" -> {
-                    Log.d(Notifly.TAG, "In-app message main button clicked")
+                    Logger.d("In-app message main button clicked")
                     logInAppMessageButtonClick("main_button_click", buttonName)
                     if (link != null && link != "null") {
-                        Log.d(Notifly.TAG, "In-app message main button link: link")
+                        Logger.d("In-app message main button link: link")
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
                         context.startActivity(intent)
                     }
@@ -343,7 +341,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 }
 
                 "hide_in_app_message" -> {
-                    Log.d(Notifly.TAG, "In-app message hide button clicked")
+                    Logger.d("In-app message hide button clicked")
                     logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
                     templateName?.let {
                         val key = "hide_in_app_message_$it"
@@ -355,7 +353,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 }
 
                 "survey_submit_button" -> {
-                    Log.d(Notifly.TAG, "In-app message survey submit button clicked")
+                    Logger.d("In-app message survey submit button clicked")
                     logInAppMessageButtonClick("survey_submit_button_click", buttonName, extraData)
                     (context as Activity).finish()
                 }

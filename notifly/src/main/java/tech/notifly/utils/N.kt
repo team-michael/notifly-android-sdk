@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import tech.notifly.NotiflySdkType
 import tech.notifly.BuildConfig
+import tech.notifly.Logger
 
 /**
  * Static values used internally
@@ -33,14 +34,9 @@ internal object N {
     val HTTP_CLIENT = OkHttpClient().newBuilder()
         .followRedirects(true) // Ensure that redirects are followed
         .followSslRedirects(true) // Ensure that SSL redirects are followed
-        .let { builder ->
-            if (BuildConfig.DEBUG) {
-                builder.addNetworkInterceptor(
-                    HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BODY
-                    })
-            }
-            builder
-        }
+        .addNetworkInterceptor(
+            HttpLoggingInterceptor().apply {
+                level = Logger.httpLogLevel
+            })
         .build()
 }

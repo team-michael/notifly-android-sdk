@@ -14,7 +14,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -40,7 +39,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             try {
                 handleFCMMessage(context, intent)
             } catch (e: Exception) {
-                Log.e(Notifly.TAG, "FCMBroadcastReceiver onReceive failed", e)
+                Logger.e("FCMBroadcastReceiver onReceive failed", e)
             }
         }.start()
     }
@@ -48,12 +47,12 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     @Throws(Exception::class)
     private fun handleFCMMessage(context: Context, intent: Intent) {
         val extras = intent.extras ?: run {
-            Log.d(Notifly.TAG, "FCM message does not have data field")
+            Logger.d("FCM message does not have data field")
             return
         }
 
         val jsonObject = bundleAsJSONObject(extras)
-        Log.d(Notifly.TAG, "FCMBroadcastReceiver intent: $jsonObject")
+        Logger.d("FCMBroadcastReceiver intent: $jsonObject")
 
         val pushNotification = extractPushNotification(jsonObject)
         if (pushNotification != null) {
@@ -70,8 +69,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
     private fun extractPushNotification(jsonObject: JSONObject): PushNotification? {
         if (!jsonObject.has("notifly")) {
-            Log.d(
-                Notifly.TAG,
+            Logger.d(
                 "FCM message does not have keys for push notification"
             )
             return null
@@ -82,8 +80,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         if (!notiflyJSONObject.has("type")
             || notiflyJSONObject.getString("type") != "push-notification"
         ) {
-            Log.d(
-                Notifly.TAG,
+            Logger.d(
                 "FCM message is not a Notifly push notification"
             )
             return null
@@ -96,8 +93,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             || jsonObject.getString("notifly_message_type") != "in-app-message"
             || !jsonObject.has("notifly_in_app_message_data")
         ) {
-            Log.d(
-                Notifly.TAG,
+            Logger.d(
                 "FCM message does not have keys for in-app message"
             )
             return null
@@ -191,7 +187,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
 
         val notification = builder.build()
-        Log.d(Notifly.TAG, "FCMBroadcastReceiver notification: $notification")
+        Logger.d("FCMBroadcastReceiver notification: $notification")
 
         val notificationId = notiflyMessageId?.toIntOrNull() ?: 1
         // Show the notification
@@ -202,7 +198,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         ) {
             NotificationManagerCompat.from(context).notify(notificationId, notification)
         } else {
-            Log.w(Notifly.TAG, "POST_NOTIFICATIONS permission is not granted")
+            Logger.w("POST_NOTIFICATIONS permission is not granted")
         }
     }
 
@@ -234,7 +230,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             try {
                 json.put(key, bundle.get(key))
             } catch (e: JSONException) {
-                Log.e(Notifly.TAG, "Failed to convert bundle to json", e)
+                Logger.e("Failed to convert bundle to json", e)
             }
         }
         return json
@@ -285,7 +281,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             if (imageUrl != null) {
                 GlobalScope.launch {
                     val bitmap = getBitmapFromURL(imageUrl)
-                    Log.d(Notifly.TAG, "FCMBroadcastReceiver bitmap: $bitmap")
+                    Logger.d("FCMBroadcastReceiver bitmap: $bitmap")
                     continuation.resume(bitmap)
                 }
             } else {

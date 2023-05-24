@@ -1,18 +1,16 @@
 package tech.notifly.utils
 
 import android.content.Context
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import tech.notifly.Notifly
+import tech.notifly.Logger
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import tech.notifly.utils.NotiflyFirebaseUtil
 import java.lang.IllegalStateException
 import kotlin.jvm.Throws
 
@@ -52,7 +50,7 @@ internal object NotiflyAuthUtil {
                 val authenticationResult = jsonResponse.getJSONObject("AuthenticationResult")
                 authenticationResult.getString("IdToken")
             } catch (e: Exception) {
-                Log.e(Notifly.TAG, "Authentication Failed", e)
+                Logger.e("Authentication Failed", e)
                 throw NullPointerException("Failed to Get Cognito ID Token")
             }
         }

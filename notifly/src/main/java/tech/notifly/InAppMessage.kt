@@ -1,8 +1,6 @@
 package tech.notifly
 
 import android.util.Base64
-import android.util.Log
-import org.json.JSONException
 import org.json.JSONObject
 
 data class InAppMessage(
@@ -19,7 +17,7 @@ data class InAppMessage(
                 val jsonObject = JSONObject(decodedJsonString)
                 parseInAppMessageJson(jsonObject)
             } catch (e: Exception) {
-                Log.e(Notifly.TAG, "InAppMessage: Failed to decode or parse JSON", e)
+                Logger.e("InAppMessage: Failed to decode or parse JSON", e)
                 null
             }
         }

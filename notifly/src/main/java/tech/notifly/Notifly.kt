@@ -1,7 +1,6 @@
 package tech.notifly
 
 import android.content.Context
-import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,7 +12,6 @@ import tech.notifly.utils.NotiflyUserUtil
 
 
 object Notifly {
-    internal const val TAG = "Notifly"
     internal const val VERSION: String = BuildConfig.VERSION
 
 
@@ -40,7 +38,7 @@ object Notifly {
                     NotiflyUserUtil.setUserProperties(context, params)
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Notifly setUserId failed", e)
+                Logger.e("Notifly setUserId failed", e)
             }
         }
     }
@@ -53,7 +51,7 @@ object Notifly {
         password: String,
     ) {
         if (isNotiflyInitialized) {
-            Log.w(TAG, "Notifly is already initialized.")
+            Logger.w("Notifly is already initialized.")
             return
         }
 
@@ -66,7 +64,7 @@ object Notifly {
             // Start Session
             NotiflyUserUtil.sessionStart(context)
         } catch (e: Exception) {
-            Log.e(TAG, "Notifly initialization failed:", e)
+            Logger.e("Notifly initialization failed:", e)
         }
     }
 
@@ -78,7 +76,7 @@ object Notifly {
             try {
                 NotiflyUserUtil.setUserProperties(context, params)
             } catch (e: Exception) {
-                Log.w(TAG, "Notifly setUserProperties failed", e)
+                Logger.w("Notifly setUserProperties failed", e)
             }
         }
     }
@@ -99,5 +97,10 @@ object Notifly {
             segmentationEventParamKeys,
             isInternalEvent
         )
+    }
+
+    @JvmStatic
+    fun setLogLevel(level: Int) {
+        Logger.setLogLevel(level)
     }
 }

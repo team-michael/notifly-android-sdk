@@ -1,13 +1,12 @@
 package tech.notifly.utils
 
 import android.content.Context
-import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import tech.notifly.Logger
 import tech.notifly.NotificationAuthorizationStatus
-import tech.notifly.Notifly
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 
@@ -21,7 +20,7 @@ object NotiflyUserUtil {
                 val previousExternalUserId =
                     NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
                 if (previousExternalUserId == null) {
-                    Log.i(Notifly.TAG, "[Notifly] <External User ID> not found.")
+                    Logger.i("[Notifly] <External User ID> not found.")
                 }
 
                 NotiflyStorage.put(
@@ -38,7 +37,7 @@ object NotiflyUserUtil {
             }
             NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
         } catch (e: Exception) {
-            Log.w(Notifly.TAG, "[Notifly] Failed to set user properties", e)
+            Logger.w("[Notifly] Failed to set user properties", e)
         }
     }
 

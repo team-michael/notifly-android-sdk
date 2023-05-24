@@ -20,13 +20,14 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--assumenosideeffects class android.util.Log {
-    # show Log.w and Log.e only in release builds
-    public static boolean isLoggable(java.lang.String, int);
-    public static int v(...);
-    public static int d(...);
-    public static int i(...);
-}
+# If you want to remove debug logs in the release, uncomment the following
+#-assumenosideeffects class android.util.Log {
+#    # show Log.w and Log.e only in release builds
+#    public static boolean isLoggable(java.lang.String, int);
+#    public static int v(...);
+#    public static int d(...);
+#    public static int i(...);
+#}
 
 # To keep method names in your stack trace, add this line
 -keepclassmembers class * {
