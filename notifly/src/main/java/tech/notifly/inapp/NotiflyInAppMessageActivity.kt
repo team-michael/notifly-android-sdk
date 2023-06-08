@@ -72,7 +72,7 @@ class NotiflyInAppMessageActivity : Activity() {
             mapOf(
                 "type" to "message_event",
                 "channel" to "in-app-message",
-                "campaign" to eventLogData.campaignId,
+                "campaign_id" to eventLogData.campaignId,
                 "notifly_message_id" to eventLogData.notiflyMessageId,
             ),
             listOf(),
