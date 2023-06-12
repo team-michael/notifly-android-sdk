@@ -17,7 +17,8 @@
 
         <activity
             android:name=".PushNotificationOpenActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:launchMode="singleTask" />
 
         <receiver
             android:name=".FCMBroadcastReceiver"

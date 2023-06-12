@@ -8,8 +8,19 @@ import tech.notifly.utils.NotiflyLogUtil
 
 class PushNotificationOpenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        Logger.d("PushNotificationOpenActivity onCreate")
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
+    }
 
+    override fun onNewIntent(intent: Intent?) {
+        Logger.d("PushNotificationOpenActivity onNewIntent")
+        super.onNewIntent(intent)
+        intent?.let { handleIntent(it) }
+    }
+
+    private fun handleIntent(intent: Intent) {
+        Logger.d("PushNotificationOpenActivity handleIntent: $intent")
         val url = intent.getStringExtra("url")
         val campaignId = intent.getStringExtra("campaign_id")
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")

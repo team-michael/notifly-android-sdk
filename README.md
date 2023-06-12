@@ -35,7 +35,7 @@ To deploy a new version. follow these steps:
 1. Update the version name in `gradle.properties`
 
 ```
-version=1.0.4
+version=1.0.5
 ```
 
 _NOTE: the sdk version gets logged in all Notifly events without the prefix v._
