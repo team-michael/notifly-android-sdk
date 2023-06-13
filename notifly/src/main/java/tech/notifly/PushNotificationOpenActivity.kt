@@ -4,11 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import tech.notifly.utils.NotiflyLogUtil
-import tech.notifly.utils.NotiflySDKInfoUtil
-import tech.notifly.utils.NotiflySdkType
-import tech.notifly.utils.OSUtils
 
 class PushNotificationOpenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,21 +40,7 @@ class PushNotificationOpenActivity : AppCompatActivity() {
             true
         )
 
-        var shouldFinish = true
         try {
-            // If react native foreground, send the event to the JS side
-            if (NotiflySDKInfoUtil.getSdkType() == NotiflySdkType.REACT_NATIVE && OSUtils.isAppInForeground(this)) {
-                Logger.d("Push notification -- sending event with url to react native foreground status")
-                val eventIntent = Intent("notifly-push-notification").apply {
-                    putExtra("url", url)
-                    putExtra("campaign_id", campaignId)
-                    putExtra("notifly_message_id", notiflyMessageId)
-                }
-                sendBroadcast(eventIntent)
-                shouldFinish = url == null
-                return
-            }
-
             // Open the URL or launch the app
             if (url != null) {
                 val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).applyIntentCommons()
@@ -71,9 +53,7 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Logger.w("Failed to open URL or launch app", e)
         } finally {
-            if (shouldFinish) {
-                finish()
-            }
+            finish()
         }
     }
 
