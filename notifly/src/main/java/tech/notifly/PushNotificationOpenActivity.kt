@@ -4,7 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.NotiflySDKInfoUtil
+import tech.notifly.utils.NotiflySdkType
 
 class PushNotificationOpenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,6 +44,18 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         )
 
         try {
+            // If react native, send the event to the JS side
+            if (NotiflySDKInfoUtil.getSdkType() == NotiflySdkType.REACT_NATIVE) {
+                Logger.d("Push notification -- sending event with url to react native")
+                val eventIntent = Intent("notifly-push-notification").apply {
+                    putExtra("url", url)
+                    putExtra("campaign_id", campaignId)
+                    putExtra("notifly_message_id", notiflyMessageId)
+                }
+                sendBroadcast(eventIntent)
+                return
+            }
+
             // Open the URL or launch the app
             if (url != null) {
                 val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).applyIntentCommons()
