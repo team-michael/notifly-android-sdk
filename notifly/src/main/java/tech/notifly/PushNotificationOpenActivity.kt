@@ -46,6 +46,7 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         try {
             // If react native, send the event to the JS side
             if (NotiflySDKInfoUtil.getSdkType() == NotiflySdkType.REACT_NATIVE) {
+                Logger.d("Sending event to react native")
                 val eventIntent = Intent("notifly-push-notification").apply {
                     putExtra("url", url)
                     putExtra("campaign_id", campaignId)
