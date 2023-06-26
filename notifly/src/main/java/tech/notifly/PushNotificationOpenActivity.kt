@@ -8,9 +8,19 @@ import tech.notifly.utils.NotiflyLogUtil
 
 class PushNotificationOpenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        Logger.d("PushNotificationOpenActivity onCreate")
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
+    }
 
-        val intent = intent
+    override fun onNewIntent(intent: Intent?) {
+        Logger.d("PushNotificationOpenActivity onNewIntent")
+        super.onNewIntent(intent)
+        intent?.let { handleIntent(it) }
+    }
+
+    private fun handleIntent(intent: Intent) {
+        Logger.d("PushNotificationOpenActivity handleIntent: $intent")
         val url = intent.getStringExtra("url")
         val campaignId = intent.getStringExtra("campaign_id")
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
@@ -30,15 +40,27 @@ class PushNotificationOpenActivity : AppCompatActivity() {
             true
         )
 
-        // Open the URL or launch the app
-        if (url != null) {
-            val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            startActivity(urlIntent)
-        } else {
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-            startActivity(launchIntent)
+        try {
+            // Open the URL or launch the app
+            if (url != null) {
+                val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).applyIntentCommons()
+                startActivity(urlIntent)
+            } else {
+                packageManager.getLaunchIntentForPackage(packageName)?.applyIntentCommons()?.let {
+                    startActivity(it)
+                }
+            }
+        } catch (e: Exception) {
+            Logger.w("Failed to open URL or launch app", e)
+        } finally {
+            finish()
         }
+    }
 
-        finish()
+    private fun Intent.applyIntentCommons(): Intent {
+        return this.apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     }
 }

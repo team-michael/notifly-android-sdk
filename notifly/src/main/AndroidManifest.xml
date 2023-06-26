@@ -12,12 +12,13 @@
     <application>
         <activity
             android:name=".inapp.NotiflyInAppMessageActivity"
-            android:theme="@style/Theme.CustomTransparent"
-            android:exported="false" />
+            android:exported="true"
+            android:theme="@style/Theme.CustomTransparent" />
 
         <activity
             android:name=".PushNotificationOpenActivity"
-            android:exported="false" />
+            android:exported="true"
+            android:launchMode="singleTask" />
 
         <receiver
             android:name=".FCMBroadcastReceiver"

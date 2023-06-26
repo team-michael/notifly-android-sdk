@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -34,6 +35,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
+    companion object {
+        var requestCodeCounter = 0
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         Thread {
             try {
@@ -148,12 +153,18 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
                 putExtra("was_app_in_foreground", isAppInForeground)
             }
 
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            notificationOpenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        requestCodeCounter++
+        val uniqueRequestCode = notiflyMessageId.hashCode().let {
+            if (it == 0) requestCodeCounter else it
+        }
+
+        val pendingIntent = TaskStackBuilder.create(context).run {
+            addNextIntentWithParentStack(notificationOpenIntent)
+            getPendingIntent(
+                uniqueRequestCode,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelName = "Notifly Notification Channel"
