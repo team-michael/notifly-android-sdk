@@ -4,6 +4,8 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.N.KEY_EXTERNAL_USER_ID
@@ -34,6 +36,7 @@ object Notifly {
                         KEY_EXTERNAL_USER_ID to userId
                     )
                     NotiflyUserUtil.setUserProperties(context, params)
+                    InAppMessageManager.refresh(context)
                 }
             } catch (e: Exception) {
                 Logger.e("Notifly setUserId failed", e)
@@ -53,16 +56,19 @@ object Notifly {
             return
         }
 
-        try {
-            // Set Required Properties from User
-            NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
-            NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
-            NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Start Session
+                // Set Required Properties from User
+                NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
+                NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
+                NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
 
-            // Start Session
-            NotiflyUserUtil.sessionStart(context)
-        } catch (e: Exception) {
-            Logger.e("Notifly initialization failed:", e)
+                InAppMessageManager.initialize(context)
+                NotiflyUserUtil.sessionStart(context)
+            } catch (e: Exception) {
+                Logger.e("Notifly initialization failed:", e)
+            }
         }
     }
 
@@ -89,11 +95,7 @@ object Notifly {
         isInternalEvent: Boolean = false
     ) {
         NotiflyLogUtil.logEvent(
-            context,
-            eventName,
-            eventParams,
-            segmentationEventParamKeys,
-            isInternalEvent
+            context, eventName, eventParams, segmentationEventParamKeys, isInternalEvent
         )
     }
 

@@ -5,8 +5,10 @@ import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tech.notifly.Logger
 import tech.notifly.NotificationAuthorizationStatus
+import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 
@@ -35,6 +37,7 @@ object NotiflyUserUtil {
                     N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
                 )
             }
+            InAppMessageManager.updateUserData(newParams)
             NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
         } catch (e: Exception) {
             Logger.w("[Notifly] Failed to set user properties", e)
@@ -47,11 +50,12 @@ object NotiflyUserUtil {
             NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
 
             NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
+            InAppMessageManager.refresh(context)
         }
     }
 
-    fun sessionStart(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
+    suspend fun sessionStart(context: Context) {
+        withContext(Dispatchers.IO) {
             val platform = NotiflyDeviceUtil.getPlatform()
             val apiLevel = NotiflyDeviceUtil.getApiLevel()
             val deviceBrand = NotiflyDeviceUtil.getBrand()
@@ -60,14 +64,11 @@ object NotiflyUserUtil {
             val notifAuthStatus = getNotifAuthStatus(context).value
 
             val openAppEventParams = mapOf(
-                "platform" to platform,
-                "device_model" to deviceModel,
-                "properties" to mapOf(
+                "platform" to platform, "device_model" to deviceModel, "properties" to mapOf(
                     "device_brand" to deviceBrand,
                     "api_level" to apiLevel,
                     "user_agent" to userAgent
-                ),
-                "notif_auth_status" to notifAuthStatus
+                ), "notif_auth_status" to notifAuthStatus
             )
 
             NotiflyLogUtil.logEvent(
