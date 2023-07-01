@@ -29,12 +29,15 @@ internal object N {
      */
     const val KEY_PREVIOUS_EXTERNAL_USER_ID = "previous_external_user_id"
 
-    val HTTP_CLIENT = OkHttpClient().newBuilder()
-        .followRedirects(true) // Ensure that redirects are followed
-        .followSslRedirects(true) // Ensure that SSL redirects are followed
-        .addNetworkInterceptor(
-            HttpLoggingInterceptor().apply {
+    /**
+     * Prefix of internal event
+     */
+    const val INTERNAL_EVENT_PREFIX = "notifly__"
+
+    val HTTP_CLIENT =
+        OkHttpClient().newBuilder().followRedirects(true) // Ensure that redirects are followed
+            .followSslRedirects(true) // Ensure that SSL redirects are followed
+            .addNetworkInterceptor(HttpLoggingInterceptor().apply {
                 level = Logger.httpLogLevel
-            })
-        .build()
+            }).build()
 }

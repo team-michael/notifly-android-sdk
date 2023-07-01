@@ -13,8 +13,8 @@ import tech.notifly.inapp.models.SegmentConditionUnitType
 import tech.notifly.inapp.models.SegmentConditionValueType
 import tech.notifly.inapp.models.SegmentOperator
 import tech.notifly.inapp.models.UserData
+import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
-import kotlin.ClassCastException
 import kotlin.math.floor
 
 object InAppMessageManager {
@@ -65,6 +65,7 @@ object InAppMessageManager {
         context: Context,
         eventName: String,
         eventParams: Map<String, Any?>,
+        isInternalEvent: Boolean,
         segmentationEventParamKeys: List<String>? = null
     ) {
         if (!isInitialized) {
@@ -72,8 +73,11 @@ object InAppMessageManager {
             return
         }
 
-        ingestEvent(eventName, eventParams, segmentationEventParamKeys)
-        getCampaignsToSchedule(campaigns, eventName, eventParams).forEach {
+        val sanitizedEventName =
+            if (isInternalEvent) "${N.INTERNAL_EVENT_PREFIX}$eventName" else eventName
+
+        ingestEvent(sanitizedEventName, eventParams, segmentationEventParamKeys)
+        getCampaignsToSchedule(campaigns, sanitizedEventName, eventParams).forEach {
             InAppMessageScheduler.schedule(context, it)
         }
     }
@@ -126,7 +130,7 @@ object InAppMessageManager {
         campaigns: List<Campaign>, eventName: String, eventParams: Map<String, Any?>
     ): List<Campaign> {
         return filterCampaignsWithUniqueDelays(campaigns.filter {
-            isEntityOfSegment(it, eventName, eventParams)
+            evaluateCampaignVisibility(it, eventName, eventParams)
         })
     }
 
@@ -152,14 +156,23 @@ object InAppMessageManager {
         return result
     }
 
-    private fun isEntityOfSegment(
+    private fun evaluateCampaignVisibility(
         campaign: Campaign, eventName: String, eventParams: Map<String, Any?>
     ): Boolean {
         if (campaign.triggeringEvent != eventName) {
             return false
         }
 
-        // TODO: Don't show again
+        if (userData?.userProperties != null) {
+            val templateName = campaign.message.templateName
+            if (templateName != null) {
+                val userProperties = userData!!.userProperties!!
+                if (userProperties["hide_in_app_message_$templateName"] == true) {
+                    return false
+                }
+            }
+        }
+
         val groups = campaign.segmentInfo?.groups
         if (groups.isNullOrEmpty()) {
             return true

@@ -74,10 +74,14 @@ data class Campaign(
             val end = from.get("end").let {
                 if (it == JSONObject.NULL) null else (it as Int).toLong()
             }
+
             val messageObject = from.getJSONObject("message")
             val url = messageObject.getString("html_url")
-            val modalProperties = messageObject.getJSONObject("modal_properties").toString()
-            val message = Message(url, modalProperties)
+            val modalPropertiesObject = messageObject.getJSONObject("modal_properties")
+            val templateName =
+                if (modalPropertiesObject.has("template_name")) modalPropertiesObject.getString("template_name") else null
+            val message = Message(url, modalPropertiesObject.toString(), templateName)
+
             val segmentInfoObject = from.getJSONObject("segment_info")
             val segmentInfo = SegmentInfo.fromJSONObject(segmentInfoObject) ?: return null
 
@@ -102,6 +106,7 @@ data class Campaign(
 data class Message(
     val url: String,
     val modalProperties: String, // JSON-stringified string. InAppMessageActivity will handle this
+    val templateName: String?
 )
 
 data class SegmentInfo(

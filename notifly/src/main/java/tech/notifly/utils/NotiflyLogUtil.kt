@@ -36,7 +36,7 @@ object NotiflyLogUtil {
         }
 
         InAppMessageManager.ingestEventAndMaybeScheduleInAppMessages(
-            context, eventName, eventParams
+            context, eventName, eventParams, isInternalEvent, segmentationEventParamKeys
         )
 
         /**

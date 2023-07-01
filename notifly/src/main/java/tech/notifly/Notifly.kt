@@ -4,7 +4,6 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -66,6 +65,8 @@ object Notifly {
 
                 InAppMessageManager.initialize(context)
                 NotiflyUserUtil.sessionStart(context)
+
+                isNotiflyInitialized = true
             } catch (e: Exception) {
                 Logger.e("Notifly initialization failed:", e)
             }
