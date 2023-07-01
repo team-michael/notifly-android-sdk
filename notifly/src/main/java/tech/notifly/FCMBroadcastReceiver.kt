@@ -193,26 +193,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
     }
 
-//    private fun showInAppMessage(context: Context, inAppMessage: InAppMessage) {
-//        val campaignId = inAppMessage.campaign_id
-//        val url = inAppMessage.url
-//        val notiflyMessageId = inAppMessage.notifly_message_id
-//        val modalProperties = inAppMessage.modal_properties
-//
-//        val inAppMessageShowIntent = Intent(
-//            context,
-//            NotiflyInAppMessageActivity::class.java
-//        ).apply {
-//            putExtra("in_app_message_campaign_id", campaignId)
-//            putExtra("in_app_message_url", url)
-//            putExtra("notifly_message_id", notiflyMessageId)
-//            putExtra("modal_properties", modalProperties)
-//            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-//        }
-//
-//        context.startActivity(inAppMessageShowIntent)
-//    }
-
     private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
         val json = JSONObject()
         val keys = bundle.keySet()

@@ -2,10 +2,8 @@ package tech.notifly.utils
 
 import android.content.Context
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -14,10 +12,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import tech.notifly.Logger
 import tech.notifly.inapp.InAppMessageManager
-import tech.notifly.utils.NotiflyIdUtil.Namespace
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import java.lang.IllegalStateException
+import tech.notifly.utils.NotiflyIdUtil.Namespace
 
 object NotiflyLogUtil {
 
@@ -79,7 +76,7 @@ object NotiflyLogUtil {
     ) {
         val notiflyCognitoIdToken: String =
             NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
-                ?: invalidateCognitoIdToken(context) // invalidate if not set
+                ?: NotiflyAuthUtil.invalidateCognitoIdToken(context) // invalidate if not set
         val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
         val notiflyExternalUserId: String? =
             NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
@@ -127,7 +124,7 @@ object NotiflyLogUtil {
 
         // invalidate and retry
         if (resultJson.optString("message") == "The incoming token has expired" && retryCount < 1) {
-            invalidateCognitoIdToken(context)
+            NotiflyAuthUtil.invalidateCognitoIdToken(context)
             logEventInternal(
                 context,
                 eventName,
@@ -137,26 +134,6 @@ object NotiflyLogUtil {
                 retryCount + 1
             )
         }
-    }
-
-    /**
-     * Invalidates and save [NotiflyStorageItem.COGNITO_ID_TOKEN]
-     *
-     * @throws IllegalStateException if [NotiflyStorageItem.USERNAME] or [NotiflyStorageItem.PASSWORD] is null
-     */
-    private suspend fun invalidateCognitoIdToken(context: Context): String {
-        val username: String =
-            NotiflyStorage.get(context, NotiflyStorageItem.USERNAME) ?: throw IllegalStateException(
-                "[Notifly] username not found. You should call Notifly.initialize before this."
-            )
-        val password: String =
-            NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD) ?: throw IllegalStateException(
-                "[Notifly] password not found. You should call Notifly.initialize before this."
-            )
-
-        val newCognitoIdToken = NotiflyAuthUtil.getCognitoIdToken(username, password)
-        NotiflyStorage.put(context, NotiflyStorageItem.COGNITO_ID_TOKEN, newCognitoIdToken)
-        return newCognitoIdToken
     }
 
     private fun createRequestBody(

@@ -9,7 +9,6 @@ import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
 import tech.notifly.inapp.models.EventIntermediateCounts
-import tech.notifly.inapp.models.Group
 import tech.notifly.inapp.models.SegmentConditionUnitType
 import tech.notifly.inapp.models.SegmentConditionValueType
 import tech.notifly.inapp.models.SegmentOperator
@@ -126,12 +125,12 @@ object InAppMessageManager {
     private fun getCampaignsToSchedule(
         campaigns: List<Campaign>, eventName: String, eventParams: Map<String, Any?>
     ): List<Campaign> {
-        return compactCampaigns(campaigns.filter {
+        return filterCampaignsWithUniqueDelays(campaigns.filter {
             isEntityOfSegment(it, eventName, eventParams)
         })
     }
 
-    private fun compactCampaigns(campaigns: List<Campaign>): List<Campaign> {
+    private fun filterCampaignsWithUniqueDelays(campaigns: List<Campaign>): List<Campaign> {
         if (campaigns.size <= 1) {
             return campaigns
         }

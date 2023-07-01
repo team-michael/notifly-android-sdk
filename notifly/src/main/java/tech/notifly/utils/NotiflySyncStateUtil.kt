@@ -13,8 +13,6 @@ import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.UserData
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import java.lang.IllegalStateException
-import kotlin.jvm.Throws
 
 object NotiflySyncStateUtil {
     data class SyncStateOutput(
@@ -33,7 +31,7 @@ object NotiflySyncStateUtil {
     ): SyncStateOutput {
         val notiflyCognitoIdToken: String =
             NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
-                ?: invalidateCognitoIdToken(context) // invalidate if not set
+                ?: NotiflyAuthUtil.invalidateCognitoIdToken(context) // invalidate if not set
         val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
         val notiflyExternalUserId: String? =
             NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
@@ -61,7 +59,7 @@ object NotiflySyncStateUtil {
                         if (retryCount < SYNC_STATE_MAX_RETRY_COUNT_ON_401) {
                             Logger.w("[Notifly] Sync state failed with 401. Retrying...")
                             try {
-                                invalidateCognitoIdToken(context)
+                                NotiflyAuthUtil.invalidateCognitoIdToken(context)
                             } catch (e: Exception) {
                                 Logger.e("[Notifly] Failed to invalidate cognito id token", e)
                                 throw NullPointerException("[Notifly] Failed to invalidate cognito id token")
@@ -118,31 +116,10 @@ object NotiflySyncStateUtil {
                 SyncStateOutput(campaigns, eventCounts, userData)
             } catch (e: JSONException) {
                 Logger.e(
-                    "[Notifly] Failed to sync state: encountered error while working with JSON",
-                    e
+                    "[Notifly] Failed to sync state: encountered error while working with JSON", e
                 )
                 throw NullPointerException("[Notifly] Failed to sync state: encountered error while working with JSON")
             }
         }
-    }
-
-    /**
-     * Invalidates and save [NotiflyStorageItem.COGNITO_ID_TOKEN]
-     *
-     * @throws IllegalStateException if [NotiflyStorageItem.USERNAME] or [NotiflyStorageItem.PASSWORD] is null
-     */
-    private suspend fun invalidateCognitoIdToken(context: Context): String {
-        val username: String =
-            NotiflyStorage.get(context, NotiflyStorageItem.USERNAME) ?: throw IllegalStateException(
-                "[Notifly] username not found. You should call Notifly.initialize before this."
-            )
-        val password: String =
-            NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD) ?: throw IllegalStateException(
-                "[Notifly] password not found. You should call Notifly.initialize before this."
-            )
-
-        val newCognitoIdToken = NotiflyAuthUtil.getCognitoIdToken(username, password)
-        NotiflyStorage.put(context, NotiflyStorageItem.COGNITO_ID_TOKEN, newCognitoIdToken)
-        return newCognitoIdToken
     }
 }

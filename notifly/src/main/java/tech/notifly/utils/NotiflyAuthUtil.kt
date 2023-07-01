@@ -11,8 +11,6 @@ import tech.notifly.Logger
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import java.lang.IllegalStateException
-import kotlin.jvm.Throws
 
 internal object NotiflyAuthUtil {
 
@@ -32,10 +30,8 @@ internal object NotiflyAuthUtil {
             put("password", password)
         }
 
-        val request = Request.Builder()
-            .url(AUTHENTICATOR_URL)
-            .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
-            .build()
+        val request = Request.Builder().url(AUTHENTICATOR_URL)
+            .post(requestBody.toString().toRequestBody("application/json".toMediaType())).build()
 
         return withContext(Dispatchers.IO) {
             try {
@@ -79,5 +75,25 @@ internal object NotiflyAuthUtil {
 
         NotiflyStorage.put(context, NotiflyStorageItem.USER_ID, notiflyUserId)
         return notiflyUserId
+    }
+
+    /**
+     * Invalidates and save [NotiflyStorageItem.COGNITO_ID_TOKEN]
+     *
+     * @throws IllegalStateException if [NotiflyStorageItem.USERNAME] or [NotiflyStorageItem.PASSWORD] is null
+     */
+    suspend fun invalidateCognitoIdToken(context: Context): String {
+        val username: String =
+            NotiflyStorage.get(context, NotiflyStorageItem.USERNAME) ?: throw IllegalStateException(
+                "[Notifly] username not found. You should call Notifly.initialize before this."
+            )
+        val password: String =
+            NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD) ?: throw IllegalStateException(
+                "[Notifly] password not found. You should call Notifly.initialize before this."
+            )
+
+        val newCognitoIdToken = NotiflyAuthUtil.getCognitoIdToken(username, password)
+        NotiflyStorage.put(context, NotiflyStorageItem.COGNITO_ID_TOKEN, newCognitoIdToken)
+        return newCognitoIdToken
     }
 }
