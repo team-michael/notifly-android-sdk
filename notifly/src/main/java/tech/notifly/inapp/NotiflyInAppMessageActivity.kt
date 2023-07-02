@@ -30,21 +30,21 @@ import kotlin.math.roundToInt
 
 class NotiflyInAppMessageActivity : Activity() {
     companion object {
-        var isActivityRunning = false
+        @Volatile
+        private var isActivityRunning = false
+        val isActive: Boolean
+            get() = isActivityRunning
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Logger.d("NotiflyInAppMessageActivity.onCreate")
         if (isActivityRunning) {
-            Logger.d(
-                "NotiflyInAppMessageActivity is already running, ignoring onCreate."
-            )
-            finish()
+            Logger.d("NotiflyInAppMessageActivity is already active")
+            rejectCreation()
             return
         }
-
         isActivityRunning = true
+        Logger.d("NotiflyInAppMessageActivity.onCreate")
 
         val intent = intent
         val (url, modalProperties) = handleIntent(intent)
@@ -67,30 +67,27 @@ class NotiflyInAppMessageActivity : Activity() {
         setupTouchInterceptorLayout(modalProperties?.optDouble("backgroundOpacity", 0.2))
 
         NotiflyLogUtil.logEvent(
-            this,
-            "in_app_message_show",
-            mapOf(
+            this, "in_app_message_show", mapOf(
                 "type" to "message_event",
                 "channel" to "in-app-message",
                 "campaign_id" to eventLogData.campaignId,
                 "notifly_message_id" to eventLogData.notiflyMessageId,
-            ),
-            listOf(),
-            true
+            ), listOf(), true
         )
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-
+    override fun finish() {
         // Clear the flag to indicate the activity is no longer running
         isActivityRunning = false
-    }
 
-    override fun finish() {
         super.finish()
         // Remove the animation when the activity gets destroyed
         overridePendingTransition(0, 0)
+    }
+
+    private fun rejectCreation() {
+        Logger.d("Rejecting creation of NotiflyInAppMessageActivity")
+        super.finish()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -124,8 +121,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 this,
                 eventLogData,
                 templateName,
-            ),
-            "Android"
+            ), "Android"
         )
     }
 
@@ -135,10 +131,7 @@ class NotiflyInAppMessageActivity : Activity() {
 
         val cappedOpacity = backgroundOpacity?.coerceIn(0.0, 1.0) ?: 0.2
         val backgroundColor = Color.argb(
-            (cappedOpacity * 255).roundToInt(),
-            0,
-            0,
-            0
+            (cappedOpacity * 255).roundToInt(), 0, 0, 0
         )
         touchInterceptorLayout.setBackgroundColor(backgroundColor)
         touchInterceptorLayout.onTouchOutsideWebView = {
@@ -179,9 +172,7 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private fun handleViewDimensions(
-        webView: WebView,
-        modalProperties: JSONObject?,
-        density: Float
+        webView: WebView, modalProperties: JSONObject?, density: Float
     ) {
         val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(this, density)
         val (widthDp, heightDp) = InAppMessageUtils.getViewDimensions(
@@ -206,16 +197,11 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private fun setPositionAndSize(
-        webView: WebView,
-        widthDp: Float,
-        heightDp: Float,
-        density: Float,
-        position: String
+        webView: WebView, widthDp: Float, heightDp: Float, density: Float, position: String
     ) {
 
         val layoutParams = ConstraintLayout.LayoutParams(
-            (widthDp * density).roundToInt(),
-            (heightDp * density).roundToInt()
+            (widthDp * density).roundToInt(), (heightDp * density).roundToInt()
         )
 
         when (position) {
@@ -257,9 +243,7 @@ class NotiflyInAppMessageActivity : Activity() {
 
     @Suppress("DEPRECATION")
     private fun setBorderRadius(
-        webView: WebView,
-        modalProperties: JSONObject,
-        density: Float
+        webView: WebView, modalProperties: JSONObject, density: Float
     ) {
         val topLeftRadiusDp = modalProperties.optInt("borderTopLeftRadius", 0)
         val topRightRadiusDp = modalProperties.optInt("borderTopRightRadius", 0)
@@ -276,14 +260,16 @@ class NotiflyInAppMessageActivity : Activity() {
                         val bottomRightRadiusPx = (bottomRightRadiusDp * density).roundToInt()
                         val path = Path()
                         path.addRoundRect(
-                            0f, 0f, it.width.toFloat(), it.height.toFloat(),
-                            floatArrayOf(
-                                topLeftRadiusPx.toFloat(), topLeftRadiusPx.toFloat(),
-                                topRightRadiusPx.toFloat(), topRightRadiusPx.toFloat(),
-                                bottomRightRadiusPx.toFloat(), bottomRightRadiusPx.toFloat(),
-                                bottomLeftRadiusPx.toFloat(), bottomLeftRadiusPx.toFloat()
-                            ),
-                            Path.Direction.CW
+                            0f, 0f, it.width.toFloat(), it.height.toFloat(), floatArrayOf(
+                                topLeftRadiusPx.toFloat(),
+                                topLeftRadiusPx.toFloat(),
+                                topRightRadiusPx.toFloat(),
+                                topRightRadiusPx.toFloat(),
+                                bottomRightRadiusPx.toFloat(),
+                                bottomRightRadiusPx.toFloat(),
+                                bottomLeftRadiusPx.toFloat(),
+                                bottomLeftRadiusPx.toFloat()
+                            ), Path.Direction.CW
                         )
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -299,9 +285,7 @@ class NotiflyInAppMessageActivity : Activity() {
 
 
     private class InAppMessageJSInterface(
-        private val context: Context,
-        val eventLogData: EventLogData,
-        val templateName: String?
+        private val context: Context, val eventLogData: EventLogData, val templateName: String?
     ) {
         @JavascriptInterface
         @Suppress("unused")
@@ -361,9 +345,7 @@ class NotiflyInAppMessageActivity : Activity() {
         }
 
         fun logInAppMessageButtonClick(
-            eventName: String,
-            buttonName: String,
-            extraData: JSONObject? = null
+            eventName: String, buttonName: String, extraData: JSONObject? = null
         ) {
             val eventParams = mutableMapOf<String, Any?>(
                 "type" to "message_event",

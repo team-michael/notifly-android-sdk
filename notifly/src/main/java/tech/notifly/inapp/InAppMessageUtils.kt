@@ -6,13 +6,14 @@ import android.os.Build
 import android.util.DisplayMetrics
 import android.view.WindowInsets
 import org.json.JSONObject
+import tech.notifly.inapp.models.SegmentOperator
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 object InAppMessageUtils {
-
     fun getViewDimensions(
-        modalProps: JSONObject?,
-        screenWidth: Float,
-        screenHeight: Float
+        modalProps: JSONObject?, screenWidth: Float, screenHeight: Float
     ): Pair<Float, Float> {
 
         val viewWidth: Float = when {
@@ -76,4 +77,10 @@ object InAppMessageUtils {
         }
     }
 
+    fun getKSTCalendarDateString(daysOffset: Int = 0): String {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, daysOffset)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return dateFormat.format(calendar.time)
+    }
 }

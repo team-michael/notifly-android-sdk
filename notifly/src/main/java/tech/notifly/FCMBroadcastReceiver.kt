@@ -26,7 +26,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.inapp.NotiflyInAppMessageActivity
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.OSUtils
 import java.net.HttpURLConnection
@@ -64,12 +63,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             val isAppInForeground = OSUtils.isAppInForeground(context)
             logPushDelivered(context, pushNotification, isAppInForeground)
             showPushNotification(context, pushNotification, isAppInForeground)
-        } else if (OSUtils.isAppInForeground(context)) {
-            extractInAppMessage(jsonObject)?.let { inAppMessage ->
-                showInAppMessage(context, inAppMessage)
-            }
         }
-
     }
 
     private fun extractPushNotification(jsonObject: JSONObject): PushNotification? {
@@ -91,20 +85,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             return null
         }
         return PushNotification(notiflyJSONObject)
-    }
-
-    private fun extractInAppMessage(jsonObject: JSONObject): InAppMessage? {
-        if (!jsonObject.has("notifly_message_type")
-            || jsonObject.getString("notifly_message_type") != "in-app-message"
-            || !jsonObject.has("notifly_in_app_message_data")
-        ) {
-            Logger.d(
-                "FCM message does not have keys for in-app message"
-            )
-            return null
-        }
-
-        return InAppMessage.fromFCMPayload(jsonObject)
     }
 
     private fun logPushDelivered(
@@ -211,26 +191,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         } else {
             Logger.w("POST_NOTIFICATIONS permission is not granted")
         }
-    }
-
-    private fun showInAppMessage(context: Context, inAppMessage: InAppMessage) {
-        val campaignId = inAppMessage.campaign_id
-        val url = inAppMessage.url
-        val notiflyMessageId = inAppMessage.notifly_message_id
-        val modalProperties = inAppMessage.modal_properties
-
-        val inAppMessageShowIntent = Intent(
-            context,
-            NotiflyInAppMessageActivity::class.java
-        ).apply {
-            putExtra("in_app_message_campaign_id", campaignId)
-            putExtra("in_app_message_url", url)
-            putExtra("notifly_message_id", notiflyMessageId)
-            putExtra("modal_properties", modalProperties)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        context.startActivity(inAppMessageShowIntent)
     }
 
     private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
