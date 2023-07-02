@@ -30,21 +30,16 @@ import kotlin.math.roundToInt
 
 class NotiflyInAppMessageActivity : Activity() {
     companion object {
+        @Volatile
         private var isActivityRunning = false
+        val isActive: Boolean
+            get() = isActivityRunning
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        isActivityRunning = true
         super.onCreate(savedInstanceState)
         Logger.d("NotiflyInAppMessageActivity.onCreate")
-        if (isActivityRunning) {
-            Logger.d(
-                "NotiflyInAppMessageActivity is already running, ignoring onCreate."
-            )
-            finish()
-            return
-        }
-
-        isActivityRunning = true
 
         val intent = intent
         val (url, modalProperties) = handleIntent(intent)

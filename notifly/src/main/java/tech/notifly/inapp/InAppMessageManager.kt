@@ -20,7 +20,9 @@ import kotlin.math.floor
 object InAppMessageManager {
     private const val REFRESH_TIMEOUT_MILLIS = 1000L * 5L // 5 seconds
 
+    @Volatile
     private var isInitialized = false
+
     private lateinit var campaigns: MutableList<Campaign>
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private var userData: UserData? = null
@@ -55,6 +57,7 @@ object InAppMessageManager {
                 params.forEach {
                     userData!!.userProperties!![it.key] = it.value
                 }
+                Logger.d("[Notifly] Updating user property to $userData")
             }
         } catch (e: Exception) {
             Logger.e("[Notifly] updateUserData failed", e)
@@ -168,6 +171,7 @@ object InAppMessageManager {
             if (templateName != null) {
                 val userProperties = userData!!.userProperties!!
                 if (userProperties["hide_in_app_message_$templateName"] == true) {
+                    Logger.d("InAppMessageManager: $templateName is hidden by user property.")
                     return false
                 }
             }

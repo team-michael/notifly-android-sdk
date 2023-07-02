@@ -33,10 +33,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -72,8 +72,7 @@ class SampleActivity : ComponentActivity() {
             NotiflyAndroidSDKTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     SampleVerticalList(BuildConfig.NOTIFLY_USERNAME, BuildConfig.NOTIFLY_PASSWORD)
                 }
@@ -90,13 +89,11 @@ class SampleActivity : ComponentActivity() {
         } else {
             // TODO: Inform user that that your app will not show notifications.
             // Show alert dialog
-            AlertDialog.Builder(this)
-                .setTitle("Notification permission")
+            AlertDialog.Builder(this).setTitle("Notification permission")
                 .setMessage("Michael requires notification permission to work properly.")
                 .setPositiveButton("OK") { dialog, _ ->
                     dialog.dismiss()
-                }
-                .show()
+                }.show()
         }
     }
 
@@ -104,31 +101,34 @@ class SampleActivity : ComponentActivity() {
         // This is only necessary for API level >= 33 (TIRAMISU)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    this, Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 // FCM SDK (and your app) can post notifications.
-                Toast.makeText(this, "Notification permission already granted!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Notification permission already granted!", Toast.LENGTH_SHORT)
+                    .show()
             } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
                 // Display an educational UI explaining to the user the features that will be enabled
                 // by them granting the POST_NOTIFICATION permission. This UI should provide the user
                 // "OK" and "No thanks" buttons. If the user selects "OK," directly request the permission.
                 // If the user selects "No thanks," allow the user to continue without notifications.
-                AlertDialog.Builder(this)
-                    .setTitle("Permission needed")
+                AlertDialog.Builder(this).setTitle("Permission needed")
                     .setMessage("This app needs the notification permission to send you notifications.")
                     .setPositiveButton("ok") { _, _ ->
                         // directly request the permission
-                        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_REQUEST_CODE)
-                    }
-                    .setNegativeButton("No thanks") { dialog, _ ->
+                        ActivityCompat.requestPermissions(
+                            this,
+                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                            PERMISSION_REQUEST_CODE
+                        )
+                    }.setNegativeButton("No thanks") { dialog, _ ->
                         dialog.dismiss()
-                    }
-                    .create().show()
+                    }.create().show()
             } else {
                 // Directly ask for the permission
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_REQUEST_CODE)
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_REQUEST_CODE
+                )
             }
         }
     }
@@ -143,16 +143,14 @@ class SampleActivity : ComponentActivity() {
             stateText.value = text
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(onLongPress = {
-                        copyTextToClipboard(context, label, stateText.value)
-                    })
-                }
-        ) {
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = {
+                    copyTextToClipboard(context, label, stateText.value)
+                })
+            }) {
             Text(
                 text = label,
                 fontSize = 12.sp,
@@ -178,16 +176,14 @@ class SampleActivity : ComponentActivity() {
             stateText.value = text
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(onLongPress = {
-                        copyTextToClipboard(context, label, stateText.value)
-                    })
-                }
-        ) {
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = {
+                    copyTextToClipboard(context, label, stateText.value)
+                })
+            }) {
             Text(
                 text = label,
                 fontSize = 12.sp,
@@ -216,8 +212,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyAuthUtil",
-                        "getCognitoIdToken"
+                        "tech.notifly.utils.NotiflyAuthUtil", "getCognitoIdToken"
                     )
                     val token = function.callSuspend(instance, username, password) as String?
 
@@ -239,8 +234,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyFirebaseUtil",
-                        "getFcmToken"
+                        "tech.notifly.utils.NotiflyFirebaseUtil", "getFcmToken"
                     )
                     val token = function.callSuspend(instance) as String?
 
@@ -262,8 +256,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyAuthUtil",
-                        "getNotiflyUserId"
+                        "tech.notifly.utils.NotiflyAuthUtil", "getNotiflyUserId"
                     )
                     val userId = function.callSuspend(instance, context) as String
 
@@ -306,48 +299,44 @@ class SampleActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         Notifly.trackEvent(
-                            context,
-                            "click_button_1",
-                            mapOf(
+                            context, "click_button_1", mapOf(
                                 "keyString" to "value1",
                                 "keyBoolean" to true,
                                 "keyInt" to 100,
-                            ),
-                            listOf(),
-                            true
+                            ), listOf()
                         )
-                    },
-                    modifier = Modifier.padding(top = 16.dp)
+                    }, modifier = Modifier.padding(top = 16.dp)
                 ) {
                     Text(text = "click_button_1 (trackEvent)")
                 }
 
                 Button(
-                    onClick = { Notifly.trackEvent(
-                        context,
-                        "click_button_2",
-                    ) },
-                    modifier = Modifier.padding(top = 8.dp)
+                    onClick = {
+                        Notifly.trackEvent(
+                            context,
+                            "click_button_2",
+                        )
+                    }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "click_button_2 (trackEvent)")
                 }
 
                 Button(
-                    onClick = { Notifly.trackEvent(
-                        context,
-                        "click_button_3",
-                        emptyMap(),
-                        listOf(
-                            "very_important_field"
-                        ),
-                    ) },
-                    modifier = Modifier.padding(top = 8.dp)
+                    onClick = {
+                        Notifly.trackEvent(
+                            context,
+                            "click_button_3",
+                            emptyMap(),
+                            listOf(
+                                "very_important_field"
+                            ),
+                        )
+                    }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "click_button_3 (trackEvent)")
                 }
 
-                TextField(
-                    value = userId,
+                TextField(value = userId,
                     onValueChange = { userId = it },
                     label = { Text("User ID") },
                     modifier = Modifier.padding(top = 8.dp)
@@ -357,13 +346,10 @@ class SampleActivity : ComponentActivity() {
                     onClick = {
                         if (userId.isNotEmpty()) {
                             val (instance, function) = reflectObjectFunction(
-                                "tech.notifly.Notifly",
-                                "setUserId"
+                                "tech.notifly.Notifly", "setUserId"
                             )
                             function.call(
-                                instance,
-                                context,
-                                userId
+                                instance, context, userId
                             )
                         } else {
                             Log.w(TAG, "Empty user ID input")
@@ -375,20 +361,17 @@ class SampleActivity : ComponentActivity() {
                             val dialog = builder.create()
                             dialog.show()
                         }
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
+                    }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "set user id")
                 }
 
-                OutlinedTextField(
-                    value = propertyName,
+                OutlinedTextField(value = propertyName,
                     onValueChange = { propertyName = it },
                     label = { Text("User Property Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = propertyValue,
+                OutlinedTextField(value = propertyValue,
                     onValueChange = { propertyValue = it },
                     label = { Text("User Property Value") },
                     modifier = Modifier.fillMaxWidth()
@@ -406,12 +389,10 @@ class SampleActivity : ComponentActivity() {
                             dialog.show()
                         } else {
                             Notifly.setUserProperties(
-                                context,
-                                mapOf(propertyName to propertyValue)
+                                context, mapOf(propertyName to propertyValue)
                             )
                         }
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
+                    }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Set User Property")
                 }
@@ -424,8 +405,7 @@ class SampleActivity : ComponentActivity() {
                 }
 
                 Button(
-                    onClick = { /* Handle button click */ },
-                    modifier = Modifier.padding(top = 8.dp)
+                    onClick = { /* Handle button click */ }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Dummy Button")
                 }
@@ -441,8 +421,7 @@ class SampleActivity : ComponentActivity() {
     }
 
     private fun reflectObjectFunction(
-        className: String,
-        functionName: String
+        className: String, functionName: String
     ): Pair<Any, KFunction<*>> {
         val objectClass: KClass<out Any> = Class.forName(className).kotlin
         val objectInstance: Any = objectClass.objectInstance
