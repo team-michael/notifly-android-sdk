@@ -37,8 +37,13 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isActivityRunning = true
         super.onCreate(savedInstanceState)
+        if (isActivityRunning) {
+            Logger.d("NotiflyInAppMessageActivity is already active")
+            rejectCreation()
+            return
+        }
+        isActivityRunning = true
         Logger.d("NotiflyInAppMessageActivity.onCreate")
 
         val intent = intent
@@ -71,17 +76,18 @@ class NotiflyInAppMessageActivity : Activity() {
         )
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-
+    override fun finish() {
         // Clear the flag to indicate the activity is no longer running
         isActivityRunning = false
-    }
 
-    override fun finish() {
         super.finish()
         // Remove the animation when the activity gets destroyed
         overridePendingTransition(0, 0)
+    }
+
+    private fun rejectCreation() {
+        Logger.d("Rejecting creation of NotiflyInAppMessageActivity")
+        super.finish()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
