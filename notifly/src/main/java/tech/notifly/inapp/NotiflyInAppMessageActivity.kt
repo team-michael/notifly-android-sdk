@@ -251,6 +251,7 @@ class NotiflyInAppMessageActivity : Activity() {
         val bottomRightRadiusDp = modalProperties.optInt("borderBottomRightRadius", 0)
         if (topLeftRadiusDp > 0 || topRightRadiusDp > 0 || bottomLeftRadiusDp > 0 || bottomRightRadiusDp > 0) {
             webView.clipToOutline = true
+            webView.setBackgroundColor(Color.TRANSPARENT)
             webView.outlineProvider = object : ViewOutlineProvider() {
                 override fun getOutline(view: View?, outline: Outline?) {
                     view?.let {
