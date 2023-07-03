@@ -1,7 +1,8 @@
 package tech.notifly.inapp
 
 import android.content.Context
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tech.notifly.Logger
@@ -40,7 +41,7 @@ object InAppMessageManager {
             return
         }
 
-        GlobalScope.launch {
+        CoroutineScope(Dispatchers.Main).launch {
             delay(timeoutMillis)
             sync(context)
         }
