@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package tech.notifly
+package tech.notifly.push
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -26,8 +26,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.push.PushNotification
-import tech.notifly.push.PushNotificationOpenActivity
+import tech.notifly.Notifly
+import tech.notifly.R
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.OSUtils

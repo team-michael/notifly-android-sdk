@@ -22,7 +22,7 @@
             android:launchMode="singleTask" />
 
         <receiver
-            android:name=".FCMBroadcastReceiver"
+            android:name=".push.FCMBroadcastReceiver"
             android:exported="true"
             android:permission="com.google.android.c2dm.permission.SEND">
             <intent-filter android:priority="999">
