@@ -2,7 +2,6 @@ package tech.notifly.utils
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import tech.notifly.Logger
 
 /**
  * Static values used internally

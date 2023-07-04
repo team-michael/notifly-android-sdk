@@ -1,30 +1,16 @@
 package tech.notifly.inapp
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.Outline
-import android.graphics.Path
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.view.ViewOutlineProvider
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.constraintlayout.widget.ConstraintLayout
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.json.JSONObject
-import tech.notifly.Logger
+import tech.notifly.utils.Logger
 import tech.notifly.R
+import tech.notifly.inapp.models.EventLogData
+import tech.notifly.inapp.views.NotiflyWebView
+import tech.notifly.inapp.views.TouchInterceptorLayout
 import tech.notifly.utils.NotiflyLogUtil
-import tech.notifly.utils.NotiflyUserUtil
 import kotlin.math.roundToInt
 
 
@@ -46,6 +32,8 @@ class NotiflyInAppMessageActivity : Activity() {
         isActivityRunning = true
         Logger.d("NotiflyInAppMessageActivity.onCreate")
 
+        setContentView(R.layout.activity_notifly_in_app_message)
+
         val intent = intent
         val (url, modalProperties) = handleIntent(intent)
         if (url == null) {
@@ -54,16 +42,10 @@ class NotiflyInAppMessageActivity : Activity() {
         val eventLogData = getEventLogData(intent)
         val templateName: String? = modalProperties?.optString("template_name")
 
-        setContentView(R.layout.activity_notifly_in_app_message)
-        val webView: WebView = findViewById(R.id.webView)
-        setupWebView(webView, eventLogData, templateName)
-
-        val density = getDensity()
-        Logger.d("density: $density")
-
-        handleViewDimensions(webView, modalProperties, density)
-
-        webView.loadUrl(url)
+        findViewById<NotiflyWebView>(R.id.webView).apply {
+            initialize(modalProperties, eventLogData, templateName)
+            loadUrl(url)
+        }
         setupTouchInterceptorLayout(modalProperties?.optDouble("backgroundOpacity", 0.2))
 
         NotiflyLogUtil.logEvent(
@@ -88,41 +70,6 @@ class NotiflyInAppMessageActivity : Activity() {
     private fun rejectCreation() {
         Logger.d("Rejecting creation of NotiflyInAppMessageActivity")
         super.finish()
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView(webView: WebView, eventLogData: EventLogData, templateName: String?) {
-        webView.settings.javaScriptEnabled = true
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
-                super.onPageFinished(view, url)
-                // Inject JavaScript after page loaded, otherwise it will not be able to find the button trigger
-                val injectedJavaScript = """
-                    const notifly_button_trigger = document.getElementById('notifly-button-trigger');
-                    if (notifly_button_trigger) {
-                        notifly_button_trigger.addEventListener('click', function(event){
-                            if (!event.notifly_button_click_type) return;
-                            window.Android.postMessage(JSON.stringify({
-                                type: event.notifly_button_click_type,
-                                button_name: event.notifly_button_name,
-                                link: event.notifly_button_click_link ?? null,
-                                extra_data: event.notifly_extra_data ?? null,
-                            }));
-                        });
-                    }
-                """.trimIndent()
-
-                webView.evaluateJavascript(injectedJavaScript, null)
-            }
-        }
-        webView.webChromeClient = WebChromeClient()
-        webView.addJavascriptInterface(
-            InAppMessageJSInterface(
-                this,
-                eventLogData,
-                templateName,
-            ), "Android"
-        )
     }
 
     private fun setupTouchInterceptorLayout(backgroundOpacity: Double?) {
@@ -159,212 +106,10 @@ class NotiflyInAppMessageActivity : Activity() {
         return Pair(url, modalProperties)
     }
 
-    data class EventLogData(
-        val campaignId: String,
-        val notiflyMessageId: String?,
-    )
-
     private fun getEventLogData(intent: Intent): EventLogData {
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
 
         return EventLogData(campaignId, notiflyMessageId)
-    }
-
-    private fun handleViewDimensions(
-        webView: WebView, modalProperties: JSONObject?, density: Float
-    ) {
-        val (screenWidth, screenHeight) = InAppMessageUtils.getScreenWidthAndHeight(this, density)
-        val (widthDp, heightDp) = InAppMessageUtils.getViewDimensions(
-            modalProperties,
-            screenWidth,
-            screenHeight,
-        )
-
-        Logger.d("screenWidth: $screenWidth, screenHeight: $screenHeight")
-        Logger.d("In-app message widthDp: $widthDp, heightDp: $heightDp")
-
-        modalProperties?.let { properties ->
-            val position = properties.optString("position", "full")
-            Logger.d("In-app message position: $position")
-            setPositionAndSize(webView, widthDp, heightDp, density, position)
-            setBorderRadius(webView, properties, density)
-        }
-    }
-
-    private fun getDensity(): Float {
-        return resources.displayMetrics.density
-    }
-
-    private fun setPositionAndSize(
-        webView: WebView, widthDp: Float, heightDp: Float, density: Float, position: String
-    ) {
-
-        val layoutParams = ConstraintLayout.LayoutParams(
-            (widthDp * density).roundToInt(), (heightDp * density).roundToInt()
-        )
-
-        when (position) {
-            "top" -> {
-                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-
-            "bottom" -> {
-                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-
-            "left" -> {
-                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-
-            "right" -> {
-                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-
-            else -> { // default to center. same as full.
-                layoutParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-
-        }
-
-        webView.layoutParams = layoutParams
-    }
-
-    @Suppress("DEPRECATION")
-    private fun setBorderRadius(
-        webView: WebView, modalProperties: JSONObject, density: Float
-    ) {
-        val topLeftRadiusDp = modalProperties.optInt("borderTopLeftRadius", 0)
-        val topRightRadiusDp = modalProperties.optInt("borderTopRightRadius", 0)
-        val bottomLeftRadiusDp = modalProperties.optInt("borderBottomLeftRadius", 0)
-        val bottomRightRadiusDp = modalProperties.optInt("borderBottomRightRadius", 0)
-        if (topLeftRadiusDp > 0 || topRightRadiusDp > 0 || bottomLeftRadiusDp > 0 || bottomRightRadiusDp > 0) {
-            webView.clipToOutline = true
-            webView.setBackgroundColor(Color.TRANSPARENT)
-            webView.outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(view: View?, outline: Outline?) {
-                    view?.let {
-                        val topLeftRadiusPx = (topLeftRadiusDp * density).roundToInt()
-                        val topRightRadiusPx = (topRightRadiusDp * density).roundToInt()
-                        val bottomLeftRadiusPx = (bottomLeftRadiusDp * density).roundToInt()
-                        val bottomRightRadiusPx = (bottomRightRadiusDp * density).roundToInt()
-                        val path = Path()
-                        path.addRoundRect(
-                            0f, 0f, it.width.toFloat(), it.height.toFloat(), floatArrayOf(
-                                topLeftRadiusPx.toFloat(),
-                                topLeftRadiusPx.toFloat(),
-                                topRightRadiusPx.toFloat(),
-                                topRightRadiusPx.toFloat(),
-                                bottomRightRadiusPx.toFloat(),
-                                bottomRightRadiusPx.toFloat(),
-                                bottomLeftRadiusPx.toFloat(),
-                                bottomLeftRadiusPx.toFloat()
-                            ), Path.Direction.CW
-                        )
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            outline?.setPath(path)
-                        } else {
-                            outline?.setConvexPath(path)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-    private class InAppMessageJSInterface(
-        private val context: Context, val eventLogData: EventLogData, val templateName: String?
-    ) {
-        @JavascriptInterface
-        @Suppress("unused")
-        fun postMessage(json: String) {
-            Logger.d("In-app message postMessage: $json")
-            val data = JSONObject(json)
-            val type = data.getString("type")
-            val buttonName = data.getString("button_name")
-            val link = data.optString("link", null.toString())
-            val extraData = data.optJSONObject("extra_data")
-            handleButtonClick(type, buttonName, link, extraData, templateName)
-        }
-
-        fun handleButtonClick(
-            type: String,
-            buttonName: String,
-            link: String?,
-            extraData: JSONObject?,
-            templateName: String?
-        ) {
-            when (type) {
-                "close" -> {
-                    Logger.d("In-app message close button clicked")
-                    logInAppMessageButtonClick("close_button_click", buttonName)
-                    (context as Activity).finish()
-                }
-
-                "main_button" -> {
-                    Logger.d("In-app message main button clicked")
-                    logInAppMessageButtonClick("main_button_click", buttonName)
-                    if (link != null && link != "null") {
-                        Logger.d("In-app message main button link: link")
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
-                        context.startActivity(intent)
-                    }
-                    (context as Activity).finish()
-                }
-
-                "hide_in_app_message" -> {
-                    Logger.d("In-app message hide button clicked")
-                    logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
-                    templateName?.let {
-                        val key = "hide_in_app_message_$it"
-                        CoroutineScope(Dispatchers.IO).launch {
-                            NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
-                        }
-                    }
-                    (context as Activity).finish()
-                }
-
-                "survey_submit_button" -> {
-                    Logger.d("In-app message survey submit button clicked")
-                    logInAppMessageButtonClick("survey_submit_button_click", buttonName, extraData)
-                    (context as Activity).finish()
-                }
-            }
-        }
-
-        fun logInAppMessageButtonClick(
-            eventName: String, buttonName: String, extraData: JSONObject? = null
-        ) {
-            val eventParams = mutableMapOf<String, Any?>(
-                "type" to "message_event",
-                "channel" to "in-app-message",
-                "button_name" to buttonName,
-                "campaign_id" to eventLogData.campaignId,
-                "notifly_message_id" to eventLogData.notiflyMessageId,
-            )
-            if (eventName == "survey_submit_button_click" && extraData != null) {
-                eventParams["notifly_extra_data"] = extraData
-            }
-            NotiflyLogUtil.logEvent(
-                context,
-                eventName,
-                eventParams,
-                listOf(),
-                true,
-            )
-        }
     }
 }

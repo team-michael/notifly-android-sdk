@@ -13,10 +13,11 @@
         <activity
             android:name=".inapp.NotiflyInAppMessageActivity"
             android:exported="true"
+            android:hardwareAccelerated="true"
             android:theme="@style/Theme.CustomTransparent" />
 
         <activity
-            android:name=".PushNotificationOpenActivity"
+            android:name=".push.PushNotificationOpenActivity"
             android:exported="true"
             android:launchMode="singleTask" />
 

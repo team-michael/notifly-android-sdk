@@ -2,7 +2,7 @@ package tech.notifly.inapp.models
 
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.Logger
+import tech.notifly.utils.Logger
 
 data class EventIntermediateCounts(
     val dt: String, val name: String, val count: Int, val event_params: Map<String, Any?>
@@ -35,6 +35,11 @@ data class EventIntermediateCounts(
         }
     }
 }
+
+data class EventLogData(
+    val campaignId: String,
+    val notiflyMessageId: String?,
+)
 
 data class UserData(
     val platform: String?,

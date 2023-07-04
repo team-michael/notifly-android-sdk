@@ -1,4 +1,4 @@
-package tech.notifly.inapp
+package tech.notifly.inapp.views
 
 import android.content.Context
 import android.util.AttributeSet
@@ -8,9 +8,7 @@ import android.webkit.WebView
 import androidx.constraintlayout.widget.ConstraintLayout
 
 class TouchInterceptorLayout @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr) {
     var onTouchOutsideWebView: (() -> Unit)? = null
 

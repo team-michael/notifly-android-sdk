@@ -10,11 +10,11 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import tech.notifly.Logger
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflyIdUtil.Namespace
+import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflyLogUtil {
 
@@ -35,9 +35,13 @@ object NotiflyLogUtil {
             return
         }
 
-        InAppMessageManager.ingestEventAndMaybeScheduleInAppMessages(
-            context, eventName, eventParams, isInternalEvent, segmentationEventParamKeys
-        )
+        if (OSUtils.isAppInForeground(context)) {
+            InAppMessageManager.ingestEventAndMaybeScheduleInAppMessages(
+                context, eventName, eventParams, isInternalEvent, segmentationEventParamKeys
+            )
+        } else {
+            Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
+        }
 
         /**
          * Required Parameters:
