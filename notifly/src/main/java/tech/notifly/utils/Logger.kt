@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.utils
 
 import android.util.Log
 import okhttp3.logging.HttpLoggingInterceptor
@@ -29,7 +29,7 @@ object Logger {
     }
 
     fun setLogLevel(level: Int) {
-        this.level = level
+        Logger.level = level
         httpLogLevel = when(level){
             Log.VERBOSE, Log.DEBUG -> HttpLoggingInterceptor.Level.BODY
             Log.INFO -> HttpLoggingInterceptor.Level.HEADERS

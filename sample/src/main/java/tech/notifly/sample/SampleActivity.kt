@@ -212,7 +212,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyAuthUtil", "getCognitoIdToken"
+                        "tech.notifly.utils.auth.NotiflyAuthUtil", "getCognitoIdToken"
                     )
                     val token = function.callSuspend(instance, username, password) as String?
 
@@ -256,7 +256,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyAuthUtil", "getNotiflyUserId"
+                        "tech.notifly.utils.auth.NotiflyAuthUtil", "getNotiflyUserId"
                     )
                     val userId = function.callSuspend(instance, context) as String
 

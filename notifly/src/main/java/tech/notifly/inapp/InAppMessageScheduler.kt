@@ -2,7 +2,7 @@ package tech.notifly.inapp
 
 import android.content.Context
 import android.content.Intent
-import tech.notifly.Logger
+import tech.notifly.utils.Logger
 import tech.notifly.inapp.models.Campaign
 import java.util.UUID
 

@@ -1,4 +1,4 @@
-package tech.notifly.utils
+package tech.notifly.utils.auth
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -7,10 +7,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import tech.notifly.Logger
+import tech.notifly.utils.Logger
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.N
+import tech.notifly.utils.NotiflyFirebaseUtil
+import tech.notifly.utils.NotiflyIdUtil
 
 internal object NotiflyAuthUtil {
 
@@ -92,7 +95,7 @@ internal object NotiflyAuthUtil {
                 "[Notifly] password not found. You should call Notifly.initialize before this."
             )
 
-        val newCognitoIdToken = NotiflyAuthUtil.getCognitoIdToken(username, password)
+        val newCognitoIdToken = getCognitoIdToken(username, password)
         NotiflyStorage.put(context, NotiflyStorageItem.COGNITO_ID_TOKEN, newCognitoIdToken)
         return newCognitoIdToken
     }

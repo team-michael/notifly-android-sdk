@@ -6,11 +6,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tech.notifly.Logger
-import tech.notifly.NotificationAuthorizationStatus
+import tech.notifly.utils.auth.NotificationAuthorizationStatus
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflyUserUtil {
 

@@ -6,13 +6,13 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.Logger
 import tech.notifly.extensions.await
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.UserData
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflySyncStateUtil {
     data class SyncStateOutput(

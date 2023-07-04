@@ -1,4 +1,4 @@
-package tech.notifly
+package tech.notifly.push
 
 import org.json.JSONObject
 

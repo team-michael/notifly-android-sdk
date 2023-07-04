@@ -1,11 +1,13 @@
 package tech.notifly.inapp
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import tech.notifly.Logger
+import tech.notifly.utils.Logger
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
@@ -16,9 +18,13 @@ import tech.notifly.inapp.models.SegmentOperator
 import tech.notifly.inapp.models.UserData
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
+import tech.notifly.utils.OSUtils
 import kotlin.math.floor
 
 object InAppMessageManager {
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
+    val IS_IN_APP_MESSAGE_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
     private const val REFRESH_TIMEOUT_MILLIS = 1000L * 5L // 5 seconds
 
     @Volatile
@@ -30,11 +36,20 @@ object InAppMessageManager {
 
     @Throws(NullPointerException::class)
     suspend fun initialize(context: Context) {
+        if (!IS_IN_APP_MESSAGE_SUPPORTED) {
+            Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
+            return
+        }
         sync(context)
         isInitialized = true
     }
 
     fun refresh(context: Context, timeoutMillis: Long = REFRESH_TIMEOUT_MILLIS) {
+        if (!IS_IN_APP_MESSAGE_SUPPORTED) {
+            Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
+            return
+        }
+
         // Fetch states from server again after timeoutMillis
         if (!isInitialized) {
             Logger.e("[Notifly] InAppMessageManager is not initialized.")
@@ -48,6 +63,11 @@ object InAppMessageManager {
     }
 
     fun updateUserData(params: Map<String, Any?>) {
+        if (!IS_IN_APP_MESSAGE_SUPPORTED) {
+            Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
+            return
+        }
+
         if (!isInitialized) {
             Logger.e("[Notifly] InAppMessageManager is not initialized.")
             return
@@ -72,18 +92,27 @@ object InAppMessageManager {
         isInternalEvent: Boolean,
         segmentationEventParamKeys: List<String>? = null
     ) {
+        if (!IS_IN_APP_MESSAGE_SUPPORTED) {
+            Logger.i("[Notifly] In app message feature is not supported on this device.")
+            return
+        }
+
         if (!isInitialized) {
             Logger.e("[Notifly] InAppMessageManager is not initialized.")
             return
         }
 
-        val sanitizedEventName =
-            if (isInternalEvent) "${N.INTERNAL_EVENT_PREFIX}$eventName" else eventName
-
-        ingestEvent(sanitizedEventName, eventParams, segmentationEventParamKeys)
-        getCampaignsToSchedule(campaigns, sanitizedEventName, eventParams).forEach {
-            InAppMessageScheduler.schedule(context, it)
+        val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
+        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
+        if (OSUtils.isAppInForeground(context)) {
+            scheduleCampaigns(context, campaigns, sanitizedEventName, eventParams)
+        } else {
+            Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
         }
+    }
+
+    private fun sanitizeEventName(eventName: String, isInternalEvent: Boolean): String {
+        return if (isInternalEvent) "${N.INTERNAL_EVENT_PREFIX}$eventName" else eventName
     }
 
     @Throws(NullPointerException::class)
@@ -99,7 +128,7 @@ object InAppMessageManager {
         Logger.d("userData: $userData")
     }
 
-    private fun ingestEvent(
+    private fun ingestEventInternal(
         eventName: String,
         eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String>? = null
@@ -127,6 +156,17 @@ object InAppMessageManager {
                     dt = formattedDate, name = eventName, count = 1, event_params = eventParams
                 )
             )
+        }
+    }
+
+    private fun scheduleCampaigns(
+        context: Context,
+        campaigns: List<Campaign>,
+        eventName: String,
+        eventParams: Map<String, Any?>
+    ) {
+        getCampaignsToSchedule(campaigns, eventName, eventParams).forEach {
+            InAppMessageScheduler.schedule(context, it)
         }
     }
 
