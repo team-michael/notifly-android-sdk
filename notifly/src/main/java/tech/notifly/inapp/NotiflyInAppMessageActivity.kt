@@ -5,17 +5,19 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import org.json.JSONObject
-import tech.notifly.utils.Logger
 import tech.notifly.R
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.inapp.views.NotiflyWebView
 import tech.notifly.inapp.views.TouchInterceptorLayout
+import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import kotlin.math.roundToInt
 
 
 class NotiflyInAppMessageActivity : Activity() {
     companion object {
+        private const val DEFAULT_BACKGROUD_OPACITY = 0.2
+
         @Volatile
         private var isActivityRunning = false
         val isActive: Boolean
@@ -39,14 +41,33 @@ class NotiflyInAppMessageActivity : Activity() {
         if (url == null) {
             return
         }
+
         val eventLogData = getEventLogData(intent)
         val templateName: String? = modalProperties?.optString("template_name")
 
+        this.setVisible(false)
+
         findViewById<NotiflyWebView>(R.id.webView).apply {
-            initialize(modalProperties, eventLogData, templateName)
+            initialize(modalProperties,
+                eventLogData,
+                templateName,
+                { this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(modalProperties, eventLogData) },
+                { this@NotiflyInAppMessageActivity.onWebViewLoadedWithError() })
             loadUrl(url)
         }
-        setupTouchInterceptorLayout(modalProperties?.optDouble("backgroundOpacity", 0.2))
+    }
+
+    private fun onWebViewLoadedComplete(modalProperties: JSONObject?, eventLogData: EventLogData) {
+        val shouldInterceptTouchEvent =
+            modalProperties?.optBoolean("dismissCTATapped", false) ?: false
+        val backgroundOpacity =
+            modalProperties?.optDouble("backgroundOpacity", DEFAULT_BACKGROUD_OPACITY)
+                ?: DEFAULT_BACKGROUD_OPACITY
+        setupTouchInterceptorLayout(
+            shouldInterceptTouchEvent, backgroundOpacity
+        )
+
+        this.setVisible(true)
 
         NotiflyLogUtil.logEvent(
             this, "in_app_message_show", mapOf(
@@ -58,11 +79,17 @@ class NotiflyInAppMessageActivity : Activity() {
         )
     }
 
+    private fun onWebViewLoadedWithError() {
+        Logger.e("Error loading in app message")
+        finish()
+    }
+
     override fun finish() {
         // Clear the flag to indicate the activity is no longer running
         isActivityRunning = false
 
         super.finish()
+
         // Remove the animation when the activity gets destroyed
         overridePendingTransition(0, 0)
     }
@@ -72,17 +99,22 @@ class NotiflyInAppMessageActivity : Activity() {
         super.finish()
     }
 
-    private fun setupTouchInterceptorLayout(backgroundOpacity: Double?) {
+    private fun setupTouchInterceptorLayout(
+        shouldInterceptTouchEvent: Boolean, backgroundOpacity: Double
+    ) {
         val touchInterceptorLayout =
             findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
 
-        val cappedOpacity = backgroundOpacity?.coerceIn(0.0, 1.0) ?: 0.2
-        val backgroundColor = Color.argb(
-            (cappedOpacity * 255).roundToInt(), 0, 0, 0
+        touchInterceptorLayout.setBackgroundColor(
+            Color.argb(
+                (backgroundOpacity.coerceIn(0.0, 1.0) * 255).roundToInt(), 0, 0, 0
+            )
         )
-        touchInterceptorLayout.setBackgroundColor(backgroundColor)
-        touchInterceptorLayout.onTouchOutsideWebView = {
-            finish()
+
+        if (shouldInterceptTouchEvent) {
+            touchInterceptorLayout.onTouchOutsideWebView = {
+                finish()
+            }
         }
     }
 

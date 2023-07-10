@@ -13,6 +13,10 @@ class TouchInterceptorLayout @JvmOverloads constructor(
     var onTouchOutsideWebView: (() -> Unit)? = null
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        if (onTouchOutsideWebView == null) {
+            return super.onInterceptTouchEvent(ev)
+        }
+
         onTouchOutsideWebView?.let {
             for (i in 0 until childCount) {
                 val child = getChildAt(i)
