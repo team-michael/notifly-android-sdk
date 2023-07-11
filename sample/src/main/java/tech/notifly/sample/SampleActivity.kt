@@ -325,15 +325,12 @@ class SampleActivity : ComponentActivity() {
                     onClick = {
                         Notifly.trackEvent(
                             context,
-                            "click_button_3",
+                            "good",
                             emptyMap(),
-                            listOf(
-                                "very_important_field"
-                            ),
                         )
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text(text = "click_button_3 (trackEvent)")
+                    Text(text = "good")
                 }
 
                 TextField(value = userId,

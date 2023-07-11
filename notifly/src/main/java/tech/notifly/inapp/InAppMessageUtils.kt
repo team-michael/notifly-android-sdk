@@ -3,10 +3,8 @@ package tech.notifly.inapp
 import android.app.Activity
 import android.graphics.Point
 import android.os.Build
-import android.util.DisplayMetrics
 import android.view.WindowInsets
 import org.json.JSONObject
-import tech.notifly.inapp.models.SegmentOperator
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -17,19 +15,19 @@ object InAppMessageUtils {
     ): Pair<Float, Float> {
 
         val viewWidth: Float = when {
-            modalProps == null -> screenWidth.toFloat()
+            modalProps == null -> screenWidth
             modalProps.has("width") -> modalProps.getInt("width").toFloat()
             modalProps.has("width_vw") -> screenWidth * (modalProps.getInt("width_vw") / 100f)
             modalProps.has("width_vh") -> screenHeight * (modalProps.getInt("width_vh") / 100f)
-            else -> screenWidth.toFloat()
+            else -> screenWidth
         }
 
         val viewHeight: Float = when {
-            modalProps == null -> screenHeight.toFloat()
+            modalProps == null -> screenHeight
             modalProps.has("height") -> modalProps.getInt("height").toFloat()
             modalProps.has("height_vh") -> screenHeight * (modalProps.getInt("height_vh") / 100f)
             modalProps.has("height_vw") -> screenWidth * (modalProps.getInt("height_vw") / 100f)
-            else -> screenHeight.toFloat()
+            else -> screenHeight
         }
 
         val minWidth = getNullableIntProperty(modalProps, "min_width")

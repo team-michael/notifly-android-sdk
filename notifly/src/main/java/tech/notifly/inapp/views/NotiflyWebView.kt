@@ -1,5 +1,6 @@
 package tech.notifly.inapp.views
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -7,8 +8,12 @@ import android.graphics.Canvas
 import android.graphics.Path
 import android.graphics.RectF
 import android.net.Uri
+import android.net.http.SslError
 import android.util.AttributeSet
 import android.webkit.JavascriptInterface
+import android.webkit.SslErrorHandler
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -16,9 +21,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import tech.notifly.utils.Logger
 import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
+import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyUserUtil
 import kotlin.math.roundToInt
@@ -30,17 +35,54 @@ class NotiflyWebView @JvmOverloads constructor(
     private val rect = RectF()
     private var radii: FloatArray? = null
 
+    @SuppressLint("SetJavaScriptEnabled")
     fun initialize(
-        modalProperties: JSONObject?, eventLogData: EventLogData, templateName: String?
+        modalProperties: JSONObject?,
+        eventLogData: EventLogData,
+        templateName: String?,
+        onPageFinishedCallback: () -> Unit,
+        onReceivedErrorCallback: () -> Unit
     ) {
         this.setLayerType(LAYER_TYPE_HARDWARE, null)
         this.settings.javaScriptEnabled = true
         this.webViewClient = object : WebViewClient() {
+            private var pageLoadedSuccessfully = true
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                evaluateJavascript(javascriptToInject, null)
+                if (pageLoadedSuccessfully) {
+                    evaluateJavascript(javascriptToInject, null)
+                    onPageFinishedCallback()
+                } else {
+                    onReceivedErrorCallback()
+                }
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onReceivedError(
+                view: WebView?, errorCode: Int, description: String?, failingUrl: String?
+            ) {
+                pageLoadedSuccessfully = false
+                Logger.w("NotiflyWebView.onReceivedError: $errorCode, $description, $failingUrl")
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?
+            ) {
+                super.onReceivedHttpError(view, request, errorResponse)
+                pageLoadedSuccessfully = false
+                Logger.w("NotiflyWebView.onReceivedHttpError: $request, $errorResponse")
+            }
+
+            override fun onReceivedSslError(
+                view: WebView?, handler: SslErrorHandler?, error: SslError?
+            ) {
+                super.onReceivedSslError(view, handler, error)
+                pageLoadedSuccessfully = false
+                Logger.w("NotiflyWebView.onReceivedSslError: $error")
             }
         }
+
         this.addJavascriptInterface(
             NotiflyJavascriptInterface(
                 context, eventLogData, templateName
