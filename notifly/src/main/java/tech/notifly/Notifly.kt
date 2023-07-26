@@ -74,6 +74,10 @@ object Notifly {
         }
     }
 
+    @JvmStatic
+    fun disableInAppMessage() {
+        InAppMessageManager.disable()
+    }
 
     @JvmStatic
     fun setUserProperties(context: Context, params: Map<String, Any?>) {

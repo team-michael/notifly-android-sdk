@@ -6,10 +6,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tech.notifly.utils.auth.NotificationAuthorizationStatus
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.auth.NotificationAuthorizationStatus
 import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflyUserUtil {
@@ -64,11 +64,15 @@ object NotiflyUserUtil {
             val notifAuthStatus = getNotifAuthStatus(context).value
 
             val openAppEventParams = mapOf(
-                "platform" to platform, "device_model" to deviceModel, "properties" to mapOf(
+                "platform" to platform,
+                "device_model" to deviceModel,
+                "properties" to mapOf(
                     "device_brand" to deviceBrand,
                     "api_level" to apiLevel,
                     "user_agent" to userAgent
-                ), "notif_auth_status" to notifAuthStatus
+                ),
+                "notif_auth_status" to notifAuthStatus,
+                "in_app_message_disabled" to InAppMessageManager.disabled
             )
 
             NotiflyLogUtil.logEvent(
