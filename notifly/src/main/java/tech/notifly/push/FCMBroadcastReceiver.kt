@@ -7,7 +7,6 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -80,9 +79,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
         val notiflyString = jsonObject.getString("notifly")
         val notiflyJSONObject = JSONObject(notiflyString)
-        if (!notiflyJSONObject.has("type")
-            || notiflyJSONObject.getString("type") != "push-notification"
-        ) {
+        if (!notiflyJSONObject.has("type") || notiflyJSONObject.getString("type") != "push-notification") {
             Logger.d(
                 "FCM message is not a Notifly push notification"
             )
@@ -92,32 +89,24 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     }
 
     private fun logPushDelivered(
-        context: Context,
-        pushNotification: PushNotification,
-        isAppInForeground: Boolean
+        context: Context, pushNotification: PushNotification, isAppInForeground: Boolean
     ) {
         val campaignId = pushNotification.campaign_id
         val notiflyMessageId = pushNotification.notifly_message_id
 
         NotiflyLogUtil.logEvent(
-            context,
-            "push_delivered",
-            mapOf(
+            context, "push_delivered", mapOf(
                 "type" to "message_event",
                 "channel" to "push-notification",
                 "campaign_id" to campaignId,
                 "notifly_message_id" to notiflyMessageId,
                 "status" to if (isAppInForeground) "foreground" else "background"
-            ),
-            listOf(),
-            true
+            ), listOf(), true
         )
     }
 
     private fun showPushNotification(
-        context: Context,
-        pushNotification: PushNotification,
-        isAppInForeground: Boolean
+        context: Context, pushNotification: PushNotification, isAppInForeground: Boolean
     ) {
         val title = pushNotification.title
         val body = pushNotification.body
@@ -143,13 +132,12 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             if (it == 0) requestCodeCounter else it
         }
 
-        val pendingIntent = TaskStackBuilder.create(context).run {
-            addNextIntentWithParentStack(notificationOpenIntent)
-            getPendingIntent(
-                uniqueRequestCode,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            uniqueRequestCode,
+            notificationOpenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelName = "Notifly Notification Channel"
@@ -165,19 +153,15 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
         val notificationIcon = getNotificationIcon(context)
         val builder = NotificationCompat.Builder(context, Notifly.NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(notificationIcon)
-            .setContentTitle(title)
-            .setContentText(body)
+            .setSmallIcon(notificationIcon).setContentTitle(title).setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
+            .setContentIntent(pendingIntent).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         if (bitmap != null) {
             builder.setStyle(
-                NotificationCompat.BigPictureStyle()
-                    .bigPicture(bitmap)
+                NotificationCompat.BigPictureStyle().bigPicture(bitmap)
                     .bigLargeIcon(null as Bitmap?)
             )
         }
@@ -188,8 +172,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val notificationId = notiflyMessageId?.toIntOrNull() ?: 1
         // Show the notification
         if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
+                context, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             NotificationManagerCompat.from(context).notify(notificationId, notification)
@@ -217,15 +200,14 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val packageName = context.packageName
         val notificationIconName = "ic_stat_notifly_default"
 
-        @SuppressLint("ResourceType")
-        val notificationIconResId = res.getIdentifier(notificationIconName, "drawable", packageName)
+        @SuppressLint("ResourceType") val notificationIconResId =
+            res.getIdentifier(notificationIconName, "drawable", packageName)
         return if (notificationIconResId != 0) {
             notificationIconResId
         } else {
             // return launcher icon
             val appInfo = context.packageManager.getApplicationInfo(
-                context.packageName,
-                PackageManager.GET_META_DATA
+                context.packageName, PackageManager.GET_META_DATA
             )
             val launcherIcon = appInfo.icon
             if (launcherIcon != 0) {
@@ -252,17 +234,16 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
     }
 
-    private suspend fun loadImage(imageUrl: String?): Bitmap? =
-        suspendCoroutine { continuation ->
-            if (imageUrl != null) {
-                GlobalScope.launch {
-                    val bitmap = getBitmapFromURL(imageUrl)
-                    Logger.d("FCMBroadcastReceiver bitmap: $bitmap")
-                    continuation.resume(bitmap)
-                }
-            } else {
-                continuation.resume(null)
+    private suspend fun loadImage(imageUrl: String?): Bitmap? = suspendCoroutine { continuation ->
+        if (imageUrl != null) {
+            GlobalScope.launch {
+                val bitmap = getBitmapFromURL(imageUrl)
+                Logger.d("FCMBroadcastReceiver bitmap: $bitmap")
+                continuation.resume(bitmap)
             }
+        } else {
+            continuation.resume(null)
         }
+    }
 
 }
