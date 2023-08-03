@@ -38,6 +38,7 @@ import kotlin.coroutines.suspendCoroutine
 
 class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     companion object {
+        @Volatile
         var requestCodeCounter = 0
     }
 
@@ -128,6 +129,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
 
         val notificationOpenIntent =
             Intent(context, PushNotificationOpenActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra("title", title)
                 putExtra("body", body)
                 putExtra("url", url)
