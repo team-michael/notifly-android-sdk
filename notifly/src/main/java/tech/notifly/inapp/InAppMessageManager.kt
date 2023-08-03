@@ -7,7 +7,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import tech.notifly.utils.Logger
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
@@ -16,6 +15,7 @@ import tech.notifly.inapp.models.SegmentConditionUnitType
 import tech.notifly.inapp.models.SegmentConditionValueType
 import tech.notifly.inapp.models.SegmentOperator
 import tech.notifly.inapp.models.UserData
+import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.OSUtils
@@ -27,6 +27,8 @@ object InAppMessageManager {
 
     private const val REFRESH_TIMEOUT_MILLIS = 1000L * 5L // 5 seconds
 
+    var disabled: Boolean = false
+
     @Volatile
     private var isInitialized = false
 
@@ -34,8 +36,21 @@ object InAppMessageManager {
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private var userData: UserData? = null
 
+    fun disable() {
+        disabled = true
+    }
+
+    fun enable() {
+        disabled = false
+    }
+
     @Throws(NullPointerException::class)
     suspend fun initialize(context: Context) {
+        if (disabled) {
+            Logger.i("[Notifly] InAppMessage feature is disabled.")
+            return
+        }
+
         if (!IS_IN_APP_MESSAGE_SUPPORTED) {
             Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
             return
@@ -45,6 +60,11 @@ object InAppMessageManager {
     }
 
     fun refresh(context: Context, timeoutMillis: Long = REFRESH_TIMEOUT_MILLIS) {
+        if (disabled) {
+            Logger.i("[Notifly] InAppMessage feature is disabled.")
+            return
+        }
+
         if (!IS_IN_APP_MESSAGE_SUPPORTED) {
             Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
             return
@@ -63,6 +83,11 @@ object InAppMessageManager {
     }
 
     fun updateUserData(params: Map<String, Any?>) {
+        if (disabled) {
+            Logger.i("[Notifly] InAppMessage feature is disabled.")
+            return
+        }
+
         if (!IS_IN_APP_MESSAGE_SUPPORTED) {
             Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
             return
@@ -92,6 +117,11 @@ object InAppMessageManager {
         isInternalEvent: Boolean,
         segmentationEventParamKeys: List<String>? = null
     ) {
+        if (disabled) {
+            Logger.i("[Notifly] InAppMessage feature is disabled.")
+            return
+        }
+
         if (!IS_IN_APP_MESSAGE_SUPPORTED) {
             Logger.i("[Notifly] In app message feature is not supported on this device.")
             return
