@@ -36,8 +36,9 @@ object NotiflyUserUtil {
                     N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
                     N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
                 )
+            } else {
+                InAppMessageManager.updateUserData(newParams)
             }
-            InAppMessageManager.updateUserData(newParams)
             NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
         } catch (e: Exception) {
             Logger.w("[Notifly] Failed to set user properties", e)
