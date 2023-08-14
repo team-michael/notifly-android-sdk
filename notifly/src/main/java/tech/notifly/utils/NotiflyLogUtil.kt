@@ -35,9 +35,10 @@ object NotiflyLogUtil {
             return
         }
 
+        val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
         if (OSUtils.isAppInForeground(context)) {
             InAppMessageManager.ingestEventAndMaybeScheduleInAppMessages(
-                context, eventName, eventParams, isInternalEvent, segmentationEventParamKeys
+                context, eventName, externalUserId, eventParams, isInternalEvent, segmentationEventParamKeys
             )
         } else {
             Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")

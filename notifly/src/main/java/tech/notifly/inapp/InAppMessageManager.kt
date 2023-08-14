@@ -113,6 +113,7 @@ object InAppMessageManager {
     fun ingestEventAndMaybeScheduleInAppMessages(
         context: Context,
         eventName: String,
+        externalUserId: String?,
         eventParams: Map<String, Any?>,
         isInternalEvent: Boolean,
         segmentationEventParamKeys: List<String>? = null
@@ -135,7 +136,7 @@ object InAppMessageManager {
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
         ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
         if (OSUtils.isAppInForeground(context)) {
-            scheduleCampaigns(context, campaigns, sanitizedEventName, eventParams)
+            scheduleCampaigns(context, campaigns, externalUserId, sanitizedEventName, eventParams)
         } else {
             Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
         }
@@ -192,19 +193,23 @@ object InAppMessageManager {
     private fun scheduleCampaigns(
         context: Context,
         campaigns: List<Campaign>,
+        externalUserId: String?,
         eventName: String,
         eventParams: Map<String, Any?>
     ) {
-        getCampaignsToSchedule(campaigns, eventName, eventParams).forEach {
+        getCampaignsToSchedule(campaigns, externalUserId, eventName, eventParams).forEach {
             InAppMessageScheduler.schedule(context, it)
         }
     }
 
     private fun getCampaignsToSchedule(
-        campaigns: List<Campaign>, eventName: String, eventParams: Map<String, Any?>
+        campaigns: List<Campaign>,
+        externalUserId: String?,
+        eventName: String,
+        eventParams: Map<String, Any?>
     ): List<Campaign> {
         return filterCampaignsWithUniqueDelays(campaigns.filter {
-            evaluateCampaignVisibility(it, eventName, eventParams)
+            evaluateCampaignVisibility(it, externalUserId, eventName, eventParams)
         })
     }
 
@@ -231,10 +236,23 @@ object InAppMessageManager {
     }
 
     private fun evaluateCampaignVisibility(
-        campaign: Campaign, eventName: String, eventParams: Map<String, Any?>
+        campaign: Campaign,
+        externalUserId: String?,
+        eventName: String,
+        eventParams: Map<String, Any?>
     ): Boolean {
         if (campaign.triggeringEvent != eventName) {
             return false
+        }
+
+        if (campaign.testing) {
+            if (externalUserId == null) {
+                return false
+            }
+            val whitelist = campaign.whitelist!!
+            if (whitelist.indexOf(externalUserId) == -1) {
+                return false
+            }
         }
 
         if (userData?.userProperties != null) {

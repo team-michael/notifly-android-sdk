@@ -2,11 +2,14 @@ package tech.notifly.inapp.models
 
 import org.json.JSONException
 import org.json.JSONObject
+import tech.notifly.utils.Logger
 
 data class Campaign(
     val id: String,
     val channel: String,
     val lastUpdatedTimestamp: Long,
+    val testing: Boolean,
+    val whitelist: List<String>?,
     val start: Long,
     val end: Long?,
     val message: Message,
@@ -32,32 +35,22 @@ data class Campaign(
          * @return [Campaign] object if successfully parsed, `null` otherwise.
          */
         @Throws(JSONException::class)
-        fun fromJSONObject(from: JSONObject, externalUserId: String?): Campaign? {
-            /**
-             * Check if this campaign is for testing first.
-             * If it is, check if this campaign is whitelisted for this user.
-             * If it is not, return null.
-             */
+        fun fromJSONObject(from: JSONObject): Campaign? {
             val testing = if (from.has("testing")) from.getBoolean("testing") else false
-            if (testing) {
-                if (externalUserId == null) {
-                    return null
-                }
+            val whitelist = if (testing) {
                 if (from.has("whitelist")) {
-                    val whitelist = from.getJSONArray("whitelist")
-                    var isWhitelisted = false
-                    for (i in 0 until whitelist.length()) {
-                        if (whitelist.getString(i) == externalUserId) {
-                            isWhitelisted = true
-                            break
-                        }
+                    val whitelistJSONArray = from.getJSONArray("whitelist")
+                    val whitelist = mutableListOf<String>()
+                    for (i in 0 until whitelistJSONArray.length()) {
+                        whitelist.add(whitelistJSONArray.getString(i))
                     }
-                    if (!isWhitelisted) {
-                        return null
-                    }
+                    whitelist
                 } else {
+                    Logger.w("If campaign is configured as testing campaign, whitelist field should be specified.")
                     return null
                 }
+            } else {
+                null
             }
 
             val id = from.getString("id") // Campaign ID
@@ -92,6 +85,8 @@ data class Campaign(
                 id,
                 channel,
                 lastUpdatedTimestamp,
+                testing,
+                whitelist,
                 start,
                 end,
                 message,

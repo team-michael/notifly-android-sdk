@@ -33,8 +33,6 @@ object NotiflySyncStateUtil {
             NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
                 ?: NotiflyAuthUtil.invalidateCognitoIdToken(context) // invalidate if not set
         val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
-        val notiflyExternalUserId: String? =
-            NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
 
         val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
             ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
@@ -81,8 +79,7 @@ object NotiflySyncStateUtil {
                 for (i in 0 until campaignsJsonArray.length()) {
                     val campaignJsonObject = campaignsJsonArray.getJSONObject(i)
                     val campaign = try {
-                        Campaign.fromJSONObject(campaignJsonObject, notiflyExternalUserId)
-                            ?: continue
+                        Campaign.fromJSONObject(campaignJsonObject) ?: continue
                     } catch (e: JSONException) {
                         Logger.w(
                             "[Notifly] Failed to parse campaign: encountered error while working with JSON",
