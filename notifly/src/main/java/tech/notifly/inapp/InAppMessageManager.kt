@@ -110,7 +110,7 @@ object InAppMessageManager {
         }
     }
 
-    fun ingestEventAndMaybeScheduleInAppMessages(
+    fun maybeScheduleInWebMessagesAndIngestEvent(
         context: Context,
         eventName: String,
         externalUserId: String?,
@@ -134,12 +134,12 @@ object InAppMessageManager {
         }
 
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
-        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
         if (OSUtils.isAppInForeground(context)) {
             scheduleCampaigns(context, campaigns, externalUserId, sanitizedEventName, eventParams)
         } else {
             Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
         }
+        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
     }
 
     private fun sanitizeEventName(eventName: String, isInternalEvent: Boolean): String {
