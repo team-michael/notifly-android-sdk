@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import org.json.JSONObject
 import tech.notifly.R
 import tech.notifly.inapp.models.EventLogData
@@ -31,6 +32,7 @@ class NotiflyInAppMessageActivity : Activity() {
             rejectCreation()
             return
         }
+
         isActivityRunning = true
         Logger.d("NotiflyInAppMessageActivity.onCreate")
 
@@ -45,19 +47,30 @@ class NotiflyInAppMessageActivity : Activity() {
         val eventLogData = getEventLogData(intent)
         val templateName: String? = modalProperties?.optString("template_name")
 
-        this.setVisible(false)
-
         findViewById<NotiflyWebView>(R.id.webView).apply {
+            this.visibility = View.INVISIBLE
+
             initialize(modalProperties,
                 eventLogData,
                 templateName,
-                { this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(modalProperties, eventLogData) },
+                {
+                    this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
+                        this,
+                        modalProperties,
+                        eventLogData
+                    )
+                },
                 { this@NotiflyInAppMessageActivity.onWebViewLoadedWithError() })
+
             loadUrl(url)
         }
     }
 
-    private fun onWebViewLoadedComplete(modalProperties: JSONObject?, eventLogData: EventLogData) {
+    private fun onWebViewLoadedComplete(
+        webView: NotiflyWebView,
+        modalProperties: JSONObject?,
+        eventLogData: EventLogData
+    ) {
         val shouldInterceptTouchEvent =
             modalProperties?.optBoolean("dismissCTATapped", false) ?: false
         val backgroundOpacity =
@@ -67,7 +80,7 @@ class NotiflyInAppMessageActivity : Activity() {
             shouldInterceptTouchEvent, backgroundOpacity
         )
 
-        this.setVisible(true)
+        webView.visibility = View.VISIBLE
 
         NotiflyLogUtil.logEvent(
             this, "in_app_message_show", mapOf(
@@ -80,7 +93,7 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private fun onWebViewLoadedWithError() {
-        Logger.e("Error loading in app message")
+        Logger.e("Error loading in app message!")
         finish()
     }
 

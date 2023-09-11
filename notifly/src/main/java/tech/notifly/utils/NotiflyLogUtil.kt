@@ -37,7 +37,7 @@ object NotiflyLogUtil {
 
         val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
         if (OSUtils.isAppInForeground(context)) {
-            InAppMessageManager.ingestEventAndMaybeScheduleInAppMessages(
+            InAppMessageManager.maybeScheduleInWebMessagesAndIngestEvent(
                 context, eventName, externalUserId, eventParams, isInternalEvent, segmentationEventParamKeys
             )
         } else {

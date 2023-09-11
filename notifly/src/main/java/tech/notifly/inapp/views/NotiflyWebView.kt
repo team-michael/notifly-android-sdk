@@ -88,6 +88,7 @@ class NotiflyWebView @JvmOverloads constructor(
                 context, eventLogData, templateName
             ), JS_INTERFACE_NAME
         )
+
         this.setViewDimensions(modalProperties, context.resources.displayMetrics.density)
     }
 
@@ -204,6 +205,7 @@ class NotiflyWebView @JvmOverloads constructor(
             val buttonName = data.getString("button_name")
             val link = data.optString("link", null.toString())
             val extraData = data.optJSONObject("extra_data")
+
             handleButtonClick(type, buttonName, link, extraData, templateName)
         }
 
@@ -214,41 +216,51 @@ class NotiflyWebView @JvmOverloads constructor(
             extraData: JSONObject?,
             templateName: String?
         ) {
-            when (type) {
-                "close" -> {
-                    Logger.d("In-app message close button clicked")
-                    logInAppMessageButtonClick("close_button_click", buttonName)
-                    (context as Activity).finish()
-                }
-
-                "main_button" -> {
-                    Logger.d("In-app message main button clicked")
-                    logInAppMessageButtonClick("main_button_click", buttonName)
-                    if (link != null && link != "null") {
-                        Logger.d("In-app message main button link: link")
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
-                        context.startActivity(intent)
+            try {
+                when (type) {
+                    "close" -> {
+                        Logger.d("In-app message close button clicked")
+                        logInAppMessageButtonClick("close_button_click", buttonName)
+                        (context as Activity).finish()
                     }
-                    (context as Activity).finish()
-                }
 
-                "hide_in_app_message" -> {
-                    Logger.d("In-app message hide button clicked")
-                    logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
-                    templateName?.let {
-                        val key = "hide_in_app_message_$it"
-                        CoroutineScope(Dispatchers.IO).launch {
-                            NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
+                    "main_button" -> {
+                        Logger.d("In-app message main button clicked")
+                        logInAppMessageButtonClick("main_button_click", buttonName)
+                        if (link != null && link != "null") {
+                            Logger.d("In-app message main button link: link")
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                            context.startActivity(intent)
                         }
+                        (context as Activity).finish()
                     }
-                    (context as Activity).finish()
-                }
 
-                "survey_submit_button" -> {
-                    Logger.d("In-app message survey submit button clicked")
-                    logInAppMessageButtonClick("survey_submit_button_click", buttonName, extraData)
-                    (context as Activity).finish()
+                    "hide_in_app_message" -> {
+                        Logger.d("In-app message hide button clicked")
+                        logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
+                        templateName?.let {
+                            val key = "hide_in_app_message_$it"
+                            CoroutineScope(Dispatchers.IO).launch {
+                                NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
+                            }
+                        }
+                        (context as Activity).finish()
+                    }
+
+                    "survey_submit_button" -> {
+                        Logger.d("In-app message survey submit button clicked")
+                        logInAppMessageButtonClick(
+                            "survey_submit_button_click", buttonName, extraData
+                        )
+                        (context as Activity).finish()
+                    }
                 }
+            } catch (e: Exception) {
+                Logger.w(
+                    "[Notifly] Unexpected error occurs while handling in-app message button click event. This error is mostly caused by invalid url you have entered.",
+                    e
+                )
+                (context as Activity).finish()
             }
         }
 

@@ -288,6 +288,7 @@ class SampleActivity : ComponentActivity() {
         ) {
             val context = LocalContext.current
             var userId: String by remember { mutableStateOf("") }
+            var eventName: String by remember { mutableStateOf("") }
             var propertyName by remember { mutableStateOf("") }
             var propertyValue by remember { mutableStateOf("") }
 
@@ -296,29 +297,22 @@ class SampleActivity : ComponentActivity() {
 
                 NotiflyAuthenticatorSection(username, password)
 
-                Button(
-                    onClick = {
-                        Notifly.trackEvent(
-                            context, "click_button_1", mapOf(
-                                "keyString" to "value1",
-                                "keyBoolean" to true,
-                                "keyInt" to 100,
-                            ), listOf()
-                        )
-                    }, modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Text(text = "click_button_1 (trackEvent)")
-                }
+                TextField(value = eventName,
+                    onValueChange = { eventName = it },
+                    label = { Text("Event Name") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
 
                 Button(
                     onClick = {
                         Notifly.trackEvent(
                             context,
-                            "click_button_2",
+                            eventName,
+                            emptyMap(),
                         )
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text(text = "click_button_2 (trackEvent)")
+                    Text(text = "Track Event")
                 }
 
                 Button(
