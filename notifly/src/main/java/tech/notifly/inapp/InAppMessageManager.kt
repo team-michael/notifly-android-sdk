@@ -78,7 +78,12 @@ object InAppMessageManager {
 
         CoroutineScope(Dispatchers.Main).launch {
             delay(timeoutMillis)
-            sync(context)
+            try {
+                sync(context)
+            } catch (e: Exception) {
+                Logger.e("[Notifly] Failed to refresh InAppMessageManager", e)
+                isInitialized = false
+            }
         }
     }
 
