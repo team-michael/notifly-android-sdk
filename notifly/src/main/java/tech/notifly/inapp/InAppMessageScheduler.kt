@@ -2,8 +2,8 @@ package tech.notifly.inapp
 
 import android.content.Context
 import android.content.Intent
-import tech.notifly.utils.Logger
 import tech.notifly.inapp.models.Campaign
+import tech.notifly.utils.Logger
 import java.util.UUID
 
 object InAppMessageScheduler {
@@ -37,6 +37,13 @@ object InAppMessageScheduler {
             putExtra("in_app_message_url", url)
             putExtra("notifly_message_id", messageId)
             putExtra("modal_properties", modalProperties)
+            putExtra("campaign_re_eligibility_specified", campaign.reEligibleCondition != null)
+            if (campaign.reEligibleCondition != null) {
+                putExtra("campaign_re_eligible_unit", campaign.reEligibleCondition.unit.name)
+                putExtra(
+                    "campaign_re_eligible_duration", campaign.reEligibleCondition.duration
+                )
+            }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         })
     }

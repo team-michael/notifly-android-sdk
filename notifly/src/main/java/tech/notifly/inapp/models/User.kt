@@ -39,6 +39,7 @@ data class EventIntermediateCounts(
 data class EventLogData(
     val campaignId: String,
     val notiflyMessageId: String?,
+    val campaignHiddenUntil: Int?,
 )
 
 data class UserData(
@@ -48,7 +49,8 @@ data class UserData(
     val sdkVersion: String?,
     val sdkType: String?,
     val updatedAt: String?, // Not used
-    val userProperties: MutableMap<String, Any?>?
+    val userProperties: MutableMap<String, Any?>?,
+    val campaignHiddenUntil: MutableMap<String, Int>,
 ) {
     fun get(unit: SegmentConditionUnitType, field: String?): Any? {
         if (field == null) return null
@@ -81,6 +83,7 @@ data class UserData(
                     if (from.has("sdk_version")) from.getString("sdk_version") else null
                 val sdkType = if (from.has("sdk_type")) from.getString("sdk_type") else null
                 val updatedAt = if (from.has("updated_at")) from.getString("updated_at") else null
+
                 val userPropertiesJSONObject =
                     if (from.has("user_properties")) from.getJSONObject("user_properties") else null
                 val userProperties = if (userPropertiesJSONObject != null) {
@@ -95,8 +98,27 @@ data class UserData(
                     userProperties
                 } else null
 
+                val campaignHiddenUntilJSONObject =
+                    if (from.has("campaign_hidden_until")) from.getJSONObject("campaign_hidden_until") else null
+                val campaignHiddenUntil = if (campaignHiddenUntilJSONObject != null) {
+                    val keys = campaignHiddenUntilJSONObject.keys()
+                    val result = mutableMapOf<String, Int>()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        result[key] = campaignHiddenUntilJSONObject.getInt(key)
+                    }
+                    result
+                } else mutableMapOf()
+
                 return UserData(
-                    platform, osVersion, appVersion, sdkVersion, sdkType, updatedAt, userProperties
+                    platform,
+                    osVersion,
+                    appVersion,
+                    sdkVersion,
+                    sdkType,
+                    updatedAt,
+                    userProperties,
+                    campaignHiddenUntil
                 )
             } catch (e: JSONException) {
                 Logger.d("Error parsing UserData: $e")

@@ -17,10 +17,19 @@ import tech.notifly.utils.NotiflyIdUtil.Namespace
 import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflyLogUtil {
-
     private const val LOG_EVENT_URI =
         "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+
+    private fun <K, V, R> deepMapValues(input: Map<K, V>, transform: (V) -> R): Map<K, R> {
+        return input.mapValues { (_, value) ->
+            when (value) {
+                is Map<*, *> -> deepMapValues(value as Map<K, V>, transform)
+                is Collection<*> -> value.map { deepMapValues(mapOf(0 to it as V), transform)[0] }
+                else -> transform(value)
+            }
+        } as Map<K, R>
+    }
 
     @OptIn(DelicateCoroutinesApi::class)
     fun logEvent(
@@ -38,7 +47,12 @@ object NotiflyLogUtil {
         val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
         if (OSUtils.isAppInForeground(context)) {
             InAppMessageManager.maybeScheduleInWebMessagesAndIngestEvent(
-                context, eventName, externalUserId, eventParams, isInternalEvent, segmentationEventParamKeys
+                context,
+                eventName,
+                externalUserId,
+                eventParams,
+                isInternalEvent,
+                segmentationEventParamKeys
             )
         } else {
             Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
@@ -158,9 +172,9 @@ object NotiflyLogUtil {
     ): RequestBody {
         val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
         val sdkType = NotiflySDKInfoUtil.getSdkType()
+
         // Replace any null values in eventParams with JSONObject.NULL
-        val sanitizedParams =
-            eventParams.mapValues { if (it.value == null) JSONObject.NULL else it.value }
+        val sanitizedParams = deepMapValues(eventParams) { it ?: JSONObject.NULL }
 
         val data = JSONObject().put("event_params", JSONObject(sanitizedParams)).put("id", eventId)
             .put("name", eventName).put("notifly_user_id", notiflyUserId)

@@ -23,3 +23,7 @@ enum class SegmentOperator {
 enum class EventBasedConditionType {
     COUNT_X, COUNT_X_IN_Y_DAYS
 }
+
+enum class ReEligibleConditionUnitType {
+    HOUR, DAY, WEEK, MONTH, INFINITE
+}

@@ -104,14 +104,73 @@ object InAppMessageManager {
         }
 
         try {
-            if (userData != null && userData!!.userProperties != null) {
-                params.forEach {
-                    userData!!.userProperties!![it.key] = it.value
-                }
+            params.forEach {
+                userData!!.userProperties!![it.key] = it.value
                 Logger.d("[Notifly] Updating user property to $userData")
             }
         } catch (e: Exception) {
             Logger.e("[Notifly] updateUserData failed", e)
+        }
+    }
+
+    private fun isReEligibleCampaign(campaignId: String, delay: Int?, now: Int): Boolean {
+        if (userData == null) return false
+
+        val hiddenUntil = userData!!.campaignHiddenUntil[campaignId]
+        if (hiddenUntil != null && hiddenUntil < 0) {
+            return false // Infinitely hidden
+        }
+
+        val sanitizedDelay = delay ?: 0
+        val displayTime = now + sanitizedDelay
+
+        return (hiddenUntil == null) || (displayTime >= hiddenUntil)
+    }
+
+    private fun isTemplateHiddenByUser(templateName: String, delay: Int?, now: Int): Boolean {
+        val userProperties = userData!!.userProperties!!
+
+        // Legacy
+        if (userProperties["hide_in_app_message_$templateName"] == true) {
+            Logger.d("InAppMessageManager: $templateName is hidden by user property.")
+            return true
+        }
+
+        // New
+        userProperties["hide_in_app_message_until_$templateName"]?.let {
+            if (it is Int) {
+                val sanitizedDelay = delay ?: 0
+                val displayTime = now + sanitizedDelay
+
+                if (it < 0) return true // Infinitely hidden
+                if (displayTime < it) return true // Hidden until a certain time
+            }
+        }
+
+        return false
+    }
+
+    fun updateHideUntilData(campaignId: String, hideUntil: Int) {
+        if (disabled) {
+            Logger.i("[Notifly] InAppMessage feature is disabled.")
+            return
+        }
+
+        if (!IS_IN_APP_MESSAGE_SUPPORTED) {
+            Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
+            return
+        }
+
+        if (!isInitialized) {
+            Logger.e("[Notifly] InAppMessageManager is not initialized.")
+            return
+        }
+
+        try {
+            userData!!.campaignHiddenUntil[campaignId] = hideUntil
+            Logger.d("[Notifly] Updating hideUntil to $userData")
+        } catch (e: Exception) {
+            Logger.e("[Notifly] updateHideUntilData failed", e)
         }
     }
 
@@ -260,15 +319,14 @@ object InAppMessageManager {
             }
         }
 
-        if (userData?.userProperties != null) {
-            val templateName = campaign.message.templateName
-            if (templateName != null) {
-                val userProperties = userData!!.userProperties!!
-                if (userProperties["hide_in_app_message_$templateName"] == true) {
-                    Logger.d("InAppMessageManager: $templateName is hidden by user property.")
-                    return false
-                }
-            }
+        val now = floor(System.currentTimeMillis().toDouble() / 1000.0).toInt()
+        if (!isReEligibleCampaign(campaign.id, campaign.delay, now)) {
+            return false
+        }
+
+        val templateName = campaign.message.templateName ?: return false
+        if (isTemplateHiddenByUser(templateName, campaign.delay, now)) {
+            return false
         }
 
         val groups = campaign.segmentInfo?.groups
@@ -276,7 +334,6 @@ object InAppMessageManager {
             return true
         }
 
-        val now = floor(System.currentTimeMillis().toDouble() / 1000.0).toInt()
         if (campaign.start > now) {
             return false
         } else {

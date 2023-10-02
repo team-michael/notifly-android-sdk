@@ -8,6 +8,7 @@ import android.view.View
 import org.json.JSONObject
 import tech.notifly.R
 import tech.notifly.inapp.models.EventLogData
+import tech.notifly.inapp.models.ReEligibleConditionUnitType
 import tech.notifly.inapp.views.NotiflyWebView
 import tech.notifly.inapp.views.TouchInterceptorLayout
 import tech.notifly.utils.Logger
@@ -17,7 +18,7 @@ import kotlin.math.roundToInt
 
 class NotiflyInAppMessageActivity : Activity() {
     companion object {
-        private const val DEFAULT_BACKGROUD_OPACITY = 0.2
+        private const val DEFAULT_BACKGROUND_OPACITY = 0.2
 
         @Volatile
         private var isActivityRunning = false
@@ -38,7 +39,6 @@ class NotiflyInAppMessageActivity : Activity() {
 
         setContentView(R.layout.activity_notifly_in_app_message)
 
-        val intent = intent
         val (url, modalProperties) = handleIntent(intent)
         if (url == null) {
             return
@@ -50,45 +50,49 @@ class NotiflyInAppMessageActivity : Activity() {
         findViewById<NotiflyWebView>(R.id.webView).apply {
             this.visibility = View.INVISIBLE
 
-            initialize(modalProperties,
-                eventLogData,
-                templateName,
-                {
-                    this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
-                        this,
-                        modalProperties,
-                        eventLogData
-                    )
-                },
-                { this@NotiflyInAppMessageActivity.onWebViewLoadedWithError() })
+            initialize(modalProperties, eventLogData, templateName, {
+                this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
+                    this, modalProperties, eventLogData
+                )
+            }, { this@NotiflyInAppMessageActivity.onWebViewLoadedWithError() })
 
             loadUrl(url)
         }
     }
 
     private fun onWebViewLoadedComplete(
-        webView: NotiflyWebView,
-        modalProperties: JSONObject?,
-        eventLogData: EventLogData
+        webView: NotiflyWebView, modalProperties: JSONObject?, eventLogData: EventLogData
     ) {
         val shouldInterceptTouchEvent =
             modalProperties?.optBoolean("dismissCTATapped", false) ?: false
         val backgroundOpacity =
-            modalProperties?.optDouble("backgroundOpacity", DEFAULT_BACKGROUD_OPACITY)
-                ?: DEFAULT_BACKGROUD_OPACITY
+            modalProperties?.optDouble("backgroundOpacity", DEFAULT_BACKGROUND_OPACITY)
+                ?: DEFAULT_BACKGROUND_OPACITY
         setupTouchInterceptorLayout(
             shouldInterceptTouchEvent, backgroundOpacity
         )
 
         webView.visibility = View.VISIBLE
 
+        val eventParams = mutableMapOf<String, Any?>(
+            "type" to "message_event",
+            "channel" to "in-app-message",
+            "campaign_id" to eventLogData.campaignId,
+            "notifly_message_id" to eventLogData.notiflyMessageId,
+        )
+
+        val campaignHiddenUntil = eventLogData.campaignHiddenUntil
+        if (campaignHiddenUntil != null) {
+            eventParams["hide_until_data"] = mapOf(
+                eventLogData.campaignId to campaignHiddenUntil
+            )
+            InAppMessageManager.updateHideUntilData(
+                eventLogData.campaignId, campaignHiddenUntil
+            )
+        }
+
         NotiflyLogUtil.logEvent(
-            this, "in_app_message_show", mapOf(
-                "type" to "message_event",
-                "channel" to "in-app-message",
-                "campaign_id" to eventLogData.campaignId,
-                "notifly_message_id" to eventLogData.notiflyMessageId,
-            ), listOf(), true
+            this, "in_app_message_show", eventParams, listOf(), true
         )
     }
 
@@ -154,7 +158,39 @@ class NotiflyInAppMessageActivity : Activity() {
     private fun getEventLogData(intent: Intent): EventLogData {
         val campaignId = intent.getStringExtra("in_app_message_campaign_id")!!
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
+        val campaignHiddenUntil = getCampaignHiddenUntil(intent)
 
-        return EventLogData(campaignId, notiflyMessageId)
+        return EventLogData(campaignId, notiflyMessageId, campaignHiddenUntil)
+    }
+
+    private fun getCampaignHiddenUntil(intent: Intent): Int? {
+        try {
+            if (!intent.getBooleanExtra(
+                    "campaign_re_eligibility_specified", false
+                )
+            ) {
+                return null
+            }
+
+            val unit =
+                ReEligibleConditionUnitType.valueOf(intent.getStringExtra("campaign_re_eligible_unit")!!)
+            val duration = intent.getIntExtra("campaign_re_eligible_duration", Int.MIN_VALUE)
+            if (duration == Int.MIN_VALUE) {
+                Logger.w("Re-eligibility duration is not specified, omitting...")
+                return null
+            }
+
+            val now = (System.currentTimeMillis() / 1000).toInt()
+            return when (unit) {
+                ReEligibleConditionUnitType.HOUR -> now + duration * 60 * 60
+                ReEligibleConditionUnitType.DAY -> now + duration * 60 * 60 * 24
+                ReEligibleConditionUnitType.WEEK -> now + duration * 60 * 60 * 24 * 7
+                ReEligibleConditionUnitType.MONTH -> now + duration * 60 * 60 * 24 * 30
+                ReEligibleConditionUnitType.INFINITE -> -1
+            }
+        } catch (e: Exception) {
+            Logger.e("Error parsing re-eligibility condition", e)
+            return null
+        }
     }
 }

@@ -238,10 +238,24 @@ class NotiflyWebView @JvmOverloads constructor(
                     "hide_in_app_message" -> {
                         Logger.d("In-app message hide button clicked")
                         logInAppMessageButtonClick("hide_in_app_message_button_click", buttonName)
-                        templateName?.let {
-                            val key = "hide_in_app_message_$it"
+                        if (extraData == null) {
+                            templateName?.let {
+                                val key = "hide_in_app_message_$it"
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
+                                }
+                            }
+                        } else {
+                            val hideUntilInDays = extraData.optInt("hide_until_in_days", -1)
+                            val now = (System.currentTimeMillis() / 1000).toInt()
+                            val hideUntilInTimestamp = if (hideUntilInDays == -1) -1 else {
+                                now + (hideUntilInDays * 24 * 60 * 60)
+                            }
+                            val key = "hide_in_app_message_until_$templateName"
                             CoroutineScope(Dispatchers.IO).launch {
-                                NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
+                                NotiflyUserUtil.setUserProperties(
+                                    context, mapOf(key to hideUntilInTimestamp)
+                                )
                             }
                         }
                         (context as Activity).finish()

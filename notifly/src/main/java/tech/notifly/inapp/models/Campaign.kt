@@ -15,7 +15,8 @@ data class Campaign(
     val message: Message,
     val segmentInfo: SegmentInfo?,
     val triggeringEvent: String,
-    val delay: Int?
+    val delay: Int?,
+    val reEligibleCondition: ReEligibleCondition? = null
 ) : Comparable<Campaign> {
     override fun compareTo(other: Campaign): Int {
         // Compare based on age
@@ -81,6 +82,13 @@ data class Campaign(
             val triggeringEvent = from.getString("triggering_event")
             val delay = if (from.has("delay")) from.getInt("delay") else 0
 
+            val reEligibleCondition = if (from.has("re_eligible_condition")) {
+                val value = from.get("re_eligible_condition")
+                if (value == JSONObject.NULL) null else ReEligibleCondition.fromJSONObject(
+                    value as JSONObject
+                )
+            } else null
+
             return Campaign(
                 id,
                 channel,
@@ -92,7 +100,8 @@ data class Campaign(
                 message,
                 segmentInfo,
                 triggeringEvent,
-                delay
+                delay,
+                reEligibleCondition
             )
         }
     }
@@ -271,6 +280,27 @@ data class Condition(
                     }
                 }
             }
+        }
+    }
+}
+
+data class ReEligibleCondition(
+    val unit: ReEligibleConditionUnitType,
+    val duration: Int,
+) {
+    companion object {
+        @Throws(JSONException::class)
+        fun fromJSONObject(reEligibleConditionObject: JSONObject): ReEligibleCondition {
+            val unit = when (reEligibleConditionObject.getString("unit")) {
+                "h" -> ReEligibleConditionUnitType.HOUR
+                "d" -> ReEligibleConditionUnitType.DAY
+                "w" -> ReEligibleConditionUnitType.WEEK
+                "m" -> ReEligibleConditionUnitType.MONTH
+                "infinite" -> ReEligibleConditionUnitType.INFINITE
+                else -> throw JSONException("Invalid unit type")
+            }
+
+            return ReEligibleCondition(unit, reEligibleConditionObject.getInt("value"))
         }
     }
 }
