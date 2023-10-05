@@ -17,15 +17,15 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.constraintlayout.widget.ConstraintLayout
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.json.JSONObject
+import tech.notifly.command.CommandDispatcher
+import tech.notifly.command.models.SetUserPropertiesCommand
+import tech.notifly.command.models.SetUserPropertiesPayload
+import tech.notifly.command.models.TrackEventCommand
+import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.utils.Logger
-import tech.notifly.utils.NotiflyLogUtil
-import tech.notifly.utils.NotiflyUserUtil
 import kotlin.math.roundToInt
 
 class NotiflyWebView @JvmOverloads constructor(
@@ -241,9 +241,13 @@ class NotiflyWebView @JvmOverloads constructor(
                         if (extraData == null) {
                             templateName?.let {
                                 val key = "hide_in_app_message_$it"
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    NotiflyUserUtil.setUserProperties(context, mapOf(key to true))
-                                }
+                                CommandDispatcher.dispatch(
+                                    SetUserPropertiesCommand(
+                                        SetUserPropertiesPayload(
+                                            context, mapOf(key to true)
+                                        )
+                                    )
+                                )
                             }
                         } else {
                             val hideUntilInDays = extraData.optInt("hide_until_in_days", -1)
@@ -252,11 +256,13 @@ class NotiflyWebView @JvmOverloads constructor(
                                 now + (hideUntilInDays * 24 * 60 * 60)
                             }
                             val key = "hide_in_app_message_until_$templateName"
-                            CoroutineScope(Dispatchers.IO).launch {
-                                NotiflyUserUtil.setUserProperties(
-                                    context, mapOf(key to hideUntilInTimestamp)
+                            CommandDispatcher.dispatch(
+                                SetUserPropertiesCommand(
+                                    SetUserPropertiesPayload(
+                                        context, mapOf(key to hideUntilInTimestamp)
+                                    )
                                 )
-                            }
+                            )
                         }
                         (context as Activity).finish()
                     }
@@ -291,12 +297,12 @@ class NotiflyWebView @JvmOverloads constructor(
             if (eventName == "survey_submit_button_click" && extraData != null) {
                 eventParams["notifly_extra_data"] = extraData
             }
-            NotiflyLogUtil.logEvent(
-                context,
-                eventName,
-                eventParams,
-                listOf(),
-                true,
+            CommandDispatcher.dispatch(
+                TrackEventCommand(
+                    TrackEventPayload(
+                        context, eventName, eventParams, listOf(), true
+                    )
+                )
             )
         }
     }

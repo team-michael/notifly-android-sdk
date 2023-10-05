@@ -2,15 +2,14 @@ package tech.notifly.utils
 
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.inapp.models.EventIntermediateCounts
+import tech.notifly.inapp.models.UserData
+import tech.notifly.push.NotificationAuthorizationStatus
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import tech.notifly.utils.auth.NotificationAuthorizationStatus
-import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflyUserUtil {
 
@@ -46,13 +45,10 @@ object NotiflyUserUtil {
     }
 
     fun removeUserId(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            NotiflyStorage.clear(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-            NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
+        NotiflyStorage.clear(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+        NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
 
-            NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
-            InAppMessageManager.refresh(context)
-        }
+        NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
     }
 
     suspend fun sessionStart(context: Context) {
@@ -92,5 +88,24 @@ object NotiflyUserUtil {
         } else {
             NotificationAuthorizationStatus.DENIED
         }
+    }
+
+    fun mergeEventCounts(
+        first: MutableList<EventIntermediateCounts>, second: MutableList<EventIntermediateCounts>
+    ): MutableList<EventIntermediateCounts> {
+        val merged = first.toMutableList()
+        for (secondEventCount in second) {
+            val index = merged.indexOfFirst {
+                secondEventCount.equalsTo(it)
+            }
+            if (index == -1) {
+                merged.add(secondEventCount)
+            } else {
+                merged[index] = secondEventCount.merge(merged[index])
+            }
+        }
+
+        Logger.d("[Notifly] Merged event counts: $merged")
+        return merged
     }
 }

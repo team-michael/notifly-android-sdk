@@ -212,7 +212,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.auth.NotiflyAuthUtil", "getCognitoIdToken"
+                        "tech.notifly.utils.NotiflyAuthUtil", "getCognitoIdToken"
                     )
                     val token = function.callSuspend(instance, username, password) as String?
 
@@ -256,7 +256,7 @@ class SampleActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.auth.NotiflyAuthUtil", "getNotiflyUserId"
+                        "tech.notifly.utils.NotiflyAuthUtil", "getNotiflyUserId"
                     )
                     val userId = function.callSuspend(instance, context) as String
 
@@ -354,7 +354,20 @@ class SampleActivity : ComponentActivity() {
                         }
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text(text = "set user id")
+                    Text(text = "Set User ID")
+                }
+
+                Button(
+                    onClick = {
+                        val (instance, function) = reflectObjectFunction(
+                            "tech.notifly.Notifly", "setUserId"
+                        )
+                        function.call(
+                            instance, context, null
+                        )
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Remove User ID")
                 }
 
                 OutlinedTextField(value = propertyName,

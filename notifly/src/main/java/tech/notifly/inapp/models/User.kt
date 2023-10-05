@@ -7,6 +7,19 @@ import tech.notifly.utils.Logger
 data class EventIntermediateCounts(
     val dt: String, val name: String, val count: Int, val event_params: Map<String, Any?>
 ) {
+    fun equalsTo(other: EventIntermediateCounts): Boolean {
+        return dt == other.dt && name == other.name && event_params == other.event_params
+    }
+
+    fun merge(other: EventIntermediateCounts): EventIntermediateCounts {
+        if (!this.equalsTo(other)) {
+            throw IllegalArgumentException("Cannot merge EventIntermediateCounts with different dt, name, and event_params")
+        }
+        return EventIntermediateCounts(
+            dt, name, count + other.count, event_params
+        )
+    }
+
     companion object {
         /**
          * Parses [JSONObject] and loads data to [EventIntermediateCounts] data class.
@@ -17,16 +30,17 @@ data class EventIntermediateCounts(
                 val name = from.getString("name")
                 val dt = from.getString("dt")
                 val count = from.getInt("count")
-                val eventParamsJSONObject = from.getJSONObject("event_params")
+                val eventParamsJSONObject = from.optJSONObject("event_params")
                 val eventParams = mutableMapOf<String, Any?>()
-                val keys = eventParamsJSONObject.keys()
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    eventParams[key] = eventParamsJSONObject.get(key).let {
-                        if (it == JSONObject.NULL) null else it
+                if (eventParamsJSONObject != null) {
+                    val keys = eventParamsJSONObject.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        eventParams[key] = eventParamsJSONObject.get(key).let {
+                            if (it == JSONObject.NULL) null else it
+                        }
                     }
                 }
-
                 return EventIntermediateCounts(dt, name, count, eventParams)
             } catch (e: JSONException) {
                 Logger.d("EventIntermediateCounts parsing failed", e)
@@ -70,6 +84,31 @@ data class UserData(
 
             else -> null
         }
+    }
+
+    fun merge(other: UserData?): UserData {
+        if (other == null) return this
+
+        val result = UserData(platform = other.platform,
+            osVersion = other.osVersion,
+            appVersion = other.appVersion,
+            sdkVersion = other.sdkVersion,
+            sdkType = other.sdkType,
+            updatedAt = other.updatedAt,
+            userProperties = if (other.userProperties == null && userProperties == null) null else {
+                val merged = mutableMapOf<String, Any?>()
+                if (userProperties != null) merged.putAll(userProperties)
+                if (other.userProperties != null) merged.putAll(other.userProperties)
+                merged
+            },
+            campaignHiddenUntil = run {
+                val merged = mutableMapOf<String, Int>()
+                merged.putAll(campaignHiddenUntil)
+                merged.putAll(other.campaignHiddenUntil)
+                merged
+            })
+        Logger.d("Merged UserData: $result")
+        return result
     }
 
     companion object {

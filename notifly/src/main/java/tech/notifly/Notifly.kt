@@ -4,45 +4,22 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import tech.notifly.command.CommandDispatcher
+import tech.notifly.command.models.SetUserIdCommand
+import tech.notifly.command.models.SetUserIdPayload
+import tech.notifly.command.models.SetUserPropertiesCommand
+import tech.notifly.command.models.SetUserPropertiesPayload
+import tech.notifly.command.models.TrackEventCommand
+import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
-import tech.notifly.utils.N.KEY_EXTERNAL_USER_ID
-import tech.notifly.utils.NotiflyControlToken
-import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflySDKInfoUtil
-import tech.notifly.utils.NotiflySdkType
 import tech.notifly.utils.NotiflyUserUtil
 
 object Notifly {
     internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
-
-    @Volatile
-    private var isNotiflyInitialized = false
-
-    @JvmStatic
-    @JvmOverloads
-    fun setUserId(
-        context: Context,
-        userId: String? = null,
-    ) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                if (userId.isNullOrEmpty()) {
-                    NotiflyUserUtil.removeUserId(context)
-                } else {
-                    val params = mapOf(
-                        KEY_EXTERNAL_USER_ID to userId
-                    )
-                    NotiflyUserUtil.setUserProperties(context, params)
-                    InAppMessageManager.refresh(context)
-                }
-            } catch (e: Exception) {
-                Logger.e("Notifly setUserId failed", e)
-            }
-        }
-    }
 
     @JvmStatic
     fun initialize(
@@ -51,10 +28,12 @@ object Notifly {
         username: String,
         password: String,
     ) {
-        if (isNotiflyInitialized) {
-            Logger.w("Notifly is already initialized.")
+        if (NotiflySdkStateManager.getState() != NotiflySdkState.NOT_INITIALIZED) {
+            Logger.e("Notifly SDK is not in expected state. Skipping initialization.")
             return
         }
+
+        NotiflySdkStateManager.registerObserver(CommandDispatcher)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -67,11 +46,28 @@ object Notifly {
                 InAppMessageManager.initialize(context)
                 NotiflyUserUtil.sessionStart(context)
 
-                isNotiflyInitialized = true
+                NotiflySdkStateManager.setState(NotiflySdkState.READY)
             } catch (e: Exception) {
                 Logger.e("Notifly initialization failed:", e)
+                NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
             }
         }
+    }
+
+
+    @JvmStatic
+    @JvmOverloads
+    fun setUserId(
+        context: Context,
+        userId: String? = null,
+    ) {
+        CommandDispatcher.dispatch(
+            SetUserIdCommand(
+                SetUserIdPayload(
+                    context = context, userId = userId
+                )
+            )
+        )
     }
 
     @JvmStatic
@@ -81,14 +77,13 @@ object Notifly {
 
     @JvmStatic
     fun setUserProperties(context: Context, params: Map<String, Any?>) {
-        // delegate to NotiflyUserUtil
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                NotiflyUserUtil.setUserProperties(context, params)
-            } catch (e: Exception) {
-                Logger.w("Notifly setUserProperties failed", e)
-            }
-        }
+        CommandDispatcher.dispatch(
+            SetUserPropertiesCommand(
+                SetUserPropertiesPayload(
+                    context = context, params = params
+                )
+            )
+        )
     }
 
     @JvmStatic
@@ -98,10 +93,17 @@ object Notifly {
         eventName: String,
         eventParams: Map<String, Any?> = emptyMap(),
         segmentationEventParamKeys: List<String>? = null,
-        isInternalEvent: Boolean = false
     ) {
-        NotiflyLogUtil.logEvent(
-            context, eventName, eventParams, segmentationEventParamKeys, isInternalEvent
+        CommandDispatcher.dispatch(
+            TrackEventCommand(
+                TrackEventPayload(
+                    context = context,
+                    eventName = eventName,
+                    eventParams = eventParams,
+                    segmentationEventParamKeys = segmentationEventParamKeys,
+                    isInternalEvent = false
+                )
+            )
         )
     }
 

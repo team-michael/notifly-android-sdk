@@ -14,7 +14,6 @@ import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflyIdUtil.Namespace
-import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflyLogUtil {
     private const val LOG_EVENT_URI =
@@ -67,8 +66,6 @@ object NotiflyLogUtil {
          * - Unique ID: non-null is ensured by native-level API
          * - Device ID: non-null is ensured by native-level API
          * - FCM Token: nullable if sdk-caller did not integrate nor set FCM and its token.
-         *
-         * [IllegalStateException] will be thrown if <Project ID> or <FCM Token> is null.
          */
         GlobalScope.launch {
             try {
@@ -168,7 +165,7 @@ object NotiflyLogUtil {
         osVersion: String,
         appVersion: String,
         externalUserId: String?,
-        eventParams: Map<String, Any?>
+        eventParams: Map<String, Any?>,
     ): RequestBody {
         val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
         val sdkType = NotiflySDKInfoUtil.getSdkType()

@@ -7,12 +7,14 @@ import android.os.Bundle
 import android.view.View
 import org.json.JSONObject
 import tech.notifly.R
+import tech.notifly.command.CommandDispatcher
+import tech.notifly.command.models.TrackEventCommand
+import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.inapp.models.ReEligibleConditionUnitType
 import tech.notifly.inapp.views.NotiflyWebView
 import tech.notifly.inapp.views.TouchInterceptorLayout
 import tech.notifly.utils.Logger
-import tech.notifly.utils.NotiflyLogUtil
 import kotlin.math.roundToInt
 
 
@@ -91,8 +93,12 @@ class NotiflyInAppMessageActivity : Activity() {
             )
         }
 
-        NotiflyLogUtil.logEvent(
-            this, "in_app_message_show", eventParams, listOf(), true
+        CommandDispatcher.dispatch(
+            TrackEventCommand(
+                TrackEventPayload(
+                    this, "in_app_message_show", eventParams, listOf(), true
+                )
+            )
         )
     }
 

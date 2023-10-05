@@ -12,7 +12,6 @@ import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.UserData
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import tech.notifly.utils.auth.NotiflyAuthUtil
 
 object NotiflySyncStateUtil {
     data class SyncStateOutput(
@@ -55,7 +54,7 @@ object NotiflySyncStateUtil {
                     if (response.code == 401) {
                         // Invalid token
                         if (retryCount < SYNC_STATE_MAX_RETRY_COUNT_ON_401) {
-                            Logger.w("[Notifly] Sync state failed with 401. Retrying...")
+                            Logger.d("[Notifly] Sync state failed with 401. Retrying...")
                             try {
                                 NotiflyAuthUtil.invalidateCognitoIdToken(context)
                             } catch (e: Exception) {

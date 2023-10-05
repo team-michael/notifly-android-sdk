@@ -1,4 +1,4 @@
-package tech.notifly.utils
+package tech.notifly
 
 enum class NotiflySdkType {
     NATIVE,
