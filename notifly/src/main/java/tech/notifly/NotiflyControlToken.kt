@@ -1,4 +1,4 @@
-package tech.notifly.utils
+package tech.notifly
 
 interface NotiflyControlToken {
     // The token does not need any methods or properties.

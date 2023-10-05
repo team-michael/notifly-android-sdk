@@ -1,4 +1,4 @@
-package tech.notifly.utils.auth
+package tech.notifly.push
 
 enum class NotificationAuthorizationStatus(val value: Int) {
     DENIED(0),

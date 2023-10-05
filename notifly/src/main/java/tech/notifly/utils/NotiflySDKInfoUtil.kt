@@ -1,6 +1,7 @@
 package tech.notifly.utils
 
 import tech.notifly.BuildConfig
+import tech.notifly.NotiflySdkType
 
 object NotiflySDKInfoUtil {
     private var sdkVersion: String = BuildConfig.VERSION

@@ -3,10 +3,8 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import tech.notifly.NotiflySdkState
+import tech.notifly.NotiflySdkStateManager
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
@@ -18,14 +16,13 @@ import tech.notifly.inapp.models.UserData
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
+import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.OSUtils
 import kotlin.math.floor
 
 object InAppMessageManager {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
     val IS_IN_APP_MESSAGE_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-
-    private const val REFRESH_TIMEOUT_MILLIS = 1000L * 5L // 5 seconds
 
     var disabled: Boolean = false
 
@@ -55,11 +52,12 @@ object InAppMessageManager {
             Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
             return
         }
-        sync(context)
+        sync(context, false)
         isInitialized = true
     }
 
-    fun refresh(context: Context, timeoutMillis: Long = REFRESH_TIMEOUT_MILLIS) {
+    @Throws(NullPointerException::class)
+    suspend fun refresh(context: Context, shouldMergeData: Boolean = false) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
             return
@@ -76,14 +74,13 @@ object InAppMessageManager {
             return
         }
 
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(timeoutMillis)
-            try {
-                sync(context)
-            } catch (e: Exception) {
-                Logger.e("[Notifly] Failed to refresh InAppMessageManager", e)
-                isInitialized = false
-            }
+        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+        try {
+            sync(context, shouldMergeData)
+            NotiflySdkStateManager.setState(NotiflySdkState.READY)
+        } catch (e: Exception) {
+            Logger.e("[Notifly] InAppMessageManager refresh failed", e)
+            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
         }
     }
 
@@ -104,10 +101,8 @@ object InAppMessageManager {
         }
 
         try {
-            params.forEach {
-                userData!!.userProperties!![it.key] = it.value
-                Logger.d("[Notifly] Updating user property to $userData")
-            }
+            userData!!.userProperties!! += params
+            Logger.d("[Notifly] Updated user data to $userData")
         } catch (e: Exception) {
             Logger.e("[Notifly] updateUserData failed", e)
         }
@@ -211,11 +206,20 @@ object InAppMessageManager {
     }
 
     @Throws(NullPointerException::class)
-    private suspend fun sync(context: Context) {
+    private suspend fun sync(context: Context, shouldMergeData: Boolean) {
         val syncStateResult = NotiflySyncStateUtil.syncState(context)
+
         campaigns = syncStateResult.campaigns
-        eventCounts = syncStateResult.eventCounts
-        userData = syncStateResult.userData
+        eventCounts = if (shouldMergeData) {
+            NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
+        } else {
+            syncStateResult.eventCounts
+        }
+        userData = if (shouldMergeData) {
+            userData?.merge(syncStateResult.userData) ?: syncStateResult.userData
+        } else {
+            syncStateResult.userData
+        }
 
         Logger.d("InAppMessageManager fetched user state successfully.")
         Logger.d("campaigns: $campaigns")

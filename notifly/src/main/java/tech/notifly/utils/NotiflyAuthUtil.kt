@@ -1,4 +1,4 @@
-package tech.notifly.utils.auth
+package tech.notifly.utils
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -7,13 +7,9 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import tech.notifly.utils.Logger
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import tech.notifly.utils.N
-import tech.notifly.utils.NotiflyFirebaseUtil
-import tech.notifly.utils.NotiflyIdUtil
 
 internal object NotiflyAuthUtil {
 
