@@ -23,22 +23,22 @@ object CommandDispatcher : SdkStateObserver {
             }
 
             else -> {
-                Logger.d("[Notifly] Notifly SDK is not currently active. Adding command ${command.commandType.name} to the queue..")
+                Logger.v("[Notifly] Notifly SDK is not currently active. Adding command ${command.commandType.name} to the queue..")
                 pendingCommandsQueue.add(command)
             }
         }
     }
 
     override fun onStateChanged(prevState: NotiflySdkState, newState: NotiflySdkState) {
-        Logger.d("[Notifly] Notifly SDK state changed: $prevState -> $newState")
+        Logger.v("[Notifly] Notifly SDK state changed: $prevState -> $newState")
         if (newState == NotiflySdkState.READY) {
-            Logger.d("==== Executing pending commands ====")
+            Logger.v("==== Executing pending commands ====")
             while (pendingCommandsQueue.isNotEmpty()) {
                 val command = pendingCommandsQueue.poll()
                 if (command != null) {
                     command.execute()
                     if (command.commandType == CommandType.SET_USER_ID) {
-                        Logger.d("==== Stopping executing pending commands due to the recurring set user ID. ====")
+                        Logger.v("==== Stopping executing pending commands due to the recurring set user ID. ====")
                         break
                     }
                 }

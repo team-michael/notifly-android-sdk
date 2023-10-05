@@ -22,9 +22,7 @@ abstract class CommandBase : Comparable<CommandBase> {
     protected abstract val payload: PayloadBase
 
     open fun execute() {
-        Logger.d("==== Executing command: $commandType ====")
-        Logger.d("Payload: $payload")
-        Logger.d("==========================================")
+        Logger.v("Executing command: $commandType")
     }
 
     override fun compareTo(other: CommandBase): Int {

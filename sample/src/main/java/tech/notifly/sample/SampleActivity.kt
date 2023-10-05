@@ -25,7 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -286,45 +289,106 @@ class SampleActivity : ComponentActivity() {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
+            val types = listOf("TEXT", "INT", "BOOL", "LIST")
+
             val context = LocalContext.current
             var userId: String by remember { mutableStateOf("") }
             var eventName: String by remember { mutableStateOf("") }
+
+            var eventParamsKey: String by remember { mutableStateOf("") }
+            var eventParamsValue: String by remember { mutableStateOf("") }
+            var selectedEventParamsType: String by remember { mutableStateOf(types[0]) }
+            var eventParamsTypeSelectionExpanded by remember { mutableStateOf(false) }
+
             var propertyName by remember { mutableStateOf("") }
             var propertyValue by remember { mutableStateOf("") }
+            var propertyValueTypeSelectionExpanded by remember { mutableStateOf(false) }
+            var selectedPropertyValueType by remember { mutableStateOf(types[0]) }
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Notifly", fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
                 NotiflyAuthenticatorSection(username, password)
 
+                Button(
+                    onClick = {
+                        val (instance, function) = reflectObjectFunction(
+                            "tech.notifly.inapp.InAppMessageManager", "sync"
+                        )
+                        CoroutineScope(Dispatchers.IO).launch {
+                            function.callSuspend(instance, context, false)
+                        }
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Force Sync State")
+                }
+
                 TextField(value = eventName,
                     onValueChange = { eventName = it },
                     label = { Text("Event Name") },
                     modifier = Modifier.padding(top = 8.dp)
                 )
-
-                Button(
-                    onClick = {
-                        Notifly.trackEvent(
-                            context,
-                            eventName,
-                            emptyMap(),
-                        )
-                    }, modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Track Event")
+                OutlinedTextField(value = eventParamsKey,
+                    onValueChange = { eventParamsKey = it },
+                    label = { Text("Event Parameter Key") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                OutlinedTextField(value = eventParamsValue,
+                    onValueChange = { eventParamsValue = it },
+                    label = { Text("Event Parameter Value") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
+                    expanded = eventParamsTypeSelectionExpanded,
+                    onExpandedChange = {
+                        eventParamsTypeSelectionExpanded = !eventParamsTypeSelectionExpanded
+                    }) {
+                    TextField(
+                        // The `menuAnchor` modifier must be passed to the text field for correctness.
+                        modifier = Modifier.menuAnchor(),
+                        readOnly = true,
+                        value = selectedEventParamsType,
+                        onValueChange = {},
+                        label = { Text("Params Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = eventParamsTypeSelectionExpanded) },
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = eventParamsTypeSelectionExpanded,
+                        onDismissRequest = { eventParamsTypeSelectionExpanded = false },
+                    ) {
+                        types.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    selectedEventParamsType = type
+                                    eventParamsTypeSelectionExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                            )
+                        }
+                    }
                 }
 
                 Button(
                     onClick = {
+                        val eventParams = mutableMapOf<String, Any?>()
+                        if (eventParamsKey.isNotEmpty() && eventParamsValue.isNotEmpty()) {
+                            val value: Any? = when (selectedEventParamsType) {
+                                "TEXT" -> eventParamsValue
+                                "INT" -> eventParamsValue.toIntOrNull()
+                                "BOOL" -> eventParamsValue.toBoolean()
+                                "LIST" -> eventParamsValue.split(",").map { it.trim() }
+                                else -> null
+                            }
+                            eventParams[eventParamsKey] = value
+                        }
                         Notifly.trackEvent(
-                            context,
-                            "good",
-                            emptyMap(),
+                            context, eventName, eventParams
                         )
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text(text = "good")
+                    Text(text = "Track Event")
                 }
 
                 TextField(value = userId,
@@ -380,6 +444,37 @@ class SampleActivity : ComponentActivity() {
                     label = { Text("User Property Value") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
+                    expanded = propertyValueTypeSelectionExpanded,
+                    onExpandedChange = {
+                        propertyValueTypeSelectionExpanded = !propertyValueTypeSelectionExpanded
+                    }) {
+                    TextField(
+                        // The `menuAnchor` modifier must be passed to the text field for correctness.
+                        modifier = Modifier.menuAnchor(),
+                        readOnly = true,
+                        value = selectedPropertyValueType,
+                        onValueChange = {},
+                        label = { Text("Params Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propertyValueTypeSelectionExpanded) },
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = propertyValueTypeSelectionExpanded,
+                        onDismissRequest = { propertyValueTypeSelectionExpanded = false },
+                    ) {
+                        types.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    selectedPropertyValueType = type
+                                    propertyValueTypeSelectionExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                            )
+                        }
+                    }
+                }
                 Button(
                     onClick = {
                         if (propertyName.isEmpty() || propertyValue.isEmpty()) {
@@ -392,8 +487,15 @@ class SampleActivity : ComponentActivity() {
                             val dialog = builder.create()
                             dialog.show()
                         } else {
+                            val value: Any? = when (selectedPropertyValueType) {
+                                "TEXT" -> propertyValue
+                                "INT" -> propertyValue.toIntOrNull()
+                                "BOOL" -> propertyValue.toBoolean()
+                                "LIST" -> propertyValue.split(",").map { it.trim() }
+                                else -> null
+                            }
                             Notifly.setUserProperties(
-                                context, mapOf(propertyName to propertyValue)
+                                context, mapOf(propertyName to value)
                             )
                         }
                     }, modifier = Modifier.padding(top = 8.dp)
