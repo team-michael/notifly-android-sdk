@@ -30,8 +30,25 @@ object NotiflyLogUtil {
         } as Map<K, R>
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    fun logEvent(
+    fun logEventSync(
+        context: Context,
+        eventName: String,
+        eventParams: Map<String, Any?> = emptyMap(),
+        segmentationEventParamKeys: List<String>? = null,
+        isInternalEvent: Boolean = false,
+    ) {
+        GlobalScope.launch {
+            try {
+                logEvent(
+                    context, eventName, eventParams, segmentationEventParamKeys, isInternalEvent
+                )
+            } catch (e: Exception) {
+                Logger.e("[Notifly] Failed logging the event. $e")
+            }
+        }
+    }
+
+    suspend fun logEvent(
         context: Context,
         eventName: String,
         eventParams: Map<String, Any?> = emptyMap(),
@@ -67,19 +84,13 @@ object NotiflyLogUtil {
          * - Device ID: non-null is ensured by native-level API
          * - FCM Token: nullable if sdk-caller did not integrate nor set FCM and its token.
          */
-        GlobalScope.launch {
-            try {
-                logEventInternal(
-                    context,
-                    eventName,
-                    eventParams,
-                    segmentationEventParamKeys,
-                    isInternalEvent,
-                )
-            } catch (e: Exception) {
-                Logger.e("[Notifly] Failed logging the event. Please retry the initialization. $e")
-            }
-        }
+        logEventInternal(
+            context,
+            eventName,
+            eventParams,
+            segmentationEventParamKeys,
+            isInternalEvent,
+        )
     }
 
     private suspend fun logEventInternal(

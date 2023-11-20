@@ -3,6 +3,8 @@ package tech.notifly.command.models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import tech.notifly.NotiflySdkState
+import tech.notifly.NotiflySdkStateManager
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -67,6 +69,7 @@ class SetUserIdCommand(
             return
         }
 
+        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
         val shouldMergeData =
             previousExternalUserId == null // Should merge data when null -> (new User ID)
 
@@ -81,8 +84,10 @@ class SetUserIdCommand(
                     NotiflyUserUtil.setUserProperties(context, params)
                 }
                 InAppMessageManager.refresh(context, shouldMergeData)
+                NotiflySdkStateManager.setState(NotiflySdkState.READY)
             } catch (e: Exception) {
-                Logger.e("Notifly setUserId failed", e)
+                Logger.e("[Notifly] setUserId failed", e)
+                NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
             }
         }
     }
@@ -95,8 +100,7 @@ class TrackEventCommand(
 
     override fun execute() {
         super.execute()
-
-        NotiflyLogUtil.logEvent(
+        NotiflyLogUtil.logEventSync(
             payload.context,
             payload.eventName,
             payload.eventParams,

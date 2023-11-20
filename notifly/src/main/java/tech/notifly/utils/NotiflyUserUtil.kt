@@ -44,10 +44,9 @@ object NotiflyUserUtil {
         }
     }
 
-    fun removeUserId(context: Context) {
+    suspend fun removeUserId(context: Context) {
         NotiflyStorage.clear(context, NotiflyStorageItem.EXTERNAL_USER_ID)
         NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
-
         NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
     }
 
