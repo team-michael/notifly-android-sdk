@@ -74,13 +74,11 @@ object InAppMessageManager {
             return
         }
 
-        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
         try {
             sync(context, shouldMergeData)
-            NotiflySdkStateManager.setState(NotiflySdkState.READY)
         } catch (e: Exception) {
             Logger.e("[Notifly] InAppMessageManager refresh failed", e)
-            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+            throw e
         }
     }
 
@@ -100,12 +98,9 @@ object InAppMessageManager {
             return
         }
 
-        try {
-            userData!!.userProperties!! += params
-            Logger.d("[Notifly] Updated user data to $userData")
-        } catch (e: Exception) {
-            Logger.e("[Notifly] updateUserData failed", e)
-        }
+
+        userData!!.userProperties!! += params
+        Logger.v("[Notifly] Updated user data to $userData")
     }
 
     private fun isReEligibleCampaign(campaignId: String, delay: Int?, now: Int): Boolean {
