@@ -27,7 +27,7 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
         val wasAppInForeground = intent.getBooleanExtra("was_app_in_foreground", false)
 
-        NotiflyLogUtil.logEvent(
+        NotiflyLogUtil.logEventSync(
             this, "push_click", mapOf(
                 "type" to "message_event",
                 "channel" to "push-notification",

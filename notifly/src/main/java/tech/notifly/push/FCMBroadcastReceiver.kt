@@ -94,7 +94,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val campaignId = pushNotification.campaign_id
         val notiflyMessageId = pushNotification.notifly_message_id
 
-        NotiflyLogUtil.logEvent(
+        NotiflyLogUtil.logEventSync(
             context, "push_delivered", mapOf(
                 "type" to "message_event",
                 "channel" to "push-notification",

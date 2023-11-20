@@ -100,8 +100,7 @@ class TrackEventCommand(
 
     override fun execute() {
         super.execute()
-
-        NotiflyLogUtil.logEvent(
+        NotiflyLogUtil.logEventSync(
             payload.context,
             payload.eventName,
             payload.eventParams,
