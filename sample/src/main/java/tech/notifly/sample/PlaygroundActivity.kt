@@ -30,25 +30,25 @@ class PlaygroundActivity : ComponentActivity() {
         setContent {
             NotiflyAndroidSDKTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     Column(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        Text(text = "Notifly Playground", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "Notifly Playground",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
 
                         Text(text = "Notification Permission: $hasNotificationPermission")
 
                         Button(onClick = { /* do something */ }) {
                             Text("Dummy Button")
                         }
-                        Button(
-                            onClick = { launchSampleActivity() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        Button(onClick = { launchSampleActivity() }) {
                             Text(text = "Go to SampleActivity")
                         }
                     }
