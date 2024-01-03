@@ -323,17 +323,20 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "Force Sync State")
                 }
 
-                TextField(value = eventName,
+                TextField(
+                    value = eventName,
                     onValueChange = { eventName = it },
                     label = { Text("Event Name") },
                     modifier = Modifier.padding(top = 8.dp)
                 )
-                OutlinedTextField(value = eventParamsKey,
+                OutlinedTextField(
+                    value = eventParamsKey,
                     onValueChange = { eventParamsKey = it },
                     label = { Text("Event Parameter Key") },
                     modifier = Modifier.padding(top = 8.dp)
                 )
-                OutlinedTextField(value = eventParamsValue,
+                OutlinedTextField(
+                    value = eventParamsValue,
                     onValueChange = { eventParamsValue = it },
                     label = { Text("Event Parameter Value") },
                     modifier = Modifier.padding(top = 8.dp)
@@ -391,7 +394,8 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "Track Event")
                 }
 
-                TextField(value = userId,
+                TextField(
+                    value = userId,
                     onValueChange = { userId = it },
                     label = { Text("User ID") },
                     modifier = Modifier.padding(top = 8.dp)
@@ -434,12 +438,14 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "Remove User ID")
                 }
 
-                OutlinedTextField(value = propertyName,
+                OutlinedTextField(
+                    value = propertyName,
                     onValueChange = { propertyName = it },
                     label = { Text("User Property Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(value = propertyValue,
+                OutlinedTextField(
+                    value = propertyValue,
                     onValueChange = { propertyValue = it },
                     label = { Text("User Property Value") },
                     modifier = Modifier.fillMaxWidth()
@@ -508,6 +514,13 @@ class SampleActivity : ComponentActivity() {
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Go to Playground page")
+                }
+
+                Button(
+                    onClick = { startActivity(Intent(context, WebViewActivity::class.java)) },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Go to WebView Page")
                 }
 
                 Button(

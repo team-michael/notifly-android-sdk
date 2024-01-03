@@ -38,7 +38,7 @@ object CommandDispatcher : SdkStateObserver {
                 if (command != null) {
                     command.execute()
                     if (command.commandType == CommandType.SET_USER_ID) {
-                        Logger.v("==== Stopping executing pending commands due to the recurring set user ID. ====")
+                        Logger.v("==== Stop executing pending commands due to the recurring set user ID. ====")
                         break
                     }
                 }
