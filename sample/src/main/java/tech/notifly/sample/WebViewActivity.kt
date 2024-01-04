@@ -22,10 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import tech.notifly.Notifly
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
@@ -52,13 +49,13 @@ class WebViewActivity : ComponentActivity() {
                                     loadUrl("https://csjunha.com")
                                 }
                             }, modifier = Modifier
-                                .fillMaxHeight(0.8f)
+                                .fillMaxHeight(0.75f)
                                 .weight(0.8f)
                         )
 
                         Column(
                             modifier = Modifier
-                                .fillMaxHeight(0.2f)
+                                .fillMaxHeight(0.25f)
                                 .fillMaxWidth(1.0f)
                                 .weight(0.2f)
                                 .background(Color.Gray),
@@ -86,25 +83,13 @@ class WebViewActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.padding(top = 8.dp)
                             ) {
-                                Text(text = "WebView Test Event")
+                                Text(text = "Sample setUserProperties")
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    @Composable
-    fun MyWebView(): WebView {
-        val webView = remember {
-            WebView(this@WebViewActivity).apply {
-                settings.javaScriptEnabled = true
-                webViewClient = WebViewClient()
-                loadUrl("https://csjunha.com")
-            }
-        }
-        return webView
     }
 
     private fun launchSampleActivity() {
