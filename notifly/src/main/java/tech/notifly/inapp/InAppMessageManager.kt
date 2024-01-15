@@ -3,15 +3,13 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
-import tech.notifly.NotiflySdkState
-import tech.notifly.NotiflySdkStateManager
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
 import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.SegmentConditionUnitType
-import tech.notifly.inapp.models.SegmentConditionValueType
-import tech.notifly.inapp.models.SegmentOperator
+import tech.notifly.inapp.models.ValueType
+import tech.notifly.inapp.models.Operator
 import tech.notifly.inapp.models.UserData
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
@@ -68,7 +66,6 @@ object InAppMessageManager {
             return
         }
 
-        // Fetch states from server again after timeoutMillis
         if (!isInitialized) {
             Logger.e("[Notifly] InAppMessageManager is not initialized.")
             return
@@ -82,7 +79,7 @@ object InAppMessageManager {
         }
     }
 
-    fun updateUserData(params: Map<String, Any?>) {
+    fun updateUserProperties(params: Map<String, Any?>) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
             return
@@ -194,6 +191,14 @@ object InAppMessageManager {
             Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
         }
         ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
+    }
+
+    fun clearUserState() {
+        eventCounts = mutableListOf()
+        userData.apply {
+            this?.userProperties?.clear()
+            this?.campaignHiddenUntil?.clear()
+        }
     }
 
     private fun sanitizeEventName(eventName: String, isInternalEvent: Boolean): String {
@@ -394,7 +399,7 @@ object InAppMessageManager {
         val valueType = condition.valueType ?: return false
         val useEventParamsAsConditionValue = condition.useEventParamsAsConditionValue ?: false
 
-        val userAttributeValue = userData?.get(unit, condition.attribute) ?: return false
+        val userAttributeValue = userData?.get(unit, condition.attribute)
         val value = if (useEventParamsAsConditionValue) {
             val comparisonParameter = condition.comparisonParameter ?: return false
             eventParams[comparisonParameter] ?: return false
@@ -402,49 +407,63 @@ object InAppMessageManager {
             condition.value
         }
 
+        if (operator == Operator.IS_NULL || operator == Operator.IS_NOT_NULL) {
+            return when (operator) {
+                Operator.IS_NULL -> !isValuePresent(userAttributeValue)
+                Operator.IS_NOT_NULL -> isValuePresent(userAttributeValue)
+                else -> false // Should never happen
+            }
+        }
+
+        if (userAttributeValue == null || value == null) {
+            return false
+        }
+
         return when (operator) {
-            SegmentOperator.EQUALS -> UserPropertyBasedConditionComparator.isEqual(
+            Operator.EQUALS -> Comparator.isEqual(
                 userAttributeValue, value, valueType
             )
 
-            SegmentOperator.NOT_EQUALS -> UserPropertyBasedConditionComparator.isNotEqual(
+            Operator.NOT_EQUALS -> Comparator.isNotEqual(
                 userAttributeValue, value, valueType
             )
 
-            SegmentOperator.GREATER_THAN -> UserPropertyBasedConditionComparator.isGreaterThan(
+            Operator.GREATER_THAN -> Comparator.isGreaterThan(
                 userAttributeValue, value, valueType
             )
 
-            SegmentOperator.GREATER_THAN_OR_EQUAL -> UserPropertyBasedConditionComparator.isGreaterThanOrEqual(
+            Operator.GREATER_THAN_OR_EQUAL -> Comparator.isGreaterThanOrEqual(
                 userAttributeValue, value, valueType
             )
 
-            SegmentOperator.LESS_THAN -> UserPropertyBasedConditionComparator.isLessThan(
+            Operator.LESS_THAN -> Comparator.isLessThan(
                 userAttributeValue, value, valueType
             )
 
-            SegmentOperator.LESS_THAN_OR_EQUAL -> UserPropertyBasedConditionComparator.isLessThanOrEqual(
+            Operator.LESS_THAN_OR_EQUAL -> Comparator.isLessThanOrEqual(
                 userAttributeValue, value, valueType
             )
 
-            SegmentOperator.CONTAINS -> UserPropertyBasedConditionComparator.contains(
+            Operator.CONTAINS -> Comparator.contains(
                 userAttributeValue, value, valueType
             )
+
+            else -> false // Should never happen
         }
     }
 
-    private fun compareEventBasedCondition(count: Int, op: SegmentOperator, value: Int): Boolean {
+    private fun compareEventBasedCondition(count: Int, op: Operator, value: Int): Boolean {
         return when (op) {
-            SegmentOperator.EQUALS -> count == value
-            SegmentOperator.GREATER_THAN -> count > value
-            SegmentOperator.GREATER_THAN_OR_EQUAL -> count >= value
-            SegmentOperator.LESS_THAN -> count < value
-            SegmentOperator.LESS_THAN_OR_EQUAL -> count <= value
+            Operator.EQUALS -> count == value
+            Operator.GREATER_THAN -> count > value
+            Operator.GREATER_THAN_OR_EQUAL -> count >= value
+            Operator.LESS_THAN -> count < value
+            Operator.LESS_THAN_OR_EQUAL -> count <= value
             else -> false
         }
     }
 
-    private class UserPropertyBasedConditionComparator {
+    private class Comparator {
         companion object {
             @Throws(ClassCastException::class, NumberFormatException::class)
             private fun cast(value: Any, type: String): Any {
@@ -478,18 +497,18 @@ object InAppMessageManager {
                 }
             }
 
-            fun isEqual(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun isEqual(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     when (type) {
-                        SegmentConditionValueType.TEXT -> cast(
+                        ValueType.TEXT -> cast(
                             a, type.toString()
                         ) as String == cast(b, type.toString()) as String
 
-                        SegmentConditionValueType.INT -> cast(a, type.toString()) as Int == cast(
+                        ValueType.INT -> cast(a, type.toString()) as Int == cast(
                             b, type.toString()
                         ) as Int
 
-                        SegmentConditionValueType.BOOL -> cast(
+                        ValueType.BOOL -> cast(
                             a, type.toString()
                         ) as Boolean == cast(b, type.toString()) as Boolean
                     }
@@ -499,18 +518,18 @@ object InAppMessageManager {
                 }
             }
 
-            fun isNotEqual(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun isNotEqual(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     when (type) {
-                        SegmentConditionValueType.TEXT -> cast(
+                        ValueType.TEXT -> cast(
                             a, type.toString()
                         ) as String != cast(b, type.toString()) as String
 
-                        SegmentConditionValueType.INT -> cast(a, type.toString()) as Int != cast(
+                        ValueType.INT -> cast(a, type.toString()) as Int != cast(
                             b, type.toString()
                         ) as Int
 
-                        SegmentConditionValueType.BOOL -> cast(
+                        ValueType.BOOL -> cast(
                             a, type.toString()
                         ) as Boolean != cast(b, type.toString()) as Boolean
                     }
@@ -520,18 +539,18 @@ object InAppMessageManager {
                 }
             }
 
-            fun isGreaterThan(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun isGreaterThan(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     when (type) {
-                        SegmentConditionValueType.TEXT -> cast(a, type.toString()) as String > cast(
+                        ValueType.TEXT -> cast(a, type.toString()) as String > cast(
                             b, type.toString()
                         ) as String
 
-                        SegmentConditionValueType.INT -> cast(a, type.toString()) as Int > cast(
+                        ValueType.INT -> cast(a, type.toString()) as Int > cast(
                             b, type.toString()
                         ) as Int
 
-                        SegmentConditionValueType.BOOL -> cast(
+                        ValueType.BOOL -> cast(
                             a, type.toString()
                         ) as Boolean > cast(b, type.toString()) as Boolean
                     }
@@ -541,18 +560,18 @@ object InAppMessageManager {
                 }
             }
 
-            fun isGreaterThanOrEqual(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun isGreaterThanOrEqual(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     when (type) {
-                        SegmentConditionValueType.TEXT -> cast(
+                        ValueType.TEXT -> cast(
                             a, type.toString()
                         ) as String >= cast(b, type.toString()) as String
 
-                        SegmentConditionValueType.INT -> cast(a, type.toString()) as Int >= cast(
+                        ValueType.INT -> cast(a, type.toString()) as Int >= cast(
                             b, type.toString()
                         ) as Int
 
-                        SegmentConditionValueType.BOOL -> cast(
+                        ValueType.BOOL -> cast(
                             a, type.toString()
                         ) as Boolean >= cast(b, type.toString()) as Boolean
                     }
@@ -562,18 +581,18 @@ object InAppMessageManager {
                 }
             }
 
-            fun isLessThan(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun isLessThan(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     when (type) {
-                        SegmentConditionValueType.TEXT -> (cast(
+                        ValueType.TEXT -> (cast(
                             a, type.toString()
                         ) as String) < (cast(b, type.toString()) as String)
 
-                        SegmentConditionValueType.INT -> (cast(
+                        ValueType.INT -> (cast(
                             a, type.toString()
                         ) as Int) < (cast(b, type.toString()) as Int)
 
-                        SegmentConditionValueType.BOOL -> (cast(
+                        ValueType.BOOL -> (cast(
                             a, type.toString()
                         ) as Boolean) < (cast(b, type.toString()) as Boolean)
                     }
@@ -583,18 +602,18 @@ object InAppMessageManager {
                 }
             }
 
-            fun isLessThanOrEqual(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun isLessThanOrEqual(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     when (type) {
-                        SegmentConditionValueType.TEXT -> (cast(
+                        ValueType.TEXT -> (cast(
                             a, type.toString()
                         ) as String) <= (cast(b, type.toString()) as String)
 
-                        SegmentConditionValueType.INT -> (cast(a, type.toString()) as Int) <= (cast(
+                        ValueType.INT -> (cast(a, type.toString()) as Int) <= (cast(
                             b, type.toString()
                         ) as Int)
 
-                        SegmentConditionValueType.BOOL -> (cast(
+                        ValueType.BOOL -> (cast(
                             a, type.toString()
                         ) as Boolean) <= (cast(b, type.toString()) as Boolean)
                     }
@@ -604,23 +623,23 @@ object InAppMessageManager {
                 }
             }
 
-            fun contains(a: Any, b: Any, type: SegmentConditionValueType): Boolean {
+            fun contains(a: Any, b: Any, type: ValueType): Boolean {
                 return try {
                     val castedA = cast(a, "ARRAY") as List<*>
                     when (type) {
-                        SegmentConditionValueType.TEXT -> castedA.contains(
+                        ValueType.TEXT -> castedA.contains(
                             cast(
                                 b, type.toString()
                             ) as String
                         )
 
-                        SegmentConditionValueType.INT -> castedA.contains(
+                        ValueType.INT -> castedA.contains(
                             cast(
                                 b, type.toString()
                             ) as Int
                         )
 
-                        SegmentConditionValueType.BOOL -> castedA.contains(
+                        ValueType.BOOL -> castedA.contains(
                             cast(
                                 b, type.toString()
                             ) as Boolean
@@ -631,6 +650,14 @@ object InAppMessageManager {
                     false
                 }
             }
+        }
+    }
+
+    private fun isValuePresent(value: Any?): Boolean {
+        return when (value) {
+            null -> false
+            is String -> value.isNotEmpty()
+            else -> false
         }
     }
 }

@@ -32,6 +32,54 @@ abstract class CommandBase : Comparable<CommandBase> {
     }
 }
 
+class SetUserIdCommand(
+    override val payload: SetUserIdPayload
+) : CommandBase() {
+    override val commandType = CommandType.SET_USER_ID
+
+    override fun execute() {
+        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+
+        super.execute()
+
+        val context = payload.context
+        val previousExternalUserId = NotiflyStorage.get(
+            context, NotiflyStorageItem.EXTERNAL_USER_ID
+        )
+        val userId = payload.userId
+
+        val areUserIdsSame =
+            (previousExternalUserId.isNullOrEmpty() && userId.isNullOrEmpty()) || (previousExternalUserId == userId)
+        val shouldMergeData =
+            !areUserIdsSame && previousExternalUserId.isNullOrEmpty() // Should merge data when null -> (new User ID)
+        val shouldClearData = userId.isNullOrEmpty() // Should clear data when (new User ID) -> null
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (userId.isNullOrEmpty()) {
+                    NotiflyUserUtil.removeUserId(context)
+                } else {
+                    val params = mapOf(
+                        N.KEY_EXTERNAL_USER_ID to userId
+                    )
+                    NotiflyUserUtil.setUserProperties(context, params)
+                }
+                // Refresh state only when user ID is changed
+                if (!areUserIdsSame) {
+                    InAppMessageManager.refresh(context, shouldMergeData)
+                }
+                if (shouldClearData) {
+                    InAppMessageManager.clearUserState()
+                }
+                NotiflySdkStateManager.setState(NotiflySdkState.READY)
+            } catch (e: Exception) {
+                Logger.e("[Notifly] setUserId failed", e)
+                NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+            }
+        }
+    }
+}
+
 class SetUserPropertiesCommand(
     override val payload: SetUserPropertiesPayload
 ) : CommandBase() {
@@ -45,49 +93,6 @@ class SetUserPropertiesCommand(
                 NotiflyUserUtil.setUserProperties(payload.context, payload.params)
             } catch (e: Exception) {
                 Logger.w("Notifly setUserProperties failed", e)
-            }
-        }
-    }
-}
-
-class SetUserIdCommand(
-    override val payload: SetUserIdPayload
-) : CommandBase() {
-    override val commandType = CommandType.SET_USER_ID
-
-    override fun execute() {
-        super.execute()
-
-        val context = payload.context
-        val previousExternalUserId = NotiflyStorage.get(
-            context, NotiflyStorageItem.EXTERNAL_USER_ID
-        )
-        val userId = payload.userId
-
-        if (previousExternalUserId == userId) {
-            Logger.d("Notifly setUserId: userId is same as previous one. Skipping...")
-            return
-        }
-
-        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
-        val shouldMergeData =
-            previousExternalUserId == null // Should merge data when null -> (new User ID)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                if (userId.isNullOrEmpty()) {
-                    NotiflyUserUtil.removeUserId(context)
-                } else {
-                    val params = mapOf(
-                        N.KEY_EXTERNAL_USER_ID to userId
-                    )
-                    NotiflyUserUtil.setUserProperties(context, params)
-                }
-                InAppMessageManager.refresh(context, shouldMergeData)
-                NotiflySdkStateManager.setState(NotiflySdkState.READY)
-            } catch (e: Exception) {
-                Logger.e("[Notifly] setUserId failed", e)
-                NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
             }
         }
     }

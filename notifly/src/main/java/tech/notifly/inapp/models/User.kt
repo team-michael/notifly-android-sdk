@@ -1,8 +1,12 @@
 package tech.notifly.inapp.models
 
+import android.content.Context
 import org.json.JSONException
 import org.json.JSONObject
+import tech.notifly.Notifly
 import tech.notifly.utils.Logger
+import tech.notifly.utils.NotiflyDeviceUtil
+import tech.notifly.utils.NotiflySDKInfoUtil
 
 data class EventIntermediateCounts(
     val dt: String, val name: String, val count: Int, val event_params: Map<String, Any?>
@@ -62,6 +66,7 @@ data class UserData(
     val appVersion: String?,
     val sdkVersion: String?,
     val sdkType: String?,
+    val randomBucketNumber: Int?,
     val updatedAt: String?, // Not used
     val userProperties: MutableMap<String, Any?>?,
     val campaignHiddenUntil: MutableMap<String, Int>,
@@ -94,6 +99,7 @@ data class UserData(
             appVersion = other.appVersion,
             sdkVersion = other.sdkVersion,
             sdkType = other.sdkType,
+            randomBucketNumber = other.randomBucketNumber,
             updatedAt = other.updatedAt,
             userProperties = if (other.userProperties == null && userProperties == null) null else {
                 val merged = mutableMapOf<String, Any?>()
@@ -112,15 +118,31 @@ data class UserData(
     }
 
     companion object {
-        fun fromJSONObject(from: JSONObject): UserData? {
+        suspend fun fromJSONObject(context: Context, from: JSONObject): UserData? {
             try {
-                val platform = if (from.has("platform")) from.getString("platform") else null
-                val osVersion = if (from.has("os_version")) from.getString("os_version") else null
-                val appVersion =
-                    if (from.has("app_version")) from.getString("app_version") else null
-                val sdkVersion =
-                    if (from.has("sdk_version")) from.getString("sdk_version") else null
-                val sdkType = if (from.has("sdk_type")) from.getString("sdk_type") else null
+                val platform = NotiflyDeviceUtil.getPlatform()
+                val osVersion = NotiflyDeviceUtil.getOsVersion()
+                val appVersion = NotiflyDeviceUtil.getAppVersion(context)
+                val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
+                val sdkType = NotiflySDKInfoUtil.getSdkType().toLowerCaseName()
+
+                // random_bucket_number can either be an int or a string
+                val randomBucketNumber = if (from.has("random_bucket_number")) {
+                    when (val randomBucketNumber = from.get("random_bucket_number")) {
+                        is Int -> {
+                            randomBucketNumber
+                        }
+
+                        is String -> {
+                            randomBucketNumber.toIntOrNull()
+                        }
+
+                        else -> {
+                            null
+                        }
+                    }
+                } else null
+
                 val updatedAt = if (from.has("updated_at")) from.getString("updated_at") else null
 
                 val userPropertiesJSONObject =
@@ -150,14 +172,15 @@ data class UserData(
                 } else mutableMapOf()
 
                 return UserData(
-                    platform,
-                    osVersion,
-                    appVersion,
-                    sdkVersion,
-                    sdkType,
-                    updatedAt,
-                    userProperties,
-                    campaignHiddenUntil
+                    platform = platform,
+                    osVersion = osVersion,
+                    appVersion = appVersion,
+                    sdkVersion = sdkVersion,
+                    sdkType = sdkType,
+                    randomBucketNumber = randomBucketNumber,
+                    updatedAt = updatedAt,
+                    userProperties = userProperties,
+                    campaignHiddenUntil = campaignHiddenUntil
                 )
             } catch (e: JSONException) {
                 Logger.d("Error parsing UserData: $e")
