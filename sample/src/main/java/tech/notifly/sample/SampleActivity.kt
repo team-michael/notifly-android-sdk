@@ -52,8 +52,12 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import tech.notifly.Notifly
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
+import tech.notifly.utils.Logger
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.callSuspend
@@ -65,6 +69,7 @@ class SampleActivity : ComponentActivity() {
     companion object {
         const val TAG = "NotiflySample"
         private const val PERMISSION_REQUEST_CODE = 101
+        private val VALUE_TYPES = listOf("TEXT", "INT", "BOOL", "LIST")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -289,21 +294,8 @@ class SampleActivity : ComponentActivity() {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            val types = listOf("TEXT", "INT", "BOOL", "LIST")
-
             val context = LocalContext.current
             var userId: String by remember { mutableStateOf("") }
-            var eventName: String by remember { mutableStateOf("") }
-
-            var eventParamsKey: String by remember { mutableStateOf("") }
-            var eventParamsValue: String by remember { mutableStateOf("") }
-            var selectedEventParamsType: String by remember { mutableStateOf(types[0]) }
-            var eventParamsTypeSelectionExpanded by remember { mutableStateOf(false) }
-
-            var propertyName by remember { mutableStateOf("") }
-            var propertyValue by remember { mutableStateOf("") }
-            var propertyValueTypeSelectionExpanded by remember { mutableStateOf(false) }
-            var selectedPropertyValueType by remember { mutableStateOf(types[0]) }
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Notifly", fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -323,79 +315,7 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "Force Sync State")
                 }
 
-                TextField(
-                    value = eventName,
-                    onValueChange = { eventName = it },
-                    label = { Text("Event Name") },
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                OutlinedTextField(
-                    value = eventParamsKey,
-                    onValueChange = { eventParamsKey = it },
-                    label = { Text("Event Parameter Key") },
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                OutlinedTextField(
-                    value = eventParamsValue,
-                    onValueChange = { eventParamsValue = it },
-                    label = { Text("Event Parameter Value") },
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
-                    expanded = eventParamsTypeSelectionExpanded,
-                    onExpandedChange = {
-                        eventParamsTypeSelectionExpanded = !eventParamsTypeSelectionExpanded
-                    }) {
-                    TextField(
-                        // The `menuAnchor` modifier must be passed to the text field for correctness.
-                        modifier = Modifier.menuAnchor(),
-                        readOnly = true,
-                        value = selectedEventParamsType,
-                        onValueChange = {},
-                        label = { Text("Params Type") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = eventParamsTypeSelectionExpanded) },
-                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = eventParamsTypeSelectionExpanded,
-                        onDismissRequest = { eventParamsTypeSelectionExpanded = false },
-                    ) {
-                        types.forEach { type ->
-                            DropdownMenuItem(
-                                text = { Text(type) },
-                                onClick = {
-                                    selectedEventParamsType = type
-                                    eventParamsTypeSelectionExpanded = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                            )
-                        }
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        val eventParams = mutableMapOf<String, Any?>()
-                        if (eventParamsKey.isNotEmpty() && eventParamsValue.isNotEmpty()) {
-                            val value: Any? = when (selectedEventParamsType) {
-                                "TEXT" -> eventParamsValue
-                                "INT" -> eventParamsValue.toIntOrNull()
-                                "BOOL" -> eventParamsValue.toBoolean()
-                                "LIST" -> eventParamsValue.split(",").map { it.trim() }
-                                else -> null
-                            }
-                            eventParams[eventParamsKey] = value
-                        }
-                        Notifly.trackEvent(
-                            context, eventName, eventParams
-                        )
-                    }, modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Track Event")
-                }
-
-                TextField(
-                    value = userId,
+                TextField(value = userId,
                     onValueChange = { userId = it },
                     label = { Text("User ID") },
                     modifier = Modifier.padding(top = 8.dp)
@@ -437,97 +357,197 @@ class SampleActivity : ComponentActivity() {
                 ) {
                     Text(text = "Remove User ID")
                 }
+                TrackEventSection()
+                SetUserPropertiesSection()
+                NavigatorButtonsSection()
+            }
+        }
+    }
 
-                OutlinedTextField(
-                    value = propertyName,
-                    onValueChange = { propertyName = it },
-                    label = { Text("User Property Name") },
-                    modifier = Modifier.fillMaxWidth()
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun SetUserPropertiesSection() {
+        val context = LocalContext.current
+
+        var propertyName by remember { mutableStateOf("") }
+        var propertyValue by remember { mutableStateOf("") }
+        var propertyValueTypeSelectionExpanded by remember { mutableStateOf(false) }
+        var selectedPropertyValueType by remember { mutableStateOf(VALUE_TYPES[0]) }
+
+        return Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            OutlinedTextField(value = propertyName,
+                onValueChange = { propertyName = it },
+                label = { Text("User Property Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(value = propertyValue,
+                onValueChange = { propertyValue = it },
+                label = { Text("User Property Value") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
+                expanded = propertyValueTypeSelectionExpanded,
+                onExpandedChange = {
+                    propertyValueTypeSelectionExpanded = !propertyValueTypeSelectionExpanded
+                }) {
+                TextField(
+                    // The `menuAnchor` modifier must be passed to the text field for correctness.
+                    modifier = Modifier.menuAnchor(),
+                    readOnly = true,
+                    value = selectedPropertyValueType,
+                    onValueChange = {},
+                    label = { Text("Params Type") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propertyValueTypeSelectionExpanded) },
+                    colors = ExposedDropdownMenuDefaults.textFieldColors(),
                 )
-                OutlinedTextField(
-                    value = propertyValue,
-                    onValueChange = { propertyValue = it },
-                    label = { Text("User Property Value") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
+                ExposedDropdownMenu(
                     expanded = propertyValueTypeSelectionExpanded,
-                    onExpandedChange = {
-                        propertyValueTypeSelectionExpanded = !propertyValueTypeSelectionExpanded
-                    }) {
-                    TextField(
-                        // The `menuAnchor` modifier must be passed to the text field for correctness.
-                        modifier = Modifier.menuAnchor(),
-                        readOnly = true,
-                        value = selectedPropertyValueType,
-                        onValueChange = {},
-                        label = { Text("Params Type") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propertyValueTypeSelectionExpanded) },
-                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = propertyValueTypeSelectionExpanded,
-                        onDismissRequest = { propertyValueTypeSelectionExpanded = false },
-                    ) {
-                        types.forEach { type ->
-                            DropdownMenuItem(
-                                text = { Text(type) },
-                                onClick = {
-                                    selectedPropertyValueType = type
-                                    propertyValueTypeSelectionExpanded = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                            )
-                        }
+                    onDismissRequest = { propertyValueTypeSelectionExpanded = false },
+                ) {
+                    VALUE_TYPES.forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(type) },
+                            onClick = {
+                                selectedPropertyValueType = type
+                                propertyValueTypeSelectionExpanded = false
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                        )
                     }
                 }
-                Button(
-                    onClick = {
-                        if (propertyName.isEmpty() || propertyValue.isEmpty()) {
-                            Log.w(TAG, "Empty user property input")
-                            // Show alert for empty user property input
-                            val builder = AlertDialog.Builder(context)
-                            builder.setTitle("Error")
-                            builder.setMessage("Please enter a user property name and value.")
-                            builder.setPositiveButton("OK", null)
-                            val dialog = builder.create()
-                            dialog.show()
-                        } else {
-                            val value: Any? = when (selectedPropertyValueType) {
-                                "TEXT" -> propertyValue
-                                "INT" -> propertyValue.toIntOrNull()
-                                "BOOL" -> propertyValue.toBoolean()
-                                "LIST" -> propertyValue.split(",").map { it.trim() }
-                                else -> null
-                            }
-                            Notifly.setUserProperties(
-                                context, mapOf(propertyName to value)
-                            )
+            }
+            Button(
+                onClick = {
+                    if (propertyName.isEmpty() || propertyValue.isEmpty()) {
+                        Log.w(TAG, "Empty user property input")
+                        // Show alert for empty user property input
+                        val builder = AlertDialog.Builder(context)
+                        builder.setTitle("Error")
+                        builder.setMessage("Please enter a user property name and value.")
+                        builder.setPositiveButton("OK", null)
+                        val dialog = builder.create()
+                        dialog.show()
+                    } else {
+                        val value: Any? = when (selectedPropertyValueType) {
+                            "TEXT" -> propertyValue
+                            "INT" -> propertyValue.toIntOrNull()
+                            "BOOL" -> propertyValue.toBoolean()
+                            "LIST" -> propertyValue.split(",").map { it.trim() }
+                            else -> null
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Set User Property")
-                }
+                        Notifly.setUserProperties(
+                            context, mapOf(propertyName to value)
+                        )
+                    }
+                }, modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(text = "Set User Property")
+            }
+        }
+    }
 
-                Button(
-                    onClick = { startActivity(Intent(context, PlaygroundActivity::class.java)) },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Go to Playground page")
-                }
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun TrackEventSection() {
+        val context = LocalContext.current
 
-                Button(
-                    onClick = { startActivity(Intent(context, WebViewActivity::class.java)) },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Go to WebView Page")
-                }
+        var eventName: String by remember { mutableStateOf("") }
+        var eventParamsStringified: String by remember {
+            mutableStateOf("{}")
+        }
 
-                Button(
-                    onClick = { /* Handle button click */ }, modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(text = "Dummy Button")
+        return Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            TextField(value = eventName,
+                onValueChange = { eventName = it },
+                label = { Text("Event Name") },
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            OutlinedTextField(value = eventParamsStringified,
+                onValueChange = { eventParamsStringified = it },
+                label = { Text("Event Params (Stringified JSON)") },
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Button(onClick = {
+                try {
+                    if (eventName.isEmpty()) {
+                        Log.w(TAG, "Empty event name input")
+                        // Show alert for empty event name input
+                        val builder = AlertDialog.Builder(context)
+                        builder.setTitle("Error")
+                        builder.setMessage("Please enter an event name.")
+                        builder.setPositiveButton("OK", null)
+                        val dialog = builder.create()
+                        dialog.show()
+                        return@Button
+                    }
+                    val eventParamsJSONObject = JSONObject(eventParamsStringified)
+                    val eventParams = mutableMapOf<String, Any?>()
+                    eventParamsJSONObject.keys().forEach { key ->
+                        eventParams[key] = eventParamsJSONObject.get(key).let { it ->
+                            when (it) {
+                                is String -> it
+                                is Int -> it
+                                is Boolean -> it
+                                is JSONArray -> {
+                                    val list = mutableListOf<Any>()
+                                    for (i in 0 until it.length()) {
+                                        list.add(it.get(i))
+                                    }
+                                    list.toList()
+                                }
+
+                                JSONObject.NULL -> null
+                                else -> throw IllegalArgumentException("Invalid value type")
+                            }
+                        }
+                    }
+
+                    Logger.v(eventParams.toString())
+                    eventParams.keys.forEach {
+                        Logger.v("$it: ${eventParams[it]}")
+                        Logger.v("type of ${eventParams[it]} is ${eventParams[it]?.javaClass?.name ?: "null"}")
+                    }
+                    Notifly.trackEvent(
+                        context, eventName, eventParams
+                    )
+                } catch (e: JSONException) {
+                    Log.w(TAG, "Error: $e")
+                    // Show alert for empty user ID input
+                    val builder = AlertDialog.Builder(context)
+                    builder.setTitle("Error")
+                    builder.setMessage("Please enter a valid JSON string.")
+                    builder.setPositiveButton("OK", null)
+                    val dialog = builder.create()
+                    dialog.show()
                 }
+            }) {
+                Text(text = "Track Event")
+            }
+        }
+    }
+
+    @Composable
+    private fun NavigatorButtonsSection() {
+        val context = LocalContext.current
+        return Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Button(
+                onClick = { startActivity(Intent(context, PlaygroundActivity::class.java)) },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(text = "Go to Playground page")
+            }
+
+            Button(
+                onClick = { startActivity(Intent(context, WebViewActivity::class.java)) },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(text = "Go to WebView Page")
+            }
+
+            Button(
+                onClick = { /* Handle button click */ }, modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(text = "Dummy Button")
             }
         }
     }

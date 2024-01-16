@@ -127,7 +127,7 @@ data class Message(
 )
 
 data class SegmentInfo(
-    val groups: List<Group>, val groupOperator: GroupOperator
+    val conditionGroup: List<ConditionGroup>, val groupOperator: GroupOperator
 ) {
     companion object {
         @Throws(JSONException::class)
@@ -135,13 +135,14 @@ data class SegmentInfo(
             try {
                 val groups = if (segmentInfo.has("groups")) {
                     val groupsArray = segmentInfo.getJSONArray("groups")
-                    val groups = mutableListOf<Group>()
+                    val conditionGroups = mutableListOf<ConditionGroup>()
                     for (i in 0 until groupsArray.length()) {
                         val groupObject = groupsArray.getJSONObject(i)
-                        val group = Group.fromJSONObject(groupObject) ?: return null
-                        groups.add(group)
+                        val conditionGroup =
+                            ConditionGroup.fromJSONObject(groupObject) ?: return null
+                        conditionGroups.add(conditionGroup)
                     }
-                    groups
+                    conditionGroups
                 } else {
                     return null
                 }
@@ -155,12 +156,12 @@ data class SegmentInfo(
     }
 }
 
-data class Group(
+data class ConditionGroup(
     val conditions: List<Condition>, val conditionOperator: ConditionOperator
 ) {
     companion object {
         @Throws(JSONException::class, ClassCastException::class)
-        fun fromJSONObject(groupObject: JSONObject): Group? {
+        fun fromJSONObject(groupObject: JSONObject): ConditionGroup? {
             val conditionsArray = groupObject.getJSONArray("conditions")
             val conditionOperator =
                 if (conditionsArray.length() > 1) ConditionOperator.AND else ConditionOperator.NULL
@@ -170,7 +171,7 @@ data class Group(
                 val condition = Condition.fromJSONObject(conditionObject) ?: return null
                 conditions.add(condition)
             }
-            return Group(conditions, conditionOperator)
+            return ConditionGroup(conditions, conditionOperator)
         }
     }
 }
@@ -193,6 +194,7 @@ data class Condition(
             val unit = when (conditionObject.getString("unit")) {
                 "event" -> SegmentConditionUnitType.EVENT
                 "user" -> SegmentConditionUnitType.USER
+                "user_metadata" -> SegmentConditionUnitType.USER_METADATA
                 "device" -> SegmentConditionUnitType.DEVICE
                 else -> return null
             }

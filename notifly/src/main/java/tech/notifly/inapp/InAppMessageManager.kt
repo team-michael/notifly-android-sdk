@@ -3,7 +3,6 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
-import androidx.annotation.NonNull
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
@@ -165,7 +164,7 @@ object InAppMessageManager {
         }
     }
 
-    fun maybeScheduleInWebMessagesAndIngestEvent(
+    fun maybeScheduleInAppMessagesAndIngestEvent(
         context: Context,
         eventName: String,
         externalUserId: String?,
@@ -242,7 +241,7 @@ object InAppMessageManager {
 
         val predicate: (EventIntermediateCounts) -> Boolean = { row ->
             if (keyField != null && valueField != null) {
-                row.dt == formattedDate && row.name == eventName && row.event_params[keyField] == valueField
+                row.dt == formattedDate && row.name == eventName && row.eventParams[keyField] == valueField
             } else {
                 row.dt == formattedDate && row.name == eventName
             }
@@ -256,7 +255,7 @@ object InAppMessageManager {
             // If no existing row is found, create a new entry
             eventCounts.add(
                 EventIntermediateCounts(
-                    dt = formattedDate, name = eventName, count = 1, event_params = eventParams
+                    dt = formattedDate, name = eventName, count = 1, eventParams = eventParams
                 )
             )
         }
@@ -269,19 +268,20 @@ object InAppMessageManager {
         eventName: String,
         eventParams: Map<String, Any?>
     ) {
-        getCampaignsToSchedule(campaigns, externalUserId, eventName, eventParams).forEach {
+        getCampaignsToSchedule(context, campaigns, externalUserId, eventName, eventParams).forEach {
             InAppMessageScheduler.schedule(context, it)
         }
     }
 
     private fun getCampaignsToSchedule(
+        context: Context,
         campaigns: List<Campaign>,
         externalUserId: String?,
         eventName: String,
         eventParams: Map<String, Any?>
     ): List<Campaign> {
         return filterCampaignsWithUniqueDelays(campaigns.filter {
-            evaluateCampaignVisibility(it, externalUserId, eventName, eventParams)
+            evaluateCampaignVisibility(context, it, externalUserId, eventName, eventParams)
         })
     }
 
@@ -308,13 +308,26 @@ object InAppMessageManager {
     }
 
     private fun evaluateCampaignVisibility(
+        context: Context,
         campaign: Campaign,
         externalUserId: String?,
         eventName: String,
         eventParams: Map<String, Any?>
     ): Boolean {
+        val now = floor(System.currentTimeMillis().toDouble() / 1000.0).toInt()
+        val templateName = campaign.message.templateName ?: return false
+        val groups = campaign.segmentInfo?.conditionGroup
+
         if (campaign.triggeringEvent != eventName) {
             return false
+        }
+
+        if (campaign.start > now) {
+            return false
+        } else {
+            if (campaign.end != null && campaign.end < now) {
+                return false
+            }
         }
 
         if (campaign.triggeringEventFilters != null) {
@@ -333,41 +346,32 @@ object InAppMessageManager {
             }
         }
 
-        val now = floor(System.currentTimeMillis().toDouble() / 1000.0).toInt()
         if (!isReEligibleCampaign(campaign.id, campaign.delay, now)) {
             return false
         }
 
-        val templateName = campaign.message.templateName ?: return false
         if (isTemplateHiddenByUser(templateName, campaign.delay, now)) {
             return false
         }
 
-        val groups = campaign.segmentInfo?.groups
         if (groups.isNullOrEmpty()) {
             return true
-        }
-
-        if (campaign.start > now) {
-            return false
-        } else {
-            if (campaign.end != null && campaign.end < now) {
-                return false
-            }
         }
 
         if (groups.any { it.conditions.isEmpty() }) return false
         return groups.any {
             it.conditions.all { condition ->
-                matchCondition(condition, eventParams)
+                matchCondition(context, condition, eventParams)
             }
         }
     }
 
-    private fun matchCondition(condition: Condition, eventParams: Map<String, Any?>): Boolean {
+    private fun matchCondition(
+        context: Context, condition: Condition, eventParams: Map<String, Any?>
+    ): Boolean {
         return when (condition.unit) {
             SegmentConditionUnitType.EVENT -> matchEventBasedCondition(condition)
-            else -> matchUserPropertyBasedCondition(condition, eventParams)
+            else -> matchUserPropertyBasedCondition(context, condition, eventParams)
         }
     }
 
@@ -402,14 +406,14 @@ object InAppMessageManager {
     }
 
     private fun matchUserPropertyBasedCondition(
-        condition: Condition, eventParams: Map<String, Any?>
+        context: Context, condition: Condition, eventParams: Map<String, Any?>
     ): Boolean {
         val unit = condition.unit
         val operator = condition.operator
         val valueType = condition.valueType ?: return false
         val useEventParamsAsConditionValue = condition.useEventParamsAsConditionValue ?: false
 
-        val userAttributeValue = userData?.get(unit, condition.attribute)
+        val userAttributeValue = userData?.get(context, unit, condition.attribute)
         val value = if (useEventParamsAsConditionValue) {
             val comparisonParameter = condition.comparisonParameter ?: return false
             eventParams[comparisonParameter] ?: return false

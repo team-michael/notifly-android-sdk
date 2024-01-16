@@ -1,7 +1,6 @@
 package tech.notifly.utils
 
 import android.content.Context
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
@@ -62,7 +61,7 @@ object NotiflyLogUtil {
 
         val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
         if (OSUtils.isAppInForeground(context)) {
-            InAppMessageManager.maybeScheduleInWebMessagesAndIngestEvent(
+            InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
                 context,
                 eventName,
                 externalUserId,

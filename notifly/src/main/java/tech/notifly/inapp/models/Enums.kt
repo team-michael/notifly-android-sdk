@@ -1,7 +1,7 @@
 package tech.notifly.inapp.models
 
 enum class SegmentConditionUnitType {
-    USER, DEVICE, EVENT
+    USER, USER_METADATA, DEVICE, EVENT
 }
 
 enum class GroupOperator {
