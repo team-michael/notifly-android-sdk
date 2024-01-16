@@ -3,6 +3,7 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.NonNull
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
@@ -10,6 +11,9 @@ import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.SegmentConditionUnitType
 import tech.notifly.inapp.models.ValueType
 import tech.notifly.inapp.models.Operator
+import tech.notifly.inapp.models.TriggeringEventFilterGroup
+import tech.notifly.inapp.models.TriggeringEventFilterUnit
+import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.UserData
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
@@ -313,6 +317,12 @@ object InAppMessageManager {
             return false
         }
 
+        if (campaign.triggeringEventFilters != null) {
+            if (!matchTriggeringEventFilters(eventParams, campaign.triggeringEventFilters)) {
+                return false
+            }
+        }
+
         if (campaign.testing) {
             if (externalUserId == null) {
                 return false
@@ -460,6 +470,75 @@ object InAppMessageManager {
             Operator.LESS_THAN -> count < value
             Operator.LESS_THAN_OR_EQUAL -> count <= value
             else -> false
+        }
+    }
+
+    private fun matchTriggeringEventFilters(
+        eventParams: Map<String, Any?>, filters: TriggeringEventFilters
+    ): Boolean {
+        return filters.filters.any {
+            matchTriggeringEventFilterGroup(eventParams, it)
+        }
+    }
+
+    private fun matchTriggeringEventFilterGroup(
+        eventParams: Map<String, Any?>, group: TriggeringEventFilterGroup
+    ): Boolean {
+        return group.all { matchTriggeringEventFilter(eventParams, it) }
+    }
+
+    private fun matchTriggeringEventFilter(
+        eventParams: Map<String, Any?>, filter: TriggeringEventFilterUnit
+    ): Boolean {
+        val keyName = filter.key
+        val operator = filter.operator
+        val valueType = filter.valueType
+        val value = filter.value
+
+        val eventParamValue = eventParams[keyName]
+
+        if (operator == Operator.IS_NULL || operator == Operator.IS_NOT_NULL) {
+            return when (operator) {
+                Operator.IS_NULL -> !isValuePresent(eventParamValue)
+                Operator.IS_NOT_NULL -> isValuePresent(eventParamValue)
+                else -> false // Should never happen
+            }
+        }
+
+        if (eventParamValue == null || value == null) {
+            return false
+        }
+
+        return when (operator) {
+            Operator.EQUALS -> Comparator.isEqual(
+                eventParamValue, value, valueType
+            )
+
+            Operator.NOT_EQUALS -> Comparator.isNotEqual(
+                eventParamValue, value, valueType
+            )
+
+            Operator.GREATER_THAN -> Comparator.isGreaterThan(
+                eventParamValue, value, valueType
+            )
+
+            Operator.GREATER_THAN_OR_EQUAL -> Comparator.isGreaterThanOrEqual(
+                eventParamValue, value, valueType
+            )
+
+            Operator.LESS_THAN -> Comparator.isLessThan(
+                eventParamValue, value, valueType
+            )
+
+            Operator.LESS_THAN_OR_EQUAL -> Comparator.isLessThanOrEqual(
+                eventParamValue, value, valueType
+            )
+
+            Operator.CONTAINS -> Comparator.contains(
+                eventParamValue, value, valueType
+            )
+
+            else -> false // Should never happen
         }
     }
 
