@@ -361,11 +361,20 @@ data class TriggeringEventFilters(
                     } else {
                         null
                     }
-                    val valueType = when (filterUnit.getString("value_type")) {
-                        "TEXT" -> ValueType.TEXT
-                        "INT" -> ValueType.INT
-                        "BOOL" -> ValueType.BOOL
-                        else -> throw JSONException("Invalid valueType")
+                    val valueType = if (filterUnit.has("value_type")) {
+                        val type = filterUnit.get("value_type")
+                        if (type == JSONObject.NULL || type !is String ) {
+                            null
+                        } else {
+                            when (type) {
+                                "TEXT" -> ValueType.TEXT
+                                "INT" -> ValueType.INT
+                                "BOOL" -> ValueType.BOOL
+                                else -> null
+                            }
+                        }
+                    } else {
+                        null
                     }
 
                     filterGroupList.add(TriggeringEventFilterUnit(key, operator, value, valueType))
@@ -380,5 +389,5 @@ data class TriggeringEventFilters(
 typealias TriggeringEventFilterGroup = List<TriggeringEventFilterUnit>
 
 data class TriggeringEventFilterUnit(
-    val key: String, val operator: Operator, val value: Any?, val valueType: ValueType
+    val key: String, val operator: Operator, val value: Any?, val valueType: ValueType?
 )

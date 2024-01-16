@@ -5,7 +5,7 @@
 - Add support for user metadata segmentation conditions
   - External User ID segmentation
   - Random bucket number segmentation
-- Implement new specifications for managing user states
+- Implement updated specifications for managing user states
 
 # 1.3.0
 

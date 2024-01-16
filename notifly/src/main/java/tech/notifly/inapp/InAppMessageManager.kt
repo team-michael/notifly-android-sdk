@@ -330,10 +330,11 @@ object InAppMessageManager {
             }
         }
 
-        if (campaign.triggeringEventFilters != null) {
-            if (!matchTriggeringEventFilters(eventParams, campaign.triggeringEventFilters)) {
-                return false
-            }
+        if (campaign.triggeringEventFilters != null && !matchTriggeringEventFilters(
+                eventParams, campaign.triggeringEventFilters
+            )
+        ) {
+            return false
         }
 
         if (campaign.testing) {
@@ -509,7 +510,7 @@ object InAppMessageManager {
             }
         }
 
-        if (eventParamValue == null || value == null) {
+        if (eventParamValue == null || value == null || valueType == null) {
             return false
         }
 
