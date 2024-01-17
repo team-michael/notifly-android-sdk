@@ -3,9 +3,10 @@
 - Add support for triggering event parameter filtering
 - Add support for IS_NULL and IS_NOT_NULL operator for segmentation conditions
 - Add support for user metadata segmentation conditions
-  - External User ID segmentation
-  - Random bucket number segmentation
+    - External User ID segmentation
+    - Random bucket number segmentation
 - Implement updated specifications for managing user states
+- Increase timestamp precision for event timestamp from milliseconds to microseconds
 
 # 1.3.0
 
@@ -17,9 +18,9 @@
 # 1.2.1
 
 - Several fixes in in-app-message feature
-  - Fix ordering problem between ingestion of event and exposure of app popup.
-  - Fix unexpected behavior when url of main button in in-app-message is invalid
-  - Fix unexpected behavior when in-app-message content loading is slow.
+    - Fix ordering problem between ingestion of event and exposure of app popup.
+    - Fix unexpected behavior when url of main button in in-app-message is invalid
+    - Fix unexpected behavior when in-app-message content loading is slow.
 
 # 1.2.0
 
