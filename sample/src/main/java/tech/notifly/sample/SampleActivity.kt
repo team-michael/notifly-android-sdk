@@ -315,6 +315,18 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "Force Sync State")
                 }
 
+                Button(
+                    onClick = {
+                        val (instance, function) = reflectObjectFunction(
+                            "tech.notifly.utils.NotiflyTimerUtil", "getTimestampMicros"
+                        )
+                        val timestampMicros = function.call(instance) as Long
+                        Logger.v("Timestamp Micros: $timestampMicros")
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Get Timestamp Micros")
+                }
+
                 TextField(value = userId,
                     onValueChange = { userId = it },
                     label = { Text("User ID") },

@@ -17,6 +17,7 @@ import tech.notifly.inapp.models.UserData
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
+import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.OSUtils
 import kotlin.math.floor
@@ -314,7 +315,7 @@ object InAppMessageManager {
         eventName: String,
         eventParams: Map<String, Any?>
     ): Boolean {
-        val now = floor(System.currentTimeMillis().toDouble() / 1000.0).toInt()
+        val now = NotiflyTimerUtil.getTimestampSeconds()
         val templateName = campaign.message.templateName ?: return false
         val groups = campaign.segmentInfo?.conditionGroup
 

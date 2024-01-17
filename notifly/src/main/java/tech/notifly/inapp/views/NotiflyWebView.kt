@@ -26,6 +26,7 @@ import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.utils.Logger
+import tech.notifly.utils.NotiflyTimerUtil
 import kotlin.math.roundToInt
 
 class NotiflyWebView @JvmOverloads constructor(
@@ -251,7 +252,7 @@ class NotiflyWebView @JvmOverloads constructor(
                             }
                         } else {
                             val hideUntilInDays = extraData.optInt("hide_until_in_days", -1)
-                            val now = (System.currentTimeMillis() / 1000).toInt()
+                            val now = NotiflyTimerUtil.getTimestampSeconds()
                             val hideUntilInTimestamp = if (hideUntilInDays == -1) -1 else {
                                 now + (hideUntilInDays * 24 * 60 * 60)
                             }

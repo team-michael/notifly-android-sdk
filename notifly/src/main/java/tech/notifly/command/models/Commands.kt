@@ -11,6 +11,7 @@ import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
 
 enum class CommandType {
@@ -18,7 +19,7 @@ enum class CommandType {
 }
 
 abstract class CommandBase : Comparable<CommandBase> {
-    private val timestamp = System.currentTimeMillis()
+    private val timestamp = NotiflyTimerUtil.getTimestampMicros()
 
     abstract val commandType: CommandType
     protected abstract val payload: PayloadBase
@@ -68,6 +69,7 @@ class SetUserIdCommand(
                 if (!areUserIdsSame) {
                     InAppMessageManager.refresh(context, shouldMergeData)
                 }
+                // Clear data only when user ID is changed to null
                 if (shouldClearData) {
                     InAppMessageManager.clearUserState()
                 }

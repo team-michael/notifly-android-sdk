@@ -13,6 +13,15 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifly.setLogLevel(Log.VERBOSE)
+
+        for (i in 0..50) {
+            Notifly.trackEvent(
+                applicationContext,
+                "test_event_android_$i",
+                mapOf("test_key" to "test_value")
+            )
+        }
+
         Notifly.initialize(
             context = applicationContext,
             projectId = "b80c3f0e2fbd5eb986df4f1d32ea2871",

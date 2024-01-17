@@ -9,6 +9,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import tech.notifly.Notifly
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -111,7 +112,8 @@ object NotiflyLogUtil {
 
         val externalDeviceId: String = NotiflyDeviceUtil.getExternalDeviceId(context)
         val notiflyEventId = NotiflyIdUtil.generate(
-            Namespace.NAMESPACE_EVENT_ID, "$notiflyUserId$eventName${System.currentTimeMillis()}"
+            Namespace.NAMESPACE_EVENT_ID,
+            "$notiflyUserId$eventName${NotiflyTimerUtil.getTimestampMillis()}"
         )
         val notiflyDeviceId =
             NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
@@ -185,7 +187,7 @@ object NotiflyLogUtil {
 
         val data = JSONObject().put("event_params", JSONObject(sanitizedParams)).put("id", eventId)
             .put("name", eventName).put("notifly_user_id", notiflyUserId)
-            .put("time", System.currentTimeMillis() / 1000)
+            .put("time", NotiflyTimerUtil.getTimestampMicros())
             .put("notifly_device_id", notiflyDeviceId).put("external_device_id", externalDeviceId)
             .put(
                 "device_token", if (deviceToken.isNullOrEmpty()) JSONObject.NULL else deviceToken
@@ -202,7 +204,6 @@ object NotiflyLogUtil {
             )
 
         val record = JSONObject().put("data", data.toString()).put("partitionKey", notiflyUserId)
-
         val records = JSONArray().put(record)
 
         val body = JSONObject().put("records", records)

@@ -15,6 +15,7 @@ import tech.notifly.inapp.models.ReEligibleConditionUnitType
 import tech.notifly.inapp.views.NotiflyWebView
 import tech.notifly.inapp.views.TouchInterceptorLayout
 import tech.notifly.utils.Logger
+import tech.notifly.utils.NotiflyTimerUtil
 import kotlin.math.roundToInt
 
 
@@ -186,7 +187,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 return null
             }
 
-            val now = (System.currentTimeMillis() / 1000).toInt()
+            val now = NotiflyTimerUtil.getTimestampSeconds()
             return when (unit) {
                 ReEligibleConditionUnitType.HOUR -> now + duration * 60 * 60
                 ReEligibleConditionUnitType.DAY -> now + duration * 60 * 60 * 24
