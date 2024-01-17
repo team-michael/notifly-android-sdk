@@ -107,7 +107,7 @@ object NotiflySyncStateUtil {
                 }
 
                 val userDataJsonObject = jsonResponse.getJSONObject("userData")
-                val userData = UserData.fromJSONObject(userDataJsonObject)
+                val userData = UserData.fromJSONObject(context, userDataJsonObject)
 
                 SyncStateOutput(campaigns, eventCounts, userData)
             } catch (e: JSONException) {

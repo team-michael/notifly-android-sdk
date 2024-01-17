@@ -1,5 +1,6 @@
 package tech.notifly.inapp.models
 
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.utils.Logger
@@ -15,6 +16,7 @@ data class Campaign(
     val message: Message,
     val segmentInfo: SegmentInfo?,
     val triggeringEvent: String,
+    val triggeringEventFilters: TriggeringEventFilters?,
     val delay: Int?,
     val reEligibleCondition: ReEligibleCondition? = null
 ) : Comparable<Campaign> {
@@ -80,6 +82,16 @@ data class Campaign(
             val segmentInfo = SegmentInfo.fromJSONObject(segmentInfoObject) ?: return null
 
             val triggeringEvent = from.getString("triggering_event")
+            val triggeringEventFilters = if (from.has("triggering_event_filters")) {
+                val triggeringEventFiltersJSONArray = from.get("triggering_event_filters")
+                if (triggeringEventFiltersJSONArray == JSONObject.NULL) {
+                    null
+                } else {
+                    TriggeringEventFilters.fromJSONObject(triggeringEventFiltersJSONArray as JSONArray)
+                }
+            } else {
+                null
+            }
             val delay = if (from.has("delay")) from.getInt("delay") else 0
 
             val reEligibleCondition = if (from.has("re_eligible_condition")) {
@@ -90,18 +102,19 @@ data class Campaign(
             } else null
 
             return Campaign(
-                id,
-                channel,
-                lastUpdatedTimestamp,
-                testing,
-                whitelist,
-                start,
-                end,
-                message,
-                segmentInfo,
-                triggeringEvent,
-                delay,
-                reEligibleCondition
+                id = id,
+                channel = channel,
+                lastUpdatedTimestamp = lastUpdatedTimestamp,
+                testing = testing,
+                whitelist = whitelist,
+                start = start,
+                end = end,
+                message = message,
+                segmentInfo = segmentInfo,
+                triggeringEvent = triggeringEvent,
+                triggeringEventFilters = triggeringEventFilters,
+                delay = delay,
+                reEligibleCondition = reEligibleCondition
             )
         }
     }
@@ -114,7 +127,7 @@ data class Message(
 )
 
 data class SegmentInfo(
-    val groups: List<Group>, val groupOperator: GroupOperator
+    val conditionGroup: List<ConditionGroup>, val groupOperator: GroupOperator
 ) {
     companion object {
         @Throws(JSONException::class)
@@ -122,13 +135,14 @@ data class SegmentInfo(
             try {
                 val groups = if (segmentInfo.has("groups")) {
                     val groupsArray = segmentInfo.getJSONArray("groups")
-                    val groups = mutableListOf<Group>()
+                    val conditionGroups = mutableListOf<ConditionGroup>()
                     for (i in 0 until groupsArray.length()) {
                         val groupObject = groupsArray.getJSONObject(i)
-                        val group = Group.fromJSONObject(groupObject) ?: return null
-                        groups.add(group)
+                        val conditionGroup =
+                            ConditionGroup.fromJSONObject(groupObject) ?: return null
+                        conditionGroups.add(conditionGroup)
                     }
-                    groups
+                    conditionGroups
                 } else {
                     return null
                 }
@@ -142,12 +156,12 @@ data class SegmentInfo(
     }
 }
 
-data class Group(
+data class ConditionGroup(
     val conditions: List<Condition>, val conditionOperator: ConditionOperator
 ) {
     companion object {
         @Throws(JSONException::class, ClassCastException::class)
-        fun fromJSONObject(groupObject: JSONObject): Group? {
+        fun fromJSONObject(groupObject: JSONObject): ConditionGroup? {
             val conditionsArray = groupObject.getJSONArray("conditions")
             val conditionOperator =
                 if (conditionsArray.length() > 1) ConditionOperator.AND else ConditionOperator.NULL
@@ -157,20 +171,20 @@ data class Group(
                 val condition = Condition.fromJSONObject(conditionObject) ?: return null
                 conditions.add(condition)
             }
-            return Group(conditions, conditionOperator)
+            return ConditionGroup(conditions, conditionOperator)
         }
     }
 }
 
 data class Condition(
     val unit: SegmentConditionUnitType,
-    val operator: SegmentOperator,
-    val value: Any,
+    val operator: Operator,
+    val value: Any?,
     val attribute: String?, // Only for user and device
     val event: String?, // Only for event
     val eventConditionType: EventBasedConditionType?, // Only for event
     val secondaryValue: Int?, // Only for event
-    val valueType: SegmentConditionValueType?, // Only for user and device
+    val valueType: ValueType?, // Only for user and device
     val comparisonParameter: String?, // Only for user and device - used only when useEventParamsAsConditionValue is true
     val useEventParamsAsConditionValue: Boolean? // Only for user and device
 ) {
@@ -180,17 +194,24 @@ data class Condition(
             val unit = when (conditionObject.getString("unit")) {
                 "event" -> SegmentConditionUnitType.EVENT
                 "user" -> SegmentConditionUnitType.USER
+                "user_metadata" -> SegmentConditionUnitType.USER_METADATA
                 "device" -> SegmentConditionUnitType.DEVICE
                 else -> return null
             }
 
             val operator =
                 getSegmentOperator(unit, conditionObject.getString("operator")) ?: return null
-            val value = conditionObject.get("value")
+            val value = if (conditionObject.has("value")) {
+                conditionObject.get("value").let {
+                    if (it == JSONObject.NULL) null else it
+                }
+            } else {
+                null
+            }
             val valueType = when (conditionObject.optString("valueType")) {
-                "TEXT" -> SegmentConditionValueType.TEXT
-                "INT" -> SegmentConditionValueType.INT
-                "BOOL" -> SegmentConditionValueType.BOOL
+                "TEXT" -> ValueType.TEXT
+                "INT" -> ValueType.INT
+                "BOOL" -> ValueType.BOOL
                 else -> null
             }
             val event = if (conditionObject.has("event")) {
@@ -254,28 +275,30 @@ data class Condition(
 
         private fun getSegmentOperator(
             unit: SegmentConditionUnitType, segmentOperatorString: String
-        ): SegmentOperator? {
+        ): Operator? {
             when (unit) {
                 SegmentConditionUnitType.EVENT -> {
                     return when (segmentOperatorString) {
-                        "=" -> SegmentOperator.EQUALS
-                        ">" -> SegmentOperator.GREATER_THAN
-                        ">=" -> SegmentOperator.GREATER_THAN_OR_EQUAL
-                        "<" -> SegmentOperator.LESS_THAN
-                        "<=" -> SegmentOperator.LESS_THAN_OR_EQUAL
+                        "=" -> Operator.EQUALS
+                        ">" -> Operator.GREATER_THAN
+                        ">=" -> Operator.GREATER_THAN_OR_EQUAL
+                        "<" -> Operator.LESS_THAN
+                        "<=" -> Operator.LESS_THAN_OR_EQUAL
                         else -> null
                     }
                 }
 
                 else -> {
                     return when (segmentOperatorString) {
-                        "=" -> SegmentOperator.EQUALS
-                        ">" -> SegmentOperator.GREATER_THAN
-                        ">=" -> SegmentOperator.GREATER_THAN_OR_EQUAL
-                        "<" -> SegmentOperator.LESS_THAN
-                        "<=" -> SegmentOperator.LESS_THAN_OR_EQUAL
-                        "<>" -> SegmentOperator.NOT_EQUALS
-                        "@>" -> SegmentOperator.CONTAINS
+                        "IS_NULL" -> Operator.IS_NULL
+                        "IS_NOT_NULL" -> Operator.IS_NOT_NULL
+                        "=" -> Operator.EQUALS
+                        ">" -> Operator.GREATER_THAN
+                        ">=" -> Operator.GREATER_THAN_OR_EQUAL
+                        "<" -> Operator.LESS_THAN
+                        "<=" -> Operator.LESS_THAN_OR_EQUAL
+                        "<>" -> Operator.NOT_EQUALS
+                        "@>" -> Operator.CONTAINS
                         else -> null
                     }
                 }
@@ -290,8 +313,8 @@ data class ReEligibleCondition(
 ) {
     companion object {
         @Throws(JSONException::class)
-        fun fromJSONObject(reEligibleConditionObject: JSONObject): ReEligibleCondition {
-            val unit = when (reEligibleConditionObject.getString("unit")) {
+        fun fromJSONObject(input: JSONObject): ReEligibleCondition {
+            val unit = when (input.getString("unit")) {
                 "h" -> ReEligibleConditionUnitType.HOUR
                 "d" -> ReEligibleConditionUnitType.DAY
                 "w" -> ReEligibleConditionUnitType.WEEK
@@ -300,7 +323,71 @@ data class ReEligibleCondition(
                 else -> throw JSONException("Invalid unit type")
             }
 
-            return ReEligibleCondition(unit, reEligibleConditionObject.getInt("value"))
+            return ReEligibleCondition(unit, input.getInt("value"))
         }
     }
 }
+
+data class TriggeringEventFilters(
+    val filters: List<TriggeringEventFilterGroup>
+) {
+    companion object {
+        @Throws(JSONException::class)
+        fun fromJSONObject(input: JSONArray): TriggeringEventFilters {
+            val filters = mutableListOf<TriggeringEventFilterGroup>()
+            for (i in 0 until input.length()) {
+                val filterGroup = input.getJSONArray(i)
+                val filterGroupList = mutableListOf<TriggeringEventFilterUnit>()
+
+                for (j in 0 until filterGroup.length()) {
+                    val filterUnit = filterGroup.getJSONObject(j)
+                    val key = filterUnit.getString("key")
+                    val operator = when (filterUnit.getString("operator")) {
+                        "IS_NULL" -> Operator.IS_NULL
+                        "IS_NOT_NULL" -> Operator.IS_NOT_NULL
+                        "=" -> Operator.EQUALS
+                        ">" -> Operator.GREATER_THAN
+                        ">=" -> Operator.GREATER_THAN_OR_EQUAL
+                        "<" -> Operator.LESS_THAN
+                        "<=" -> Operator.LESS_THAN_OR_EQUAL
+                        "<>" -> Operator.NOT_EQUALS
+                        "@>" -> Operator.CONTAINS
+                        else -> throw JSONException("Invalid operator")
+                    }
+                    val value = if (filterUnit.has("value")) {
+                        filterUnit.get("value").let {
+                            if (it == JSONObject.NULL) null else it
+                        }
+                    } else {
+                        null
+                    }
+                    val valueType = if (filterUnit.has("value_type")) {
+                        val type = filterUnit.get("value_type")
+                        if (type == JSONObject.NULL || type !is String ) {
+                            null
+                        } else {
+                            when (type) {
+                                "TEXT" -> ValueType.TEXT
+                                "INT" -> ValueType.INT
+                                "BOOL" -> ValueType.BOOL
+                                else -> null
+                            }
+                        }
+                    } else {
+                        null
+                    }
+
+                    filterGroupList.add(TriggeringEventFilterUnit(key, operator, value, valueType))
+                }
+                filters.add(filterGroupList)
+            }
+            return TriggeringEventFilters(filters)
+        }
+    }
+}
+
+typealias TriggeringEventFilterGroup = List<TriggeringEventFilterUnit>
+
+data class TriggeringEventFilterUnit(
+    val key: String, val operator: Operator, val value: Any?, val valueType: ValueType?
+)

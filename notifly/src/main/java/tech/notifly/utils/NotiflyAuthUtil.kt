@@ -1,6 +1,7 @@
 package tech.notifly.utils
 
 import android.content.Context
+import android.os.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,6 +11,7 @@ import org.json.JSONObject
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import java.time.Clock
 
 internal object NotiflyAuthUtil {
 
@@ -31,6 +33,8 @@ internal object NotiflyAuthUtil {
 
         val request = Request.Builder().url(AUTHENTICATOR_URL)
             .post(requestBody.toString().toRequestBody("application/json".toMediaType())).build()
+
+        SystemClock.elapsedRealtimeNanos()
 
         return withContext(Dispatchers.IO) {
             try {

@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.inapp.models.EventIntermediateCounts
-import tech.notifly.inapp.models.UserData
 import tech.notifly.push.NotificationAuthorizationStatus
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -36,7 +35,7 @@ object NotiflyUserUtil {
                     N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
                 )
             } else {
-                InAppMessageManager.updateUserData(newParams)
+                InAppMessageManager.updateUserProperties(newParams)
             }
             NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
         } catch (e: Exception) {
