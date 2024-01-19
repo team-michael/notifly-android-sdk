@@ -33,7 +33,7 @@ object InAppMessageManager {
 
     private lateinit var campaigns: MutableList<Campaign>
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
-    private var userData: UserData? = null
+    private lateinit var userData: UserData
 
     fun disable() {
         disabled = true
@@ -54,6 +54,8 @@ object InAppMessageManager {
             Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
             return
         }
+
+        userData = UserData.getSkeleton(context)
         sync(context, false)
         isInitialized = true
     }
@@ -100,14 +102,12 @@ object InAppMessageManager {
         }
 
 
-        userData!!.userProperties!! += params
+        userData.userProperties += params
         Logger.v("[Notifly] Updated user data to $userData")
     }
 
     private fun isReEligibleCampaign(campaignId: String, delay: Int?, now: Int): Boolean {
-        if (userData == null) return false
-
-        val hiddenUntil = userData!!.campaignHiddenUntil[campaignId]
+        val hiddenUntil = userData.campaignHiddenUntil[campaignId]
         if (hiddenUntil != null && hiddenUntil < 0) {
             return false // Infinitely hidden
         }
@@ -119,7 +119,7 @@ object InAppMessageManager {
     }
 
     private fun isTemplateHiddenByUser(templateName: String, delay: Int?, now: Int): Boolean {
-        val userProperties = userData!!.userProperties!!
+        val userProperties = userData.userProperties
 
         // Legacy
         if (userProperties["hide_in_app_message_$templateName"] == true) {
@@ -158,7 +158,7 @@ object InAppMessageManager {
         }
 
         try {
-            userData!!.campaignHiddenUntil[campaignId] = hideUntil
+            userData.campaignHiddenUntil[campaignId] = hideUntil
             Logger.d("[Notifly] Updating hideUntil to $userData")
         } catch (e: Exception) {
             Logger.e("[Notifly] updateHideUntilData failed", e)
@@ -205,8 +205,8 @@ object InAppMessageManager {
     fun clearUserState() {
         eventCounts = mutableListOf()
         userData.apply {
-            this?.userProperties?.clear()
-            this?.campaignHiddenUntil?.clear()
+            this.userProperties.clear()
+            this.campaignHiddenUntil.clear()
         }
     }
 
@@ -225,7 +225,7 @@ object InAppMessageManager {
             syncStateResult.eventCounts
         }
         userData = if (shouldMergeData) {
-            userData?.merge(syncStateResult.userData) ?: syncStateResult.userData
+            userData.merge(syncStateResult.userData)
         } else {
             syncStateResult.userData
         }
@@ -421,7 +421,7 @@ object InAppMessageManager {
         val valueType = condition.valueType ?: return false
         val useEventParamsAsConditionValue = condition.useEventParamsAsConditionValue ?: false
 
-        val userAttributeValue = userData?.get(context, unit, condition.attribute)
+        val userAttributeValue = userData.get(context, unit, condition.attribute)
         val value = if (useEventParamsAsConditionValue) {
             val comparisonParameter = condition.comparisonParameter ?: return false
             eventParams[comparisonParameter] ?: return false

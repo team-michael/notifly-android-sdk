@@ -17,7 +17,7 @@ object NotiflySyncStateUtil {
     data class SyncStateOutput(
         val campaigns: MutableList<Campaign>,
         val eventCounts: MutableList<EventIntermediateCounts>,
-        val userData: UserData?,
+        val userData: UserData,
     )
 
     private const val SYNC_STATE_BASE_URI = "https://api.notifly.tech/user-state"
