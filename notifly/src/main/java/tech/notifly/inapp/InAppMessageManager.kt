@@ -188,8 +188,13 @@ object InAppMessageManager {
             return
         }
 
+        Logger.v(
+            "[Notifly] maybeScheduleInAppMessagesAndIngestEvent called with $eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys"
+        )
+
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
         if (OSUtils.isAppInForeground(context)) {
+            Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
             scheduleCampaigns(context, campaigns, externalUserId, sanitizedEventName, eventParams)
         } else {
             Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
@@ -270,6 +275,7 @@ object InAppMessageManager {
         eventParams: Map<String, Any?>
     ) {
         getCampaignsToSchedule(context, campaigns, externalUserId, eventName, eventParams).forEach {
+            Logger.v("[Notifly] Scheduling campaign: $it")
             InAppMessageScheduler.schedule(context, it)
         }
     }
