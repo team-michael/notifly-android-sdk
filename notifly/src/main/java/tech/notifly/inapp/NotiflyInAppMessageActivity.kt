@@ -44,6 +44,8 @@ class NotiflyInAppMessageActivity : Activity() {
 
         val (url, modalProperties) = handleIntent(intent)
         if (url == null) {
+            Logger.e("Error parsing in app message url")
+            finish()
             return
         }
 
@@ -52,6 +54,8 @@ class NotiflyInAppMessageActivity : Activity() {
 
         findViewById<NotiflyWebView>(R.id.webView).apply {
             this.visibility = View.INVISIBLE
+
+            Logger.v("Visibility: ${this.visibility}") // Should be 4 (INVISIBLE)
 
             initialize(modalProperties, eventLogData, templateName, {
                 this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
@@ -66,16 +70,23 @@ class NotiflyInAppMessageActivity : Activity() {
     private fun onWebViewLoadedComplete(
         webView: NotiflyWebView, modalProperties: JSONObject?, eventLogData: EventLogData
     ) {
+        Logger.v("Webview loaded complete, showing...")
         val shouldInterceptTouchEvent =
             modalProperties?.optBoolean("dismissCTATapped", false) ?: false
         val backgroundOpacity =
             modalProperties?.optDouble("backgroundOpacity", DEFAULT_BACKGROUND_OPACITY)
                 ?: DEFAULT_BACKGROUND_OPACITY
+
+        Logger.v("shouldInterceptTouchEvent: $shouldInterceptTouchEvent")
+        Logger.v("backgroundOpacity: $backgroundOpacity")
         setupTouchInterceptorLayout(
             shouldInterceptTouchEvent, backgroundOpacity
         )
 
+        Logger.v("Previous visibility: ${webView.visibility}") // Should be 4 (INVISIBLE)
         webView.visibility = View.VISIBLE
+        webView.bringToFront()
+        Logger.v("Visibility: ${webView.visibility}") // 0
 
         val eventParams = mutableMapOf<String, Any?>(
             "type" to "message_event",

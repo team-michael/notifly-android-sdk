@@ -62,20 +62,20 @@ data class EventLogData(
 )
 
 data class UserData(
-    val platform: String?,
-    val osVersion: String?,
-    val appVersion: String?,
-    val sdkVersion: String?,
-    val sdkType: String?,
+    val platform: String,
+    val osVersion: String,
+    val appVersion: String,
+    val sdkVersion: String,
+    val sdkType: String,
     val randomBucketNumber: Int?,
     val updatedAt: String?, // Not used
-    val userProperties: MutableMap<String, Any?>?,
+    val userProperties: MutableMap<String, Any?>,
     val campaignHiddenUntil: MutableMap<String, Int>,
 ) {
     fun get(context: Context, unit: SegmentConditionUnitType, field: String?): Any? {
         if (field == null) return null
         return when (unit) {
-            SegmentConditionUnitType.USER -> userProperties?.get(field)
+            SegmentConditionUnitType.USER -> userProperties[field]
             SegmentConditionUnitType.DEVICE -> {
                 when (field) {
                     "platform" -> platform
@@ -103,9 +103,7 @@ data class UserData(
         }
     }
 
-    fun merge(other: UserData?): UserData {
-        if (other == null) return this
-
+    fun merge(other: UserData): UserData {
         val result = UserData(platform = other.platform,
             osVersion = other.osVersion,
             appVersion = other.appVersion,
@@ -113,10 +111,10 @@ data class UserData(
             sdkType = other.sdkType,
             randomBucketNumber = other.randomBucketNumber,
             updatedAt = other.updatedAt,
-            userProperties = if (other.userProperties == null && userProperties == null) null else {
+            userProperties = run {
                 val merged = mutableMapOf<String, Any?>()
-                if (userProperties != null) merged.putAll(userProperties)
-                if (other.userProperties != null) merged.putAll(other.userProperties)
+                merged.putAll(userProperties)
+                merged.putAll(other.userProperties)
                 merged
             },
             campaignHiddenUntil = run {
@@ -130,14 +128,14 @@ data class UserData(
     }
 
     companion object {
-        suspend fun fromJSONObject(context: Context, from: JSONObject): UserData? {
-            try {
-                val platform = NotiflyDeviceUtil.getPlatform()
-                val osVersion = NotiflyDeviceUtil.getOsVersion()
-                val appVersion = NotiflyDeviceUtil.getAppVersion(context)
-                val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
-                val sdkType = NotiflySDKInfoUtil.getSdkType().toLowerCaseName()
+        suspend fun fromJSONObject(context: Context, from: JSONObject): UserData {
+            val platform = NotiflyDeviceUtil.getPlatform()
+            val osVersion = NotiflyDeviceUtil.getOsVersion()
+            val appVersion = NotiflyDeviceUtil.getAppVersion(context)
+            val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
+            val sdkType = NotiflySDKInfoUtil.getSdkType().toLowerCaseName()
 
+            try {
                 // random_bucket_number can either be an int or a string
                 val randomBucketNumber = if (from.has("random_bucket_number")) {
                     when (val randomBucketNumber = from.get("random_bucket_number")) {
@@ -169,7 +167,7 @@ data class UserData(
                         }
                     }
                     userProperties
-                } else null
+                } else mutableMapOf()
 
                 val campaignHiddenUntilJSONObject =
                     if (from.has("campaign_hidden_until")) from.getJSONObject("campaign_hidden_until") else null
@@ -196,8 +194,38 @@ data class UserData(
                 )
             } catch (e: JSONException) {
                 Logger.d("Error parsing UserData: $e")
-                return null
+                return UserData(
+                    platform = platform,
+                    osVersion = osVersion,
+                    appVersion = appVersion,
+                    sdkVersion = sdkVersion,
+                    sdkType = sdkType,
+                    randomBucketNumber = null,
+                    updatedAt = null,
+                    userProperties = mutableMapOf(),
+                    campaignHiddenUntil = mutableMapOf()
+                )
             }
+        }
+
+        suspend fun getSkeleton(context: Context): UserData {
+            val platform = NotiflyDeviceUtil.getPlatform()
+            val osVersion = NotiflyDeviceUtil.getOsVersion()
+            val appVersion = NotiflyDeviceUtil.getAppVersion(context)
+            val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
+            val sdkType = NotiflySDKInfoUtil.getSdkType().toLowerCaseName()
+
+            return UserData(
+                platform = platform,
+                osVersion = osVersion,
+                appVersion = appVersion,
+                sdkVersion = sdkVersion,
+                sdkType = sdkType,
+                randomBucketNumber = null,
+                updatedAt = null,
+                userProperties = mutableMapOf(),
+                campaignHiddenUntil = mutableMapOf()
+            )
         }
     }
 }

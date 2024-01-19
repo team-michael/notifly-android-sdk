@@ -12,6 +12,7 @@ import android.net.http.SslError
 import android.util.AttributeSet
 import android.webkit.JavascriptInterface
 import android.webkit.SslErrorHandler
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -51,20 +52,26 @@ class NotiflyWebView @JvmOverloads constructor(
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                Logger.v("NotiflyWebView.onPageFinished: $url")
                 if (pageLoadedSuccessfully) {
+                    Logger.v("NotiflyWebView.onPageFinished: Injecting javascript")
                     evaluateJavascript(javascriptToInject, null)
+                    Logger.v(
+                        "NotiflyWebView.onPageFinished: Javascript injected"
+                    )
                     onPageFinishedCallback()
                 } else {
+                    Logger.v("NotiflyWebView.onPageFinished: Page failed to load")
                     onReceivedErrorCallback()
                 }
             }
 
-            @Deprecated("Deprecated in Java")
             override fun onReceivedError(
-                view: WebView?, errorCode: Int, description: String?, failingUrl: String?
+                view: WebView?, request: WebResourceRequest?, error: WebResourceError?
             ) {
+                super.onReceivedError(view, request, error)
                 pageLoadedSuccessfully = false
-                Logger.w("NotiflyWebView.onReceivedError: $errorCode, $description, $failingUrl")
+                Logger.w("NotiflyWebView.onReceivedError: $error")
             }
 
             override fun onReceivedHttpError(
