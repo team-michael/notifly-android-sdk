@@ -7,6 +7,8 @@
     - Random bucket number segmentation
 - Implement updated specifications for managing user states
 - Increase timestamp precision for event timestamp from milliseconds to microseconds
+- Ensures non-null UserData
+- Add verbose logs
 
 # 1.3.0
 
