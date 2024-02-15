@@ -29,6 +29,8 @@ class NotiflyInAppMessageActivity : Activity() {
             get() = isActivityRunning
     }
 
+    private var mNotiflyWebView: NotiflyWebView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (isActivityRunning) {
@@ -52,24 +54,38 @@ class NotiflyInAppMessageActivity : Activity() {
         val eventLogData = getEventLogData(intent)
         val templateName: String? = modalProperties?.optString("template_name")
 
-        findViewById<NotiflyWebView>(R.id.webView).apply {
+        mNotiflyWebView = findViewById<NotiflyWebView>(R.id.webView).apply {
             this.visibility = View.INVISIBLE
 
             Logger.v("Visibility: ${this.visibility}") // Should be 4 (INVISIBLE)
 
             initialize(modalProperties, eventLogData, templateName, {
                 this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
-                    this, modalProperties, eventLogData
+                    modalProperties, eventLogData
                 )
-            }, { this@NotiflyInAppMessageActivity.onWebViewLoadedWithError() })
+            }, this@NotiflyInAppMessageActivity::onWebViewLoadedWithError)
 
             loadUrl(url)
         }
     }
 
-    private fun onWebViewLoadedComplete(
-        webView: NotiflyWebView, modalProperties: JSONObject?, eventLogData: EventLogData
-    ) {
+    override fun onPause() {
+        super.onPause()
+        mNotiflyWebView?.pauseTimers()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mNotiflyWebView?.resumeTimers()
+    }
+
+    private fun onWebViewLoadedComplete(modalProperties: JSONObject?, eventLogData: EventLogData) {
+        if (mNotiflyWebView == null) {
+            Logger.e("NotiflyWebView is null! Cannot show in app message")
+            finish()
+            return
+        }
+
         Logger.v("Webview loaded complete, showing...")
         val shouldInterceptTouchEvent =
             modalProperties?.optBoolean("dismissCTATapped", false) ?: false
@@ -83,10 +99,10 @@ class NotiflyInAppMessageActivity : Activity() {
             shouldInterceptTouchEvent, backgroundOpacity
         )
 
-        Logger.v("Previous visibility: ${webView.visibility}") // Should be 4 (INVISIBLE)
-        webView.visibility = View.VISIBLE
-        webView.bringToFront()
-        Logger.v("Visibility: ${webView.visibility}") // 0
+        Logger.v("Previous visibility: ${mNotiflyWebView!!.visibility}") // Should be 4 (INVISIBLE)
+        mNotiflyWebView!!.visibility = View.VISIBLE
+        mNotiflyWebView!!.bringToFront()
+        Logger.v("Visibility: ${mNotiflyWebView!!.visibility}") // 0
 
         val eventParams = mutableMapOf<String, Any?>(
             "type" to "message_event",
@@ -114,8 +130,8 @@ class NotiflyInAppMessageActivity : Activity() {
         )
     }
 
-    private fun onWebViewLoadedWithError() {
-        Logger.e("Error loading in app message!")
+    private fun onWebViewLoadedWithError(errorMessage: String?) {
+        Logger.e("Error loading in app message! Error: " + (errorMessage ?: "Unknown error"))
         finish()
     }
 
