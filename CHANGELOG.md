@@ -1,3 +1,7 @@
+# 1.4.1
+
+- Fix unexpected behavior of in-app message for hybrid webview applications
+
 # 1.4.0
 
 - Add support for triggering event parameter filtering

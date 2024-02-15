@@ -43,12 +43,13 @@ class NotiflyWebView @JvmOverloads constructor(
         eventLogData: EventLogData,
         templateName: String?,
         onPageFinishedCallback: () -> Unit,
-        onReceivedErrorCallback: () -> Unit
+        onReceivedErrorCallback: (errorMessage: String?) -> Unit
     ) {
         this.setLayerType(LAYER_TYPE_HARDWARE, null)
         this.settings.javaScriptEnabled = true
         this.webViewClient = object : WebViewClient() {
             private var pageLoadedSuccessfully = true
+            private var errorMessage: String? = null
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
@@ -62,7 +63,7 @@ class NotiflyWebView @JvmOverloads constructor(
                     onPageFinishedCallback()
                 } else {
                     Logger.v("NotiflyWebView.onPageFinished: Page failed to load")
-                    onReceivedErrorCallback()
+                    onReceivedErrorCallback(errorMessage)
                 }
             }
 
@@ -72,6 +73,7 @@ class NotiflyWebView @JvmOverloads constructor(
                 super.onReceivedError(view, request, error)
                 pageLoadedSuccessfully = false
                 Logger.w("NotiflyWebView.onReceivedError: $error")
+                errorMessage = error?.description.toString()
             }
 
             override fun onReceivedHttpError(
@@ -80,6 +82,8 @@ class NotiflyWebView @JvmOverloads constructor(
                 super.onReceivedHttpError(view, request, errorResponse)
                 pageLoadedSuccessfully = false
                 Logger.w("NotiflyWebView.onReceivedHttpError: $request, $errorResponse")
+                errorMessage =
+                    if (errorResponse != null) "HTTP error: ${errorResponse.statusCode}" else null
             }
 
             override fun onReceivedSslError(
@@ -88,6 +92,7 @@ class NotiflyWebView @JvmOverloads constructor(
                 super.onReceivedSslError(view, handler, error)
                 pageLoadedSuccessfully = false
                 Logger.w("NotiflyWebView.onReceivedSslError: $error")
+                errorMessage = if (error != null) "SSL error: ${error.primaryError}" else null
             }
         }
 
