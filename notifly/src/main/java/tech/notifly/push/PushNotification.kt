@@ -2,6 +2,10 @@ package tech.notifly.push
 
 import org.json.JSONObject
 
+enum class Importance {
+    HIGH, NORMAL, LOW
+}
+
 data class PushNotification(
     /** The body text of the notification */
     val body: String? = null,
@@ -11,6 +15,8 @@ data class PushNotification(
     val campaign_id: String? = null,
     /** The Notifly message ID of the notification */
     val notifly_message_id: String? = null,
+    /** The importance of the notification. Can be "high", "normal", or "low" */
+    val importance: Importance? = null,
     /** The URL to open when the notification is clicked */
     val url: String? = null,
     /** The URL of the image to display in the notification */
@@ -31,6 +37,14 @@ data class PushNotification(
         notifly_message_id = if (notiflyJsonObject.has("mid")) notiflyJsonObject.getString("mid") else null,
         url = if (notiflyJsonObject.has("u")) notiflyJsonObject.getString("u") else null,
         image_url = if (notiflyJsonObject.has("iu")) notiflyJsonObject.getString("iu") else null,
+        importance = if (notiflyJsonObject.has("imp")) {
+            when (notiflyJsonObject.getString("imp")) {
+                "high" -> Importance.HIGH
+                "normal" -> Importance.NORMAL
+                "low" -> Importance.LOW
+                else -> null
+            }
+        } else null,
         // The below fields are not yet supported by the Notifly SDK
         channel_id = if (notiflyJsonObject.has("chid")) notiflyJsonObject.getString("chid") else null,
         icon = if (notiflyJsonObject.has("ic")) notiflyJsonObject.getString("ic") else null,
