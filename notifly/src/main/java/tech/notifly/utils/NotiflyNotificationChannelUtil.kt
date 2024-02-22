@@ -10,10 +10,11 @@ import tech.notifly.push.Importance
 
 internal object NotiflyNotificationChannelUtil {
     private const val NOTIFLY_HIGH_IMPORTANCE_NOTIFICATION_CHANNEL_ID =
-        "NotiflyHighImportanceChannel"
+        "NotiflyHighImportanceNotificationChannelId"
     private const val NOTIFLY_NORMAL_IMPORTANCE_NOTIFICATION_CHANNEL_ID =
-        "NotiflyNormalImportanceChannel"
-    private const val NOTIFLY_LOW_IMPORTANCE_NOTIFICATION_CHANNEL_ID = "NotiflyLowImportanceChannel"
+        "NotiflyNotificationChannelId"
+    private const val NOTIFLY_LOW_IMPORTANCE_NOTIFICATION_CHANNEL_ID =
+        "NotiflyLowImportanceNotificationChannelId"
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun createNotificationChannels(context: Context) {
