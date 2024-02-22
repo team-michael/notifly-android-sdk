@@ -1,3 +1,9 @@
+# 1.4.2
+
+- Separate notification channels based on the importance of the notification
+- Importance of the notification is determined by the `imp` field in the push notification data
+  payload
+
 # 1.4.1
 
 - Fix unexpected behavior of in-app message for hybrid webview applications

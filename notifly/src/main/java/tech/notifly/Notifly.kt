@@ -19,8 +19,6 @@ import tech.notifly.utils.NotiflySDKInfoUtil
 import tech.notifly.utils.NotiflyUserUtil
 
 object Notifly {
-    internal const val NOTIFICATION_CHANNEL_ID = "NotiflyNotificationChannelId"
-
     @JvmStatic
     fun initialize(
         context: Context,

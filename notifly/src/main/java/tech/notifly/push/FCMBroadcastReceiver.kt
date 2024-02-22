@@ -4,8 +4,6 @@ package tech.notifly.push
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -25,10 +23,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.Notifly
 import tech.notifly.R
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.NotiflyNotificationChannelUtil
 import tech.notifly.utils.OSUtils
 import java.net.HttpURLConnection
 import java.net.URL
@@ -140,23 +138,18 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelName = "Notifly Notification Channel"
-            val channelDescription = "This is the Notifly Notification Channel"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel =
-                NotificationChannel(Notifly.NOTIFICATION_CHANNEL_ID, channelName, importance)
-            channel.description = channelDescription
-
-            val notificationManager = context.getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
+            NotiflyNotificationChannelUtil.createNotificationChannels(context)
         }
 
+        val channelId =
+            NotiflyNotificationChannelUtil.getNotificationChannelId(pushNotification.importance)
+        val priority = NotiflyNotificationChannelUtil.getSystemPriority(pushNotification.importance)
         val notificationIcon = getNotificationIcon(context)
-        val builder = NotificationCompat.Builder(context, Notifly.NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(notificationIcon).setContentTitle(title).setContentText(body)
+
+        val builder = NotificationCompat.Builder(context, channelId).setSmallIcon(notificationIcon)
+            .setContentTitle(title).setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setContentIntent(pendingIntent).setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent).setAutoCancel(true).setPriority(priority)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         if (bitmap != null) {
@@ -180,6 +173,14 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             Logger.w("POST_NOTIFICATIONS permission is not granted")
         }
     }
+
+//    private fun createNotiflyNotificationChannels() {
+//        val channelConfigurations = arrayOf(
+//            "Notifly Notification Channel for Urgent Messages",
+//            "Notifly Notification Channel for Normal Messages",
+//            "Notifly Notification Channel for Low Priority Messages"
+//        )
+//    }
 
     private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
         val json = JSONObject()

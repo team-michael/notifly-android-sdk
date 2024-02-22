@@ -7,20 +7,19 @@ import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
 import tech.notifly.inapp.models.EventIntermediateCounts
-import tech.notifly.inapp.models.SegmentConditionUnitType
-import tech.notifly.inapp.models.ValueType
 import tech.notifly.inapp.models.Operator
+import tech.notifly.inapp.models.SegmentConditionUnitType
 import tech.notifly.inapp.models.TriggeringEventFilterGroup
 import tech.notifly.inapp.models.TriggeringEventFilterUnit
 import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.UserData
+import tech.notifly.inapp.models.ValueType
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.OSUtils
-import kotlin.math.floor
 
 object InAppMessageManager {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
