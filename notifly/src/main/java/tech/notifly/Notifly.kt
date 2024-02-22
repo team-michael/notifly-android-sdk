@@ -1,9 +1,6 @@
 package tech.notifly
 
-import android.app.NotificationChannel
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,7 +15,6 @@ import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
-import tech.notifly.utils.NotiflyNotificationChannelUtil
 import tech.notifly.utils.NotiflySDKInfoUtil
 import tech.notifly.utils.NotiflyUserUtil
 

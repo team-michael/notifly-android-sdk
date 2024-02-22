@@ -11,7 +11,6 @@ import org.json.JSONObject
 import tech.notifly.extensions.await
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
-import java.time.Clock
 
 internal object NotiflyAuthUtil {
 
