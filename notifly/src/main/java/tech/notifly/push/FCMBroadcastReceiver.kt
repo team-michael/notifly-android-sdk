@@ -4,6 +4,7 @@ package tech.notifly.push
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -174,14 +175,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         }
     }
 
-//    private fun createNotiflyNotificationChannels() {
-//        val channelConfigurations = arrayOf(
-//            "Notifly Notification Channel for Urgent Messages",
-//            "Notifly Notification Channel for Normal Messages",
-//            "Notifly Notification Channel for Low Priority Messages"
-//        )
-//    }
-
     private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
         val json = JSONObject()
         val keys = bundle.keySet()
@@ -246,5 +239,4 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             continuation.resume(null)
         }
     }
-
 }
