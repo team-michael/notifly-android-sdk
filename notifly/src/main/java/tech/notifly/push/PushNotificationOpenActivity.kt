@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
-import tech.notifly.utils.OSUtils
 
 class PushNotificationOpenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,7 +25,7 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         val url = intent.getStringExtra("url")
         val campaignId = intent.getStringExtra("campaign_id")
         val notiflyMessageId = intent.getStringExtra("notifly_message_id")
-        val isAppInForeground = OSUtils.isAppInForeground(this)
+        val wasAppInForeground = intent.getBooleanExtra("was_app_in_foreground", false)
 
         NotiflyLogUtil.logEventSync(
             this, "push_click", mapOf(
@@ -34,7 +33,7 @@ class PushNotificationOpenActivity : AppCompatActivity() {
                 "channel" to "push-notification",
                 "campaign_id" to campaignId,
                 "notifly_message_id" to notiflyMessageId,
-                "status" to if (isAppInForeground) "foreground" else "background"
+                "status" to if (wasAppInForeground) "foreground" else "background"
             ), listOf(), true
         )
 
@@ -47,17 +46,11 @@ class PushNotificationOpenActivity : AppCompatActivity() {
                 }
                 startActivity(urlIntent)
             } else {
-                if (isAppInForeground) {
-                    // If the app was in the foreground, we don't need to do anything
-                    Logger.d("App is in the foreground, no need to do anything")
-                } else {
-                    // If the app was in the background, we need to launch the app
-                    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-                    launchIntent?.apply {
-                        putExtra("test", "test")
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(this)
-                    }
+                val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                launchIntent?.apply {
+                    putExtra("test", "test")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(this)
                 }
             }
         } catch (e: Exception) {

@@ -77,8 +77,6 @@ class SampleActivity : ComponentActivity() {
         askNotificationPermission()
 
         Log.d("SampleApplication", "onCreate")
-        // Debug intent extras
-        Log.d("SampleActivity", intent.toString())
         intent.extras?.let {
             for (key in it.keySet()) {
                 val value = it.getString(key)
@@ -95,20 +93,6 @@ class SampleActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     SampleVerticalList(BuildConfig.NOTIFLY_USERNAME, BuildConfig.NOTIFLY_PASSWORD)
-                }
-            }
-        }
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        Log.d("SampleActivity", "onNewIntent")
-        Log.d("SampleActivity", intent.toString())
-        intent?.extras?.let {
-            for (key in it.keySet()) {
-                val value = it.getString(key)
-                if (value != null) {
-                    Log.d("SampleActivity", "Key: $key Value: $value")
                 }
             }
         }

@@ -63,7 +63,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         if (pushNotification != null) {
             val isAppInForeground = OSUtils.isAppInForeground(context)
             logPushDelivered(context, pushNotification, isAppInForeground)
-            showPushNotification(context, pushNotification)
+            showPushNotification(context, pushNotification, isAppInForeground)
         }
     }
 
@@ -103,7 +103,9 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         )
     }
 
-    private fun showPushNotification(context: Context, pushNotification: PushNotification) {
+    private fun showPushNotification(
+        context: Context, pushNotification: PushNotification, wasAppInForeground: Boolean
+    ) {
         val title = pushNotification.title
         val body = pushNotification.body
         val url = pushNotification.url
@@ -120,6 +122,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
                 putExtra("url", url)
                 putExtra("campaign_id", campaignId)
                 putExtra("notifly_message_id", notiflyMessageId)
+                putExtra("was_app_in_foreground", wasAppInForeground)
             }
 
         requestCodeCounter++
