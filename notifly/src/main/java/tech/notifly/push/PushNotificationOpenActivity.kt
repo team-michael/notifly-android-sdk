@@ -40,24 +40,23 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         try {
             // Open the URL or launch the app
             if (url != null) {
-                val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).applyIntentCommons()
+                val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
                 startActivity(urlIntent)
             } else {
-                packageManager.getLaunchIntentForPackage(packageName)?.applyIntentCommons()?.let {
-                    startActivity(it)
+                val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                launchIntent?.apply {
+                    putExtra("test", "test")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(this)
                 }
             }
         } catch (e: Exception) {
             Logger.w("Failed to open URL or launch app", e)
         } finally {
             finish()
-        }
-    }
-
-    private fun Intent.applyIntentCommons(): Intent {
-        return this.apply {
-            addCategory(Intent.CATEGORY_BROWSABLE)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
 }

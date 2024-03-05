@@ -104,7 +104,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     }
 
     private fun showPushNotification(
-        context: Context, pushNotification: PushNotification, isAppInForeground: Boolean
+        context: Context, pushNotification: PushNotification, wasAppInForeground: Boolean
     ) {
         val title = pushNotification.title
         val body = pushNotification.body
@@ -122,7 +122,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
                 putExtra("url", url)
                 putExtra("campaign_id", campaignId)
                 putExtra("notifly_message_id", notiflyMessageId)
-                putExtra("was_app_in_foreground", isAppInForeground)
+                putExtra("was_app_in_foreground", wasAppInForeground)
             }
 
         requestCodeCounter++
@@ -173,14 +173,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             Logger.w("POST_NOTIFICATIONS permission is not granted")
         }
     }
-
-//    private fun createNotiflyNotificationChannels() {
-//        val channelConfigurations = arrayOf(
-//            "Notifly Notification Channel for Urgent Messages",
-//            "Notifly Notification Channel for Normal Messages",
-//            "Notifly Notification Channel for Low Priority Messages"
-//        )
-//    }
 
     private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
         val json = JSONObject()
@@ -246,5 +238,4 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             continuation.resume(null)
         }
     }
-
 }

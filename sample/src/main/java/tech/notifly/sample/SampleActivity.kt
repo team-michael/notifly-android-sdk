@@ -76,6 +76,16 @@ class SampleActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         askNotificationPermission()
 
+        Log.d("SampleApplication", "onCreate")
+        intent.extras?.let {
+            for (key in it.keySet()) {
+                val value = it.getString(key)
+                if (value != null) {
+                    Log.d("SampleActivity", "Key: $key Value: $value")
+                }
+            }
+        }
+
         setContent {
             NotiflyAndroidSDKTheme {
                 // A surface container using the 'background' color from the theme
