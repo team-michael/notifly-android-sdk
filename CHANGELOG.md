@@ -1,3 +1,6 @@
+# 1.4.3
+- Fix app restarting issue when push notification is clicked on foreground state.
+
 # 1.4.2
 
 - Separate notification channels based on the importance of the notification
