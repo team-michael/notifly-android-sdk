@@ -4,6 +4,7 @@ package tech.notifly.push
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -56,41 +57,32 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             return
         }
 
+        if ("google.com/iid" == extras.getString("from")) {
+            // Do not process token update messages here.
+            // They are also non-ordered broadcasts.
+            return
+        }
+
         val jsonObject = bundleAsJSONObject(extras)
         Logger.d("FCMBroadcastReceiver intent: $jsonObject")
 
-        val pushNotification = extractPushNotification(jsonObject)
+        val pushNotification = PushNotification.fromFCMPayload(jsonObject)
         if (pushNotification != null) {
             val isAppInForeground = OSUtils.isAppInForeground(context)
             logPushDelivered(context, pushNotification, isAppInForeground)
             showPushNotification(context, pushNotification, isAppInForeground)
-        }
-    }
-
-    private fun extractPushNotification(jsonObject: JSONObject): PushNotification? {
-        if (!jsonObject.has("notifly")) {
-            Logger.d(
-                "FCM message does not have keys for push notification"
-            )
-            return null
+        } else {
+            Logger.d("FCM message is not valid or not a message from Notifly. Ignoring...")
         }
 
-        val notiflyString = jsonObject.getString("notifly")
-        val notiflyJSONObject = JSONObject(notiflyString)
-        if (!notiflyJSONObject.has("type") || notiflyJSONObject.getString("type") != "push-notification") {
-            Logger.d(
-                "FCM message is not a Notifly push notification"
-            )
-            return null
-        }
-        return PushNotification(notiflyJSONObject)
+        setSuccessfulResultCode()
     }
 
     private fun logPushDelivered(
         context: Context, pushNotification: PushNotification, isAppInForeground: Boolean
     ) {
-        val campaignId = pushNotification.campaign_id
-        val notiflyMessageId = pushNotification.notifly_message_id
+        val campaignId = pushNotification.campaignId
+        val notiflyMessageId = pushNotification.notiflyMessageId
 
         NotiflyLogUtil.logEventSync(
             context, "push_delivered", mapOf(
@@ -106,22 +98,17 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     private fun showPushNotification(
         context: Context, pushNotification: PushNotification, wasAppInForeground: Boolean
     ) {
-        val title = pushNotification.title
         val body = pushNotification.body
-        val url = pushNotification.url
-        val campaignId = pushNotification.campaign_id
-        val notiflyMessageId = pushNotification.notifly_message_id
-        val imageUrl = pushNotification.image_url
+        val title = pushNotification.title
+        val notificationId = pushNotification.androidNotificationId
+        val notiflyMessageId = pushNotification.notiflyMessageId
+        val imageUrl = pushNotification.imageUrl
         val bitmap = runBlocking { loadImage(imageUrl) }
 
         val notificationOpenIntent =
             Intent(context, PushNotificationOpenActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra("title", title)
-                putExtra("body", body)
-                putExtra("url", url)
-                putExtra("campaign_id", campaignId)
-                putExtra("notifly_message_id", notiflyMessageId)
+                putExtra("notification", pushNotification)
                 putExtra("was_app_in_foreground", wasAppInForeground)
             }
 
@@ -162,7 +149,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val notification = builder.build()
         Logger.d("FCMBroadcastReceiver notification: $notification")
 
-        val notificationId = notiflyMessageId?.toIntOrNull() ?: 1
         // Show the notification
         if (ActivityCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS
@@ -236,6 +222,12 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             }
         } else {
             continuation.resume(null)
+        }
+    }
+
+    private fun setSuccessfulResultCode() {
+        if (isOrderedBroadcast) {
+            resultCode = Activity.RESULT_OK
         }
     }
 }

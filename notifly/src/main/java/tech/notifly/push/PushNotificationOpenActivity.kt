@@ -2,6 +2,7 @@ package tech.notifly.push
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import tech.notifly.utils.Logger
@@ -22,11 +23,25 @@ class PushNotificationOpenActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent) {
         Logger.d("PushNotificationOpenActivity handleIntent: $intent")
-        val url = intent.getStringExtra("url")
-        val campaignId = intent.getStringExtra("campaign_id")
-        val notiflyMessageId = intent.getStringExtra("notifly_message_id")
+
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getSerializableExtra("notification", PushNotification::class.java)
+        } else {
+            @Suppress("DEPRECATION") intent.getSerializableExtra("notification") as? PushNotification
+        }
+
+        if (notification == null) {
+            Logger.e("PushNotificationOpenActivity: No notification found in intent")
+            finish()
+            return
+        }
+
+        val url = notification.url
+        val campaignId = notification.campaignId
+        val notiflyMessageId = notification.notiflyMessageId
         val wasAppInForeground = intent.getBooleanExtra("was_app_in_foreground", false)
 
+        // Log the push click event
         NotiflyLogUtil.logEventSync(
             this, "push_click", mapOf(
                 "type" to "message_event",
@@ -36,6 +51,8 @@ class PushNotificationOpenActivity : AppCompatActivity() {
                 "status" to if (wasAppInForeground) "foreground" else "background"
             ), listOf(), true
         )
+
+        // Fire callbacks for push click event
 
         try {
             // Open the URL or launch the app
@@ -48,7 +65,6 @@ class PushNotificationOpenActivity : AppCompatActivity() {
             } else {
                 val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
                 launchIntent?.apply {
-                    putExtra("test", "test")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     startActivity(this)
                 }
