@@ -25,6 +25,9 @@ import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.R
+import tech.notifly.push.activities.PushNotificationOpenActivity
+import tech.notifly.push.impl.PushNotification
+import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyNotificationChannelUtil
@@ -79,7 +82,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     }
 
     private fun logPushDelivered(
-        context: Context, pushNotification: PushNotification, isAppInForeground: Boolean
+        context: Context, pushNotification: IPushNotification, isAppInForeground: Boolean
     ) {
         val campaignId = pushNotification.campaignId
         val notiflyMessageId = pushNotification.notiflyMessageId
@@ -96,7 +99,7 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     }
 
     private fun showPushNotification(
-        context: Context, pushNotification: PushNotification, wasAppInForeground: Boolean
+        context: Context, pushNotification: IPushNotification, wasAppInForeground: Boolean
     ) {
         val body = pushNotification.body
         val title = pushNotification.title

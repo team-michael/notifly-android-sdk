@@ -17,9 +17,9 @@
             android:theme="@style/Theme.CustomTransparent" />
 
         <activity
-            android:name=".push.PushNotificationOpenActivity"
+            android:name=".push.activities.PushNotificationOpenActivity"
             android:exported="true"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTop" />
 
         <receiver
             android:name=".push.FCMBroadcastReceiver"

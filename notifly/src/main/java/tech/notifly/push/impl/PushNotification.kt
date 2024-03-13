@@ -1,9 +1,9 @@
-package tech.notifly.push
+package tech.notifly.push.impl
 
 import org.json.JSONObject
+import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyTimerUtil
-import java.io.Serializable
 import java.security.SecureRandom
 
 enum class Importance {
@@ -12,21 +12,21 @@ enum class Importance {
 
 data class PushNotification(
     /** The body text of the notification */
-    val body: String? = null,
+    override val body: String? = null,
     /** The title text of the notification */
-    val title: String? = null,
+    override val title: String? = null,
     /** The Notifly campaign ID of the notification */
-    val campaignId: String? = null,
+    override val campaignId: String? = null,
     /** The Android notification ID of the notification */
-    val androidNotificationId: Int,
+    override val androidNotificationId: Int,
     /** The Notifly message ID of the notification */
-    val notiflyMessageId: String? = null,
+    override val notiflyMessageId: String? = null,
     /** The importance of the notification. Can be "high", "normal", or "low" */
-    val importance: Importance? = null,
+    override val importance: Importance? = null,
     /** The URL to open when the notification is clicked */
-    val url: String? = null,
+    override val url: String? = null,
     /** The URL of the image to display in the notification */
-    val imageUrl: String? = null,
+    override val imageUrl: String? = null,
 //    /** The ID of the notification channel to use */
 //    val channelId: String? = null,
 //    /** The notification's icon. Sets the notification icon to myicon for drawable resource myicon. If you don't send this key in the request, Notifly uses a default icon. */
@@ -36,14 +36,14 @@ data class PushNotification(
 //    /** The sound to play when the notification is shown. This is usually the name of a sound resource. */
 //    val sound: String? = null,
     /** Sent time of the notification in milliseconds */
-    val sentTime: Long,
+    override val sentTime: Long,
     /** TTL of the notification in seconds */
-    val ttl: Int,
+    override val ttl: Int,
     /** Custom data from the push notification */
-    val customData: HashMap<String, String>,
+    override val customData: HashMap<String, String>,
     /** Raw data from the push notification */
-    val rawPayload: String,
-) : Serializable {
+    override val rawPayload: String,
+) : IPushNotification {
     companion object {
         private const val DEFAULT_TTL_IF_NOT_IN_PAYLOAD = 259_200
         private const val GOOGLE_TTL_KEY = "google.ttl"
@@ -51,12 +51,18 @@ data class PushNotification(
         private const val NOTIFLY_INTERNAL_DATA_KEY = "notifly"
         private const val NOTIFLY_PUSH_NOTIFICATION_TYPE = "push-notification"
 
+        private val RESERVED_KEYS = listOf("from", "notification", "message_type")
+
+        private fun isReservedKey(key: String): Boolean {
+            return key.startsWith("google") || key.startsWith("gcm") || RESERVED_KEYS.contains(key) || key == NOTIFLY_INTERNAL_DATA_KEY
+        }
+
         private fun extractCustomDataFromJSONObject(jsonObject: JSONObject): HashMap<String, String> {
             val keySet = jsonObject.keys()
             val customData = HashMap<String, String>()
             while (keySet.hasNext()) {
                 val key = keySet.next()
-                if (!key.startsWith("google.") && key != NOTIFLY_INTERNAL_DATA_KEY) {
+                if (!isReservedKey(key)) {
                     try {
                         customData[key] = jsonObject.getString(key)
                     } catch (e: Exception) {
@@ -101,7 +107,7 @@ data class PushNotification(
                     }
                 } else null,
                 // The below fields are not yet supported by the Notifly SDK
-                channelId = if (notiflyJSONObject.has("chid")) notiflyJSONObject.getString("chid") else null,
+//                channelId = if (notiflyJSONObject.has("chid")) notiflyJSONObject.getString("chid") else null,
 //                icon = if (notiflyJSONObject.has("ic")) notiflyJSONObject.getString("ic") else null,
 //                color = if (notiflyJSONObject.has("col")) notiflyJSONObject.getString("col") else null,
 //                sound = if (notiflyJSONObject.has("sd")) notiflyJSONObject.getString("sd") else null,

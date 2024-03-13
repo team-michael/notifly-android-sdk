@@ -73,5 +73,9 @@ afterEvaluate {
                 version = project.property('version')
             }
         }
+
+        repositories {
+            mavenLocal()
+        }
     }
 }

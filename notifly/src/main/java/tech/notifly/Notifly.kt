@@ -12,6 +12,8 @@ import tech.notifly.command.models.SetUserPropertiesPayload
 import tech.notifly.command.models.TrackEventCommand
 import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.push.PushNotificationManager
+import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
@@ -103,6 +105,11 @@ object Notifly {
                 )
             )
         )
+    }
+
+    @JvmStatic
+    fun addNotificationClickListener(listener: INotificationClickListener) {
+        PushNotificationManager.addClickListener(listener)
     }
 
     @JvmStatic

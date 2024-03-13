@@ -57,7 +57,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.Notifly
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
-import tech.notifly.utils.Logger
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.callSuspend
@@ -77,14 +76,6 @@ class SampleActivity : ComponentActivity() {
         askNotificationPermission()
 
         Log.d("SampleApplication", "onCreate")
-        intent.extras?.let {
-            for (key in it.keySet()) {
-                val value = it.getString(key)
-                if (value != null) {
-                    Log.d("SampleActivity", "Key: $key Value: $value")
-                }
-            }
-        }
 
         setContent {
             NotiflyAndroidSDKTheme {
@@ -331,7 +322,7 @@ class SampleActivity : ComponentActivity() {
                             "tech.notifly.utils.NotiflyTimerUtil", "getTimestampMicros"
                         )
                         val timestampMicros = function.call(instance) as Long
-                        Logger.v("Timestamp Micros: $timestampMicros")
+                        Log.v("SampleApplication", "Timestamp Micros: $timestampMicros")
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Get Timestamp Micros")
@@ -524,10 +515,13 @@ class SampleActivity : ComponentActivity() {
                         }
                     }
 
-                    Logger.v(eventParams.toString())
+                    Log.v("SampleApplication", eventParams.toString())
                     eventParams.keys.forEach {
-                        Logger.v("$it: ${eventParams[it]}")
-                        Logger.v("type of ${eventParams[it]} is ${eventParams[it]?.javaClass?.name ?: "null"}")
+                        Log.v("SampleApplication", "$it: ${eventParams[it]}")
+                        Log.v(
+                            "SampleApplication",
+                            "type of ${eventParams[it]} is ${eventParams[it]?.javaClass?.name ?: "null"}"
+                        )
                     }
                     Notifly.trackEvent(
                         context, eventName, eventParams

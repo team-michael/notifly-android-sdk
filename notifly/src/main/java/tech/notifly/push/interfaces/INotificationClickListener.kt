@@ -1,4 +1,4 @@
-package tech.notifly.push
+package tech.notifly.push.interfaces
 
 interface INotificationClickListener {
     /**

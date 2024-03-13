@@ -63,7 +63,9 @@ android {
 }
 
 dependencies {
-    implementation project(':notifly')
+    //    implementation project(':notifly')
+
+    implementation 'com.github.team-michael:notifly-android-sdk:1.5.0-SNAPSHOT-20240313'
 
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10'
     implementation 'org.jetbrains.kotlin:kotlin-reflect:1.8.10'
@@ -82,8 +84,6 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging'
     implementation "com.google.firebase:firebase-crashlytics-ktx"
     implementation "com.google.firebase:firebase-analytics-ktx"
-
-    // implementation 'com.onesignal:OneSignal:[4.0.0, 4.99.99]'
 
     testImplementation 'junit:junit:4.13.2'
 

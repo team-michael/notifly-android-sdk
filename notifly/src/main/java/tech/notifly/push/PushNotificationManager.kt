@@ -1,0 +1,32 @@
+package tech.notifly.push
+
+import tech.notifly.push.impl.NotificationClickEvent
+import tech.notifly.push.interfaces.INotificationClickListener
+import tech.notifly.push.interfaces.IPushNotification
+import tech.notifly.utils.EventProducer
+
+object PushNotificationManager {
+    private val clickListeners = EventProducer<INotificationClickListener>()
+    private val unprocessedNotifications = ArrayDeque<IPushNotification>()
+
+    fun addClickListener(listener: INotificationClickListener) {
+        clickListeners.subscribe(listener)
+
+        if (clickListeners.hasSubscribers && unprocessedNotifications.any()) {
+            for (notification in unprocessedNotifications) {
+                clickListeners.fireOnMain { it.onClick(NotificationClickEvent(notification)) }
+            }
+        }
+    }
+
+    fun removeClickListener(listener: INotificationClickListener) =
+        clickListeners.unsubscribe(listener)
+
+    fun notificationOpened(data: IPushNotification) {
+        if (clickListeners.hasSubscribers) {
+            clickListeners.fireOnMain { it.onClick(NotificationClickEvent(data)) }
+        } else {
+            unprocessedNotifications.add(data)
+        }
+    }
+}

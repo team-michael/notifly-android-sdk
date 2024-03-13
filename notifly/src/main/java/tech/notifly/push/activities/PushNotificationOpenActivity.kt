@@ -1,10 +1,12 @@
-package tech.notifly.push
+package tech.notifly.push.activities
 
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import tech.notifly.push.PushNotificationManager
+import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 
@@ -25,9 +27,9 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         Logger.d("PushNotificationOpenActivity handleIntent: $intent")
 
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getSerializableExtra("notification", PushNotification::class.java)
+            intent.getSerializableExtra("notification", IPushNotification::class.java)
         } else {
-            @Suppress("DEPRECATION") intent.getSerializableExtra("notification") as? PushNotification
+            @Suppress("DEPRECATION") intent.getSerializableExtra("notification") as? IPushNotification
         }
 
         if (notification == null) {
@@ -53,19 +55,19 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         )
 
         // Fire callbacks for push click event
+        PushNotificationManager.notificationOpened(notification)
 
         try {
             // Open the URL or launch the app
             if (url != null) {
-                val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                     addCategory(Intent.CATEGORY_BROWSABLE)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(this)
                 }
-                startActivity(urlIntent)
             } else {
-                val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-                launchIntent?.apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
                     startActivity(this)
                 }
             }

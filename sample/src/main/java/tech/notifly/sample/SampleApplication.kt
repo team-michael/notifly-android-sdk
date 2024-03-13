@@ -4,10 +4,8 @@ package tech.notifly.sample
 import android.app.Application
 import android.util.Log
 import tech.notifly.Notifly
-
-// import com.onesignal.OneSignal
-// const val ONESIGNAL_APP_ID = "0fb00786-17c7-409a-8210-27fdb0e941a1"
-
+import tech.notifly.push.interfaces.INotificationClickEvent
+import tech.notifly.push.interfaces.INotificationClickListener
 
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -20,6 +18,12 @@ class SampleApplication : Application() {
             username = BuildConfig.NOTIFLY_USERNAME,
             password = BuildConfig.NOTIFLY_PASSWORD,
         )
+
+        Notifly.addNotificationClickListener(object : INotificationClickListener {
+            override fun onClick(event: INotificationClickEvent) {
+                Log.d("SampleApplication", "Notification clicked: ${event.notification.toString()}")
+            }
+        })
 
         // OneSignal Initialization
         /*OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)
