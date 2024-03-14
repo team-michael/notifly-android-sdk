@@ -1,6 +1,6 @@
 # 1.5.0
 
-- Immersive improvements for push notification feature.
+- Lots of improvements for push notification feature.
     - Application lifecycle listeners are added to avoid redundant session start logging.
     - Application lifecycle listeners are added to avoid redundant fetching of user states.
 - Push notification click event handler interface is added to allow developers to customize push
