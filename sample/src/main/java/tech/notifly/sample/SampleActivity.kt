@@ -303,11 +303,15 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        val (instance, function) = reflectObjectFunction(
-                            "tech.notifly.inapp.InAppMessageManager", "sync"
-                        )
-                        CoroutineScope(Dispatchers.IO).launch {
-                            function.callSuspend(instance, context, false)
+                        try {
+                            val (instance, function) = reflectObjectFunction(
+                                "tech.notifly.inapp.InAppMessageManager", "sync"
+                            )
+                            CoroutineScope(Dispatchers.IO).launch {
+                                function.callSuspend(instance, context, false)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error: $e")
                         }
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
@@ -316,11 +320,15 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        val (instance, function) = reflectObjectFunction(
-                            "tech.notifly.utils.NotiflyTimerUtil", "getTimestampMicros"
-                        )
-                        val timestampMicros = function.call(instance) as Long
-                        Log.v("SampleApplication", "Timestamp Micros: $timestampMicros")
+                        try {
+                            val (instance, function) = reflectObjectFunction(
+                                "tech.notifly.utils.NotiflyTimerUtil", "getTimestampMicros"
+                            )
+                            val timestampMicros = function.call(instance) as Long
+                            Log.v("SampleApplication", "Timestamp Micros: $timestampMicros")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error: $e")
+                        }
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Get Timestamp Micros")
@@ -335,12 +343,7 @@ class SampleActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         if (userId.isNotEmpty()) {
-                            val (instance, function) = reflectObjectFunction(
-                                "tech.notifly.Notifly", "setUserId"
-                            )
-                            function.call(
-                                instance, context, userId
-                            )
+                            Notifly.setUserId(context, userId)
                         } else {
                             Log.w(TAG, "Empty user ID input")
                             // Show alert for empty user ID input
@@ -358,12 +361,7 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        val (instance, function) = reflectObjectFunction(
-                            "tech.notifly.Notifly", "setUserId"
-                        )
-                        function.call(
-                            instance, context, null
-                        )
+                        Notifly.setUserId(context, null)
                     }, modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(text = "Remove User ID")
