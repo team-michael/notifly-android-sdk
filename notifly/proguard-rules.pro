@@ -30,15 +30,15 @@
 #}
 
 # To keep method names in your stack trace, add this line
--keepclassmembers class tech.notifly.Notifly.** { *; }
+#-keepclassmembers class tech.notifly.Notifly.** { *; }
 
 # To keep methods in Notifly
--keep class tech.notifly.Notifly { *; }
--keep class tech.notifly.NotiflySdkType { *; }
--keep class tech.notifly.NotiflyControlToken { *; }
-
--keep class tech.notifly.push.interfaces.** { *; }
+#-keep class tech.notifly.Notifly { *; }
+#-keep class tech.notifly.NotiflySdkType { *; }
+#-keep class tech.notifly.NotiflyControlToken { *; }
+#
+#-keep class tech.notifly.push.interfaces.** { *; }
 
 # These 2 methods are called with reflection
--keep class tech.notifly.utils.NotiflyAuthUtil { *; }
--keep class tech.notifly.utils.NotiflyFirebaseUtil { *; }
+#-keep class tech.notifly.utils.NotiflyAuthUtil { *; }
+#-keep class tech.notifly.utils.NotiflyFirebaseUtil { *; }

@@ -1,5 +1,5 @@
-package tech.notifly
+package tech.notifly.sdkstate
 
-interface SdkStateObserver {
+interface ISdkLifecycleListener {
     fun onStateChanged(prevState: NotiflySdkState, newState: NotiflySdkState)
 }

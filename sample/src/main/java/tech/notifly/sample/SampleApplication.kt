@@ -7,9 +7,13 @@ import tech.notifly.Notifly
 import tech.notifly.push.interfaces.INotificationClickEvent
 import tech.notifly.push.interfaces.INotificationClickListener
 
+//import tech.notifly.push.interfaces.INotificationClickEvent
+//import tech.notifly.push.interfaces.INotificationClickListener
+
 class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+
         Notifly.setLogLevel(Log.VERBOSE)
 
         Notifly.initialize(

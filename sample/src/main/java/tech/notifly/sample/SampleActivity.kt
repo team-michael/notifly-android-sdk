@@ -75,8 +75,6 @@ class SampleActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         askNotificationPermission()
 
-        Log.d("SampleApplication", "onCreate")
-
         setContent {
             NotiflyAndroidSDKTheme {
                 // A surface container using the 'background' color from the theme

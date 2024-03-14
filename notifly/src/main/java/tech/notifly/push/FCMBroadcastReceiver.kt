@@ -6,6 +6,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,16 +17,14 @@ import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.legacy.content.WakefulBroadcastReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.json.JSONException
-import org.json.JSONObject
+import tech.notifly.Notifly
 import tech.notifly.R
-import tech.notifly.push.activities.PushNotificationOpenActivity
+import tech.notifly.push.activities.NotificationOpenedActivity
 import tech.notifly.push.impl.PushNotification
 import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
@@ -37,39 +36,53 @@ import java.net.URL
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
+class FCMBroadcastReceiver : BroadcastReceiver() {
     companion object {
+        private const val FCM_RECEIVE_ACTION = "com.google.android.c2dm.intent.RECEIVE"
+        private const val FCM_TYPE = "gcm"
+        private const val MESSAGE_TYPE_EXTRA_KEY = "message_type"
+
         @Volatile
         var requestCodeCounter = 0
+
+        private fun isFCMMessage(intent: Intent): Boolean {
+            if (FCM_RECEIVE_ACTION == intent.action) {
+                val messageType = intent.getStringExtra(MESSAGE_TYPE_EXTRA_KEY)
+                return messageType == null || FCM_TYPE == messageType
+            }
+            return false
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        Thread {
-            try {
-                handleFCMMessage(context, intent)
-            } catch (e: Exception) {
-                Logger.e("FCMBroadcastReceiver onReceive failed", e)
-            }
-        }.start()
+        val bundle = intent.extras
+        if (bundle == null || "google.com/iid" == bundle.getString("from") || bundle.getString("notifly") == null) {
+            return
+        }
+
+        if (!Notifly.initializeWithContext(context)) {
+            return
+        }
+
+        if (!isFCMMessage(intent)) {
+            setSuccessfulResultCode()
+            return
+        }
+
+        try {
+            processFCMMessage(context, bundle)
+        } catch (e: Exception) {
+            Logger.e("FCMBroadcastReceiver onReceive failed", e)
+        }
+
+        setSuccessfulResultCode()
     }
 
     @Throws(Exception::class)
-    private fun handleFCMMessage(context: Context, intent: Intent) {
-        val extras = intent.extras ?: run {
-            Logger.d("FCM message does not have data field")
-            return
-        }
+    private fun processFCMMessage(context: Context, bundle: Bundle) {
+        Logger.d("FCMBroadcastReceiver intent: $bundle")
 
-        if ("google.com/iid" == extras.getString("from")) {
-            // Do not process token update messages here.
-            // They are also non-ordered broadcasts.
-            return
-        }
-
-        val jsonObject = bundleAsJSONObject(extras)
-        Logger.d("FCMBroadcastReceiver intent: $jsonObject")
-
-        val pushNotification = PushNotification.fromFCMPayload(jsonObject)
+        val pushNotification = PushNotification.fromIntentExtras(bundle)
         if (pushNotification != null) {
             val isAppInForeground = OSUtils.isAppInForeground(context)
             logPushDelivered(context, pushNotification, isAppInForeground)
@@ -77,8 +90,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         } else {
             Logger.d("FCM message is not valid or not a message from Notifly. Ignoring...")
         }
-
-        setSuccessfulResultCode()
     }
 
     private fun logPushDelivered(
@@ -108,12 +119,11 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val imageUrl = pushNotification.imageUrl
         val bitmap = runBlocking { loadImage(imageUrl) }
 
-        val notificationOpenIntent =
-            Intent(context, PushNotificationOpenActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra("notification", pushNotification)
-                putExtra("was_app_in_foreground", wasAppInForeground)
-            }
+        val notificationOpenIntent = Intent(context, NotificationOpenedActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra("notification", pushNotification)
+            putExtra("was_app_in_foreground", wasAppInForeground)
+        }
 
         requestCodeCounter++
         val uniqueRequestCode = notiflyMessageId.hashCode().let {
@@ -161,20 +171,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         } else {
             Logger.w("POST_NOTIFICATIONS permission is not granted")
         }
-    }
-
-    private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
-        val json = JSONObject()
-        val keys = bundle.keySet()
-
-        for (key in keys) {
-            try {
-                json.put(key, bundle.get(key))
-            } catch (e: JSONException) {
-                Logger.e("Failed to convert bundle to json", e)
-            }
-        }
-        return json
     }
 
     private fun getNotificationIcon(context: Context): Int {

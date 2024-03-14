@@ -3,8 +3,8 @@ package tech.notifly.command.models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import tech.notifly.NotiflySdkState
-import tech.notifly.NotiflySdkStateManager
+import tech.notifly.sdkstate.NotiflySdkState
+import tech.notifly.sdkstate.NotiflySdkStateManager
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -39,8 +39,6 @@ class SetUserIdCommand(
     override val commandType = CommandType.SET_USER_ID
 
     override fun execute() {
-        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
-
         super.execute()
 
         val context = payload.context
@@ -73,7 +71,6 @@ class SetUserIdCommand(
                 if (shouldClearData) {
                     InAppMessageManager.clearUserState()
                 }
-                NotiflySdkStateManager.setState(NotiflySdkState.READY)
             } catch (e: Exception) {
                 Logger.e("[Notifly] setUserId failed", e)
                 NotiflySdkStateManager.setState(NotiflySdkState.FAILED)

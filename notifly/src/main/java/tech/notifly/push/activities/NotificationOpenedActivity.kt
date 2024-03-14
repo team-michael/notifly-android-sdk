@@ -5,27 +5,36 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import tech.notifly.Notifly
+import tech.notifly.application.ApplicationEntryAction
+import tech.notifly.application.IApplicationService
 import tech.notifly.push.PushNotificationManager
 import tech.notifly.push.interfaces.IPushNotification
+import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
+import tech.notifly.utils.OSUtils
 
-class PushNotificationOpenActivity : AppCompatActivity() {
+class NotificationOpenedActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        Logger.d("PushNotificationOpenActivity onCreate")
         super.onCreate(savedInstanceState)
+        if (!Notifly.initializeWithContext(this)) {
+            return
+        }
         handleIntent(intent)
+        finish()
     }
 
     override fun onNewIntent(intent: Intent?) {
-        Logger.d("PushNotificationOpenActivity onNewIntent")
         super.onNewIntent(intent)
+        if (!Notifly.initializeWithContext(this)) {
+            return
+        }
         intent?.let { handleIntent(it) }
+        finish()
     }
 
     private fun handleIntent(intent: Intent) {
-        Logger.d("PushNotificationOpenActivity handleIntent: $intent")
-
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("notification", IPushNotification::class.java)
         } else {
@@ -33,7 +42,6 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         }
 
         if (notification == null) {
-            Logger.e("PushNotificationOpenActivity: No notification found in intent")
             finish()
             return
         }
@@ -58,23 +66,33 @@ class PushNotificationOpenActivity : AppCompatActivity() {
         PushNotificationManager.notificationOpened(notification)
 
         try {
+            val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
+            if (!applicationService.isInForeground) {
+                applicationService.entryState = ApplicationEntryAction.NOTIFICATION_CLICK
+            }
             // Open the URL or launch the app
-            if (url != null) {
-                Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                    addCategory(Intent.CATEGORY_BROWSABLE)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(this)
-                }
-            } else {
-                packageManager.getLaunchIntentForPackage(packageName)?.apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-                    startActivity(this)
-                }
+            val destinationIntent = getIntent(url)
+            if (destinationIntent != null) {
+                startActivity(destinationIntent)
             }
         } catch (e: Exception) {
             Logger.w("Failed to open URL or launch app", e)
-        } finally {
-            finish()
+        }
+    }
+
+    private fun getIntent(url: String?): Intent? {
+        val uri = if (url != null) {
+            Uri.parse(url.trim { it <= ' ' })
+        } else {
+            null
+        }
+
+        return if (uri != null) {
+            OSUtils.openURLInBrowserIntent(uri)
+        } else {
+            packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         }
     }
 }

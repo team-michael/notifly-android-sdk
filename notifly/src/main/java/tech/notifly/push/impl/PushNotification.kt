@@ -1,5 +1,6 @@
 package tech.notifly.push.impl
 
+import android.os.Bundle
 import org.json.JSONObject
 import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
@@ -57,14 +58,13 @@ data class PushNotification(
             return key.startsWith("google") || key.startsWith("gcm") || RESERVED_KEYS.contains(key) || key == NOTIFLY_INTERNAL_DATA_KEY
         }
 
-        private fun extractCustomDataFromJSONObject(jsonObject: JSONObject): HashMap<String, String> {
-            val keySet = jsonObject.keys()
+        private fun extractCustomDataFromJSONObject(bundle: Bundle): HashMap<String, String> {
+            val keySet = bundle.keySet()
             val customData = HashMap<String, String>()
-            while (keySet.hasNext()) {
-                val key = keySet.next()
+            for (key in keySet) {
                 if (!isReservedKey(key)) {
                     try {
-                        customData[key] = jsonObject.getString(key)
+                        customData[key] = bundle.getString(key)!!
                     } catch (e: Exception) {
                         Logger.d("Invalid value for key: $key", e)
                     }
@@ -73,22 +73,16 @@ data class PushNotification(
             return customData
         }
 
-        fun fromFCMPayload(from: JSONObject): PushNotification? {
-            if (!from.has(NOTIFLY_INTERNAL_DATA_KEY)) {
+        fun fromIntentExtras(from: Bundle): PushNotification? {
+            val internalDataString = from.getString(NOTIFLY_INTERNAL_DATA_KEY)
+            if (internalDataString == null) {
                 Logger.d(
                     "FCM message does not have keys for push notification"
                 )
                 return null
             }
 
-            val notiflyString = from.getString("notifly")
-            val notiflyJSONObject = JSONObject(notiflyString)
-            if (!notiflyJSONObject.has("type") || notiflyJSONObject.getString("type") != NOTIFLY_PUSH_NOTIFICATION_TYPE) {
-                Logger.d(
-                    "FCM message is not a Notifly push notification"
-                )
-                return null
-            }
+            val notiflyJSONObject = JSONObject(internalDataString)
 
             return PushNotification(
                 body = if (notiflyJSONObject.has("bd")) notiflyJSONObject.getString("bd") else null,
@@ -111,8 +105,10 @@ data class PushNotification(
 //                icon = if (notiflyJSONObject.has("ic")) notiflyJSONObject.getString("ic") else null,
 //                color = if (notiflyJSONObject.has("col")) notiflyJSONObject.getString("col") else null,
 //                sound = if (notiflyJSONObject.has("sd")) notiflyJSONObject.getString("sd") else null,
-                sentTime = if (from.has(GOOGLE_SENT_TIME_KEY)) from.getLong(GOOGLE_SENT_TIME_KEY) else NotiflyTimerUtil.getTimestampMillis(),
-                ttl = if (from.has(GOOGLE_TTL_KEY)) from.getInt(GOOGLE_TTL_KEY) else DEFAULT_TTL_IF_NOT_IN_PAYLOAD,
+                sentTime = if (from.containsKey(GOOGLE_SENT_TIME_KEY)) from.getLong(
+                    GOOGLE_SENT_TIME_KEY
+                ) else NotiflyTimerUtil.getTimestampMillis(),
+                ttl = if (from.containsKey(GOOGLE_TTL_KEY)) from.getInt(GOOGLE_TTL_KEY) else DEFAULT_TTL_IF_NOT_IN_PAYLOAD,
                 customData = extractCustomDataFromJSONObject(from),
                 rawPayload = from.toString()
             )

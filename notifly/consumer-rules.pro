@@ -6,5 +6,5 @@
 
 # Proguard ends up removing this class even if it is used in AndroidManifest.xml so force keeping it.
 -keep public class tech.notifly.push.FCMBroadcastReceiver { *; }
--keep public class tech.notifly.push.activities.PushNotificationOpenActivity { *; }
+-keep public class tech.notifly.push.activities.NotificationOpenedActivity { *; }
 -keep public class tech.notifly.inapp.NotiflyInAppMessageActivity { *; }
