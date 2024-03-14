@@ -1,6 +1,7 @@
 package tech.notifly.push.impl
 
 import android.os.Bundle
+import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
@@ -58,6 +59,20 @@ data class PushNotification(
             return key.startsWith("google") || key.startsWith("gcm") || RESERVED_KEYS.contains(key) || key == NOTIFLY_INTERNAL_DATA_KEY
         }
 
+        private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
+            val json = JSONObject()
+            val keys = bundle.keySet()
+
+            for (key in keys) {
+                try {
+                    json.put(key, bundle.get(key) ?: JSONObject.NULL)
+                } catch (e: JSONException) {
+                    Logger.e("Failed to convert bundle to json for key: $key", e)
+                }
+            }
+            return json
+        }
+
         private fun extractCustomDataFromJSONObject(bundle: Bundle): HashMap<String, String> {
             val keySet = bundle.keySet()
             val customData = HashMap<String, String>()
@@ -110,7 +125,7 @@ data class PushNotification(
                 ) else NotiflyTimerUtil.getTimestampMillis(),
                 ttl = if (from.containsKey(GOOGLE_TTL_KEY)) from.getInt(GOOGLE_TTL_KEY) else DEFAULT_TTL_IF_NOT_IN_PAYLOAD,
                 customData = extractCustomDataFromJSONObject(from),
-                rawPayload = from.toString()
+                rawPayload = bundleAsJSONObject(from).toString()
             )
         }
     }

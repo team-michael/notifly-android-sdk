@@ -3,9 +3,9 @@ package tech.notifly.command.models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.sdkstate.NotiflySdkState
 import tech.notifly.sdkstate.NotiflySdkStateManager
-import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
