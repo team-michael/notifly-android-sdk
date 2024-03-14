@@ -1,4 +1,14 @@
+# 1.5.0
+
+- Lots of improvements for push notification feature.
+    - Application lifecycle listeners are added to avoid redundant session start logging.
+    - Application lifecycle listeners are added to avoid redundant fetching of user states.
+- Push notification click event handler interface is added to allow developers to customize push
+  notification click events.
+- Proguard rules and consumer proguard rules are re-organized to avoid unexpected behavior.
+
 # 1.4.3
+
 - Fix app restarting issue when push notification is clicked on foreground state.
 
 # 1.4.2

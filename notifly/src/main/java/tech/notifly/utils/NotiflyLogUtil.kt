@@ -9,7 +9,9 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import tech.notifly.application.IApplicationService
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflyIdUtil.Namespace
@@ -60,8 +62,10 @@ object NotiflyLogUtil {
         }
 
         val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-        if (OSUtils.isAppInForeground(context)) {
-            Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
+        val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
+
+        if (applicationService.current != null) {
+            Logger.v("[Notifly] Consider scheduling in app messages.")
             Logger.v("$eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys")
             InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
                 context,
@@ -71,8 +75,6 @@ object NotiflyLogUtil {
                 isInternalEvent,
                 segmentationEventParamKeys
             )
-        } else {
-            Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
         }
 
         /**

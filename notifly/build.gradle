@@ -22,7 +22,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -72,6 +72,10 @@ afterEvaluate {
                 artifactId = 'notifly-android-sdk'
                 version = project.property('version')
             }
+        }
+
+        repositories {
+            mavenLocal()
         }
     }
 }

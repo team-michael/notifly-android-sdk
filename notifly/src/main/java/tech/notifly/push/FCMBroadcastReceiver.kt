@@ -4,7 +4,9 @@ package tech.notifly.push
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,15 +17,16 @@ import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.legacy.content.WakefulBroadcastReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.json.JSONException
-import org.json.JSONObject
+import tech.notifly.Notifly
 import tech.notifly.R
+import tech.notifly.push.activities.NotificationOpenedActivity
+import tech.notifly.push.impl.PushNotification
+import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyNotificationChannelUtil
@@ -33,64 +36,67 @@ import java.net.URL
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
+class FCMBroadcastReceiver : BroadcastReceiver() {
     companion object {
+        private const val FCM_RECEIVE_ACTION = "com.google.android.c2dm.intent.RECEIVE"
+        private const val FCM_TYPE = "gcm"
+        private const val MESSAGE_TYPE_EXTRA_KEY = "message_type"
+
         @Volatile
         var requestCodeCounter = 0
+
+        private fun isFCMMessage(intent: Intent): Boolean {
+            if (FCM_RECEIVE_ACTION == intent.action) {
+                val messageType = intent.getStringExtra(MESSAGE_TYPE_EXTRA_KEY)
+                return messageType == null || FCM_TYPE == messageType
+            }
+            return false
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        Thread {
-            try {
-                handleFCMMessage(context, intent)
-            } catch (e: Exception) {
-                Logger.e("FCMBroadcastReceiver onReceive failed", e)
-            }
-        }.start()
-    }
-
-    @Throws(Exception::class)
-    private fun handleFCMMessage(context: Context, intent: Intent) {
-        val extras = intent.extras ?: run {
-            Logger.d("FCM message does not have data field")
+        val bundle = intent.extras
+        if (bundle == null || "google.com/iid" == bundle.getString("from") || bundle.getString("notifly") == null) {
             return
         }
 
-        val jsonObject = bundleAsJSONObject(extras)
-        Logger.d("FCMBroadcastReceiver intent: $jsonObject")
+        if (!Notifly.initializeWithContext(context)) {
+            return
+        }
 
-        val pushNotification = extractPushNotification(jsonObject)
+        if (!isFCMMessage(intent)) {
+            setSuccessfulResultCode()
+            return
+        }
+
+        try {
+            processFCMMessage(context, bundle)
+        } catch (e: Exception) {
+            Logger.e("FCMBroadcastReceiver onReceive failed", e)
+        }
+
+        setSuccessfulResultCode()
+    }
+
+    @Throws(Exception::class)
+    private fun processFCMMessage(context: Context, bundle: Bundle) {
+        Logger.d("FCMBroadcastReceiver intent: $bundle")
+
+        val pushNotification = PushNotification.fromIntentExtras(bundle)
         if (pushNotification != null) {
             val isAppInForeground = OSUtils.isAppInForeground(context)
             logPushDelivered(context, pushNotification, isAppInForeground)
             showPushNotification(context, pushNotification, isAppInForeground)
+        } else {
+            Logger.d("FCM message is not valid or not a message from Notifly. Ignoring...")
         }
-    }
-
-    private fun extractPushNotification(jsonObject: JSONObject): PushNotification? {
-        if (!jsonObject.has("notifly")) {
-            Logger.d(
-                "FCM message does not have keys for push notification"
-            )
-            return null
-        }
-
-        val notiflyString = jsonObject.getString("notifly")
-        val notiflyJSONObject = JSONObject(notiflyString)
-        if (!notiflyJSONObject.has("type") || notiflyJSONObject.getString("type") != "push-notification") {
-            Logger.d(
-                "FCM message is not a Notifly push notification"
-            )
-            return null
-        }
-        return PushNotification(notiflyJSONObject)
     }
 
     private fun logPushDelivered(
-        context: Context, pushNotification: PushNotification, isAppInForeground: Boolean
+        context: Context, pushNotification: IPushNotification, isAppInForeground: Boolean
     ) {
-        val campaignId = pushNotification.campaign_id
-        val notiflyMessageId = pushNotification.notifly_message_id
+        val campaignId = pushNotification.campaignId
+        val notiflyMessageId = pushNotification.notiflyMessageId
 
         NotiflyLogUtil.logEventSync(
             context, "push_delivered", mapOf(
@@ -104,26 +110,20 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
     }
 
     private fun showPushNotification(
-        context: Context, pushNotification: PushNotification, wasAppInForeground: Boolean
+        context: Context, pushNotification: IPushNotification, wasAppInForeground: Boolean
     ) {
-        val title = pushNotification.title
         val body = pushNotification.body
-        val url = pushNotification.url
-        val campaignId = pushNotification.campaign_id
-        val notiflyMessageId = pushNotification.notifly_message_id
-        val imageUrl = pushNotification.image_url
+        val title = pushNotification.title
+        val notificationId = pushNotification.androidNotificationId
+        val notiflyMessageId = pushNotification.notiflyMessageId
+        val imageUrl = pushNotification.imageUrl
         val bitmap = runBlocking { loadImage(imageUrl) }
 
-        val notificationOpenIntent =
-            Intent(context, PushNotificationOpenActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra("title", title)
-                putExtra("body", body)
-                putExtra("url", url)
-                putExtra("campaign_id", campaignId)
-                putExtra("notifly_message_id", notiflyMessageId)
-                putExtra("was_app_in_foreground", wasAppInForeground)
-            }
+        val notificationOpenIntent = Intent(context, NotificationOpenedActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra("notification", pushNotification)
+            putExtra("was_app_in_foreground", wasAppInForeground)
+        }
 
         requestCodeCounter++
         val uniqueRequestCode = notiflyMessageId.hashCode().let {
@@ -162,7 +162,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         val notification = builder.build()
         Logger.d("FCMBroadcastReceiver notification: $notification")
 
-        val notificationId = notiflyMessageId?.toIntOrNull() ?: 1
         // Show the notification
         if (ActivityCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS
@@ -172,20 +171,6 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
         } else {
             Logger.w("POST_NOTIFICATIONS permission is not granted")
         }
-    }
-
-    private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
-        val json = JSONObject()
-        val keys = bundle.keySet()
-
-        for (key in keys) {
-            try {
-                json.put(key, bundle.get(key))
-            } catch (e: JSONException) {
-                Logger.e("Failed to convert bundle to json", e)
-            }
-        }
-        return json
     }
 
     private fun getNotificationIcon(context: Context): Int {
@@ -236,6 +221,12 @@ class FCMBroadcastReceiver : WakefulBroadcastReceiver() {
             }
         } else {
             continuation.resume(null)
+        }
+    }
+
+    private fun setSuccessfulResultCode() {
+        if (isOrderedBroadcast) {
+            resultCode = Activity.RESULT_OK
         }
     }
 }

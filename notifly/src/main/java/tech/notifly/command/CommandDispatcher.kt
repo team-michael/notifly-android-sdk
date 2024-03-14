@@ -1,14 +1,14 @@
 package tech.notifly.command
 
-import tech.notifly.NotiflySdkState
-import tech.notifly.NotiflySdkStateManager
-import tech.notifly.SdkStateObserver
+import tech.notifly.sdkstate.NotiflySdkState
+import tech.notifly.sdkstate.NotiflySdkStateManager
+import tech.notifly.sdkstate.ISdkLifecycleListener
 import tech.notifly.command.models.CommandBase
 import tech.notifly.command.models.CommandType
 import tech.notifly.utils.Logger
 import java.util.PriorityQueue
 
-object CommandDispatcher : SdkStateObserver {
+object CommandDispatcher : ISdkLifecycleListener {
     private val pendingCommandsQueue: PriorityQueue<CommandBase> = PriorityQueue()
 
     fun dispatch(command: CommandBase) {

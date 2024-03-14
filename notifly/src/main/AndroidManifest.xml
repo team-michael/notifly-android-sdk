@@ -10,17 +10,6 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application>
-        <activity
-            android:name=".inapp.NotiflyInAppMessageActivity"
-            android:exported="true"
-            android:hardwareAccelerated="true"
-            android:theme="@style/Theme.CustomTransparent" />
-
-        <activity
-            android:name=".push.PushNotificationOpenActivity"
-            android:exported="true"
-            android:launchMode="singleTask" />
-
         <receiver
             android:name=".push.FCMBroadcastReceiver"
             android:exported="true"
@@ -30,6 +19,20 @@
                 <category android:name="${applicationId}" />
             </intent-filter>
         </receiver>
+
+        <activity
+            android:name=".inapp.NotiflyInAppMessageActivity"
+            android:noHistory="true"
+            android:exported="true"
+            android:hardwareAccelerated="true"
+            android:theme="@style/Theme.CustomTransparent" />
+
+        <activity
+            android:name=".push.activities.NotificationOpenedActivity"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTop" />
     </application>
 
 </manifest>

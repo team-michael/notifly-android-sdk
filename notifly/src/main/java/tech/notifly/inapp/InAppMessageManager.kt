@@ -3,6 +3,9 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
+import tech.notifly.sdkstate.NotiflySdkState
+import tech.notifly.sdkstate.NotiflySdkStateManager
+import tech.notifly.application.IApplicationService
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventBasedConditionType
@@ -14,12 +17,12 @@ import tech.notifly.inapp.models.TriggeringEventFilterUnit
 import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.UserData
 import tech.notifly.inapp.models.ValueType
+import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
-import tech.notifly.utils.OSUtils
 
 object InAppMessageManager {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
@@ -72,16 +75,11 @@ object InAppMessageManager {
         }
 
         if (!isInitialized) {
-            Logger.e("[Notifly] InAppMessageManager is not initialized.")
+            Logger.w("[Notifly] InAppMessageManager is not initialized.")
             return
         }
 
-        try {
-            sync(context, shouldMergeData)
-        } catch (e: Exception) {
-            Logger.e("[Notifly] InAppMessageManager refresh failed", e)
-            throw e
-        }
+        sync(context, shouldMergeData)
     }
 
     fun updateUserProperties(params: Map<String, Any?>) {
@@ -96,7 +94,7 @@ object InAppMessageManager {
         }
 
         if (!isInitialized) {
-            Logger.e("[Notifly] InAppMessageManager is not initialized.")
+            Logger.w("[Notifly] InAppMessageManager is not initialized.")
             return
         }
 
@@ -152,7 +150,7 @@ object InAppMessageManager {
         }
 
         if (!isInitialized) {
-            Logger.e("[Notifly] InAppMessageManager is not initialized.")
+            Logger.w("[Notifly] InAppMessageManager is not initialized.")
             return
         }
 
@@ -183,7 +181,7 @@ object InAppMessageManager {
         }
 
         if (!isInitialized) {
-            Logger.e("[Notifly] InAppMessageManager is not initialized.")
+            Logger.w("[Notifly] InAppMessageManager is not initialized.")
             return
         }
 
@@ -191,12 +189,11 @@ object InAppMessageManager {
             "[Notifly] maybeScheduleInAppMessagesAndIngestEvent called with $eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys"
         )
 
+        val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
-        if (OSUtils.isAppInForeground(context)) {
+        if (applicationService.isInForeground) {
             Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
             scheduleCampaigns(context, campaigns, externalUserId, sanitizedEventName, eventParams)
-        } else {
-            Logger.d("[Notifly] App is not in foreground. Not scheduling in app messages.")
         }
         ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
     }
@@ -215,24 +212,33 @@ object InAppMessageManager {
 
     @Throws(NullPointerException::class)
     private suspend fun sync(context: Context, shouldMergeData: Boolean) {
-        val syncStateResult = NotiflySyncStateUtil.syncState(context)
+        try {
+            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
-        campaigns = syncStateResult.campaigns
-        eventCounts = if (shouldMergeData) {
-            NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
-        } else {
-            syncStateResult.eventCounts
-        }
-        userData = if (shouldMergeData) {
-            userData.merge(syncStateResult.userData)
-        } else {
-            syncStateResult.userData
-        }
+            val syncStateResult = NotiflySyncStateUtil.syncState(context)
 
-        Logger.d("InAppMessageManager fetched user state successfully.")
-        Logger.d("campaigns: $campaigns")
-        Logger.d("eventCounts: $eventCounts")
-        Logger.d("userData: $userData")
+            campaigns = syncStateResult.campaigns
+            eventCounts = if (shouldMergeData) {
+                NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
+            } else {
+                syncStateResult.eventCounts
+            }
+            userData = if (shouldMergeData) {
+                userData.merge(syncStateResult.userData)
+            } else {
+                syncStateResult.userData
+            }
+
+            Logger.d("InAppMessageManager fetched user state successfully.")
+            Logger.d("campaigns: $campaigns")
+            Logger.d("eventCounts: $eventCounts")
+            Logger.d("userData: $userData")
+
+            NotiflySdkStateManager.setState(NotiflySdkState.READY)
+        } catch (e: Exception) {
+            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+            throw e
+        }
     }
 
     private fun ingestEventInternal(

@@ -4,6 +4,9 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import tech.notifly.application.ApplicationService
+import tech.notifly.application.BaseApplicationLifecycleHandler
+import tech.notifly.application.IApplicationService
 import tech.notifly.command.CommandDispatcher
 import tech.notifly.command.models.SetUserIdCommand
 import tech.notifly.command.models.SetUserIdPayload
@@ -12,6 +15,11 @@ import tech.notifly.command.models.SetUserPropertiesPayload
 import tech.notifly.command.models.TrackEventCommand
 import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.push.PushNotificationManager
+import tech.notifly.push.interfaces.INotificationClickListener
+import tech.notifly.sdkstate.NotiflySdkState
+import tech.notifly.sdkstate.NotiflySdkStateManager
+import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
@@ -19,6 +27,9 @@ import tech.notifly.utils.NotiflySDKInfoUtil
 import tech.notifly.utils.NotiflyUserUtil
 
 object Notifly {
+    private var isInitialized: Boolean = false
+    private val initLock: Any = Any()
+
     @JvmStatic
     fun initialize(
         context: Context,
@@ -26,32 +37,87 @@ object Notifly {
         username: String,
         password: String,
     ) {
-        if (NotiflySdkStateManager.getState() != NotiflySdkState.NOT_INITIALIZED) {
-            Logger.e("Notifly SDK is not in expected state. Skipping initialization.")
-            return
-        }
+        storeProjectMetadata(context, projectId, username, password)
+        initializeWithContext(context)
+    }
 
-        NotiflySdkStateManager.registerObserver(CommandDispatcher)
+    /**
+     * Initialize Notifly SDK from the context.
+     * This method assumes that the project metadata is already stored in the storage.
+     *
+     * DO NOT CALL THIS METHOD DIRECTLY.
+     */
+    fun initializeWithContext(context: Context): Boolean {
+        synchronized(initLock) {
+            if (isInitialized) {
+                Logger.d("Notifly SDK is already initialized. Skipping initialization.")
+                return true
+            }
 
-        CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Start Session
-                // Set Required Properties from User
-                NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
-                NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
-                NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
+                val projectId = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                val username = NotiflyStorage.get(context, NotiflyStorageItem.USERNAME)
+                val password = NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD)
 
-                InAppMessageManager.initialize(context)
-                NotiflyUserUtil.sessionStart(context)
+                if (projectId.isNullOrEmpty() || username.isNullOrEmpty() || password.isNullOrEmpty()) {
+                    Logger.e("Project metadata is missing.")
+                    isInitialized = false
+                    return false
+                }
 
+                val applicationService = ApplicationService()
+                NotiflyServiceProvider.register(IApplicationService::class.java, applicationService)
+
+                applicationService.addApplicationLifecycleHandler(object :
+                    BaseApplicationLifecycleHandler() {
+                    override fun onFirstFocus() {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            initializeInAppMessageManagerAndStartSession(context)
+                        }
+                    }
+                })
+                applicationService.start(context)
+
+                NotiflySdkStateManager.addSdkLifecycleListener(CommandDispatcher)
                 NotiflySdkStateManager.setState(NotiflySdkState.READY)
+
+                isInitialized = true
+                return true
             } catch (e: Exception) {
                 Logger.e("Notifly initialization failed:", e)
+                isInitialized = false
                 NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+                return false
             }
         }
     }
 
+    private fun storeProjectMetadata(
+        context: Context,
+        projectId: String,
+        username: String,
+        password: String,
+    ) {
+        NotiflyStorage.put(context, NotiflyStorageItem.PROJECT_ID, projectId)
+        NotiflyStorage.put(context, NotiflyStorageItem.USERNAME, username)
+        NotiflyStorage.put(context, NotiflyStorageItem.PASSWORD, password)
+    }
+
+    private suspend fun initializeInAppMessageManagerAndStartSession(context: Context) {
+        try {
+            // Start Session
+            // Set Required Properties from User
+            InAppMessageManager.initialize(context)
+        } catch (e: Exception) {
+            Logger.e("Failed to initialize in app message manager:", e)
+        }
+
+        try {
+            NotiflyUserUtil.sessionStart(context)
+        } catch (e: Exception) {
+            Logger.e("Failed to start session:", e)
+        }
+    }
 
     @JvmStatic
     @JvmOverloads
@@ -103,6 +169,11 @@ object Notifly {
                 )
             )
         )
+    }
+
+    @JvmStatic
+    fun addNotificationClickListener(listener: INotificationClickListener) {
+        PushNotificationManager.addClickListener(listener)
     }
 
     @JvmStatic
