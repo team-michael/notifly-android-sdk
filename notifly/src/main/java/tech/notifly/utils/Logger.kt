@@ -1,12 +1,10 @@
 package tech.notifly.utils
 
 import android.util.Log
-import okhttp3.logging.HttpLoggingInterceptor
 
 object Logger {
     private const val TAG = "Notifly"
     var level: Int = Log.WARN
-    var httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE
 
     fun v(msg: String, tr: Throwable? = null) {
         if (level <= Log.VERBOSE) Log.v(TAG, msg, tr)
@@ -30,10 +28,5 @@ object Logger {
 
     fun setLogLevel(level: Int) {
         Logger.level = level
-        httpLogLevel = when(level){
-            Log.VERBOSE, Log.DEBUG -> HttpLoggingInterceptor.Level.BODY
-            Log.INFO -> HttpLoggingInterceptor.Level.HEADERS
-            else -> HttpLoggingInterceptor.Level.NONE
-        }
     }
 }

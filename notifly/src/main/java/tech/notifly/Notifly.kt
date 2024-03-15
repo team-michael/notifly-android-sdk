@@ -14,6 +14,10 @@ import tech.notifly.command.models.SetUserPropertiesCommand
 import tech.notifly.command.models.SetUserPropertiesPayload
 import tech.notifly.command.models.TrackEventCommand
 import tech.notifly.command.models.TrackEventPayload
+import tech.notifly.http.HttpClientOptions
+import tech.notifly.http.IHttpClient
+import tech.notifly.http.impl.HttpClient
+import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.push.PushNotificationManager
 import tech.notifly.push.interfaces.INotificationClickListener
@@ -66,7 +70,11 @@ object Notifly {
                 }
 
                 val applicationService = ApplicationService()
+                val httpClient =
+                    HttpClient(HttpConnectionFactory(), HttpClientOptions(120000, 60000))
+
                 NotiflyServiceProvider.register(IApplicationService::class.java, applicationService)
+                NotiflyServiceProvider.register(IHttpClient::class.java, httpClient)
 
                 applicationService.addApplicationLifecycleHandler(object :
                     BaseApplicationLifecycleHandler() {
@@ -85,8 +93,9 @@ object Notifly {
                 return true
             } catch (e: Exception) {
                 Logger.e("Notifly initialization failed:", e)
-                isInitialized = false
                 NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+
+                isInitialized = false
                 return false
             }
         }

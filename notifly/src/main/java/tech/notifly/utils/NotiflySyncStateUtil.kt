@@ -3,15 +3,16 @@ package tech.notifly.utils
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Request
 import org.json.JSONException
 import org.json.JSONObject
-import tech.notifly.extensions.await
+import tech.notifly.http.IHttpClient
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.UserData
+import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import java.net.HttpURLConnection
 
 object NotiflySyncStateUtil {
     data class SyncStateOutput(
@@ -43,34 +44,49 @@ object NotiflySyncStateUtil {
         val url =
             "$SYNC_STATE_BASE_URI/$notiflyProjectId/$notiflyUserId?channel=in-app-message&deviceId=$notiflyDeviceId"
 
-        val request =
-            Request.Builder().url(url).header("Authorization", "Bearer $notiflyCognitoIdToken")
-                .header("Content-Type", "application/json").get().build()
+        val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
 
         return withContext(Dispatchers.IO) {
             try {
-                val response = N.HTTP_CLIENT.await(request)
-                if (!response.isSuccessful) {
-                    if (response.code == 401) {
+                val response = httpClient.get(
+                    url, mapOf(
+                        "Authorization" to "Bearer $notiflyCognitoIdToken"
+                    )
+                )
+                if (!response.isSuccess) {
+                    if (response.statusCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
                         // Invalid token
                         if (retryCount < SYNC_STATE_MAX_RETRY_COUNT_ON_401) {
-                            Logger.d("[Notifly] Sync state failed with 401. Retrying...")
+                            Logger.d("[NotiflyStateSynchronizer] Sync state failed with 401. Retrying...")
                             try {
                                 NotiflyAuthUtil.invalidateCognitoIdToken(context)
                             } catch (e: Exception) {
-                                Logger.e("[Notifly] Failed to invalidate cognito id token", e)
-                                throw NullPointerException("[Notifly] Failed to invalidate cognito id token")
+                                Logger.e(
+                                    "[NotiflyStateSynchronizer] Failed to invalidate cognito id token",
+                                    e
+                                )
+                                throw NullPointerException("[NotiflyStateSynchronizer] Failed to invalidate cognito id token")
                             }
                             return@withContext syncState(context, retryCount + 1)
                         } else {
-                            Logger.e("[Notifly] Sync state failed with 401. Max retry count reached.")
-                            throw NullPointerException("[Notifly] Sync state failed with 401. Max retry count reached.")
+                            Logger.e("[NotiflyStateSynchronizer] Sync state failed with 401. Max retry count reached.")
+                            throw NullPointerException("[NotiflyStateSynchronizer] Sync state failed. Response: ${response.payload} ${response.statusCode}")
                         }
                     } else {
-                        throw NullPointerException("[Notifly] Sync state failed with ${response.code}")
+                        throw NullPointerException("[NotiflyStateSynchronizer] Sync state failed. Response: ${response.payload} ${response.statusCode}")
                     }
                 }
-                val jsonResponse = JSONObject(response.body!!.string())
+
+                val jsonResponse = try {
+                    JSONObject(response.payload!!)
+                } catch (e: JSONException) {
+                    Logger.e(
+                        "[NotiflyStateSynchronizer] Failed to sync state: encountered error while working with JSON",
+                        e
+                    )
+                    throw NullPointerException("[NotiflyStateSynchronizer] Failed to sync state: response is not a valid JSON")
+                }
+
                 val campaignsJsonArray = jsonResponse.getJSONArray("campaignData")
                 val campaigns = mutableListOf<Campaign>()
 

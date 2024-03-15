@@ -1,8 +1,5 @@
 package tech.notifly.utils
 
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-
 /**
  * Static values used internally
  */
@@ -15,7 +12,7 @@ internal object N {
 
     /**
      * Reserved Key for backward compatibility based on User Property or Event Logging.
-     */
+ */
     const val KEY_EXTERNAL_USER_ID = "external_user_id"
 
     /**
@@ -32,11 +29,4 @@ internal object N {
      * Prefix of internal event
      */
     const val INTERNAL_EVENT_PREFIX = "notifly__"
-
-    val HTTP_CLIENT =
-        OkHttpClient().newBuilder().followRedirects(true) // Ensure that redirects are followed
-            .followSslRedirects(true) // Ensure that SSL redirects are followed
-            .addNetworkInterceptor(HttpLoggingInterceptor().apply {
-                level = Logger.httpLogLevel
-            }).build()
 }

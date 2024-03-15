@@ -51,7 +51,6 @@ data class PushNotification(
         private const val GOOGLE_TTL_KEY = "google.ttl"
         private const val GOOGLE_SENT_TIME_KEY = "google.sent_time"
         private const val NOTIFLY_INTERNAL_DATA_KEY = "notifly"
-        private const val NOTIFLY_PUSH_NOTIFICATION_TYPE = "push-notification"
 
         private val RESERVED_KEYS = listOf("from", "notification", "message_type")
 
@@ -97,7 +96,12 @@ data class PushNotification(
                 return null
             }
 
-            val notiflyJSONObject = JSONObject(internalDataString)
+            val notiflyJSONObject = try {
+                JSONObject(internalDataString)
+            } catch (e: JSONException) {
+                Logger.e("Failed to parse internal data", e)
+                return null
+            }
 
             return PushNotification(
                 body = if (notiflyJSONObject.has("bd")) notiflyJSONObject.getString("bd") else null,

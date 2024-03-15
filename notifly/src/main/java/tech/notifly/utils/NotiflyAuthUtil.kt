@@ -1,14 +1,11 @@
 package tech.notifly.utils
 
 import android.content.Context
-import android.os.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import tech.notifly.extensions.await
+import tech.notifly.http.IHttpClient
+import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 
@@ -25,24 +22,23 @@ internal object NotiflyAuthUtil {
      */
     @Throws(NullPointerException::class)
     suspend fun getCognitoIdToken(username: String, password: String): String {
+        val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
         val requestBody = JSONObject().apply {
             put("userName", username)
             put("password", password)
         }
 
-        val request = Request.Builder().url(AUTHENTICATOR_URL)
-            .post(requestBody.toString().toRequestBody("application/json".toMediaType())).build()
-
-        SystemClock.elapsedRealtimeNanos()
-
         return withContext(Dispatchers.IO) {
             try {
-                val response = N.HTTP_CLIENT.await(request)
-                val jsonResponse = JSONObject(response.body!!.string())
-                jsonResponse.getString("data")
+                val response = httpClient.post(AUTHENTICATOR_URL, requestBody, null)
+                if (!response.isSuccess) {
+                    Logger.e("[Notifly] Failed to retrieve Cognito ID Token. Response: ${response.statusCode} ${response.payload}")
+                    throw response.throwable!!
+                }
+                val responseJSON = JSONObject(response.payload!!)
+                responseJSON.getString("data")
             } catch (e: Exception) {
-                Logger.e("Authentication Failed", e)
-                throw NullPointerException("Failed to Get Cognito ID Token")
+                throw NullPointerException("[Notifly] Failed to retrieve Cognito ID Token. $e")
             }
         }
     }

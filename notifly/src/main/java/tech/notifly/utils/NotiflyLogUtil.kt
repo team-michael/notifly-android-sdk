@@ -3,13 +3,10 @@ package tech.notifly.utils
 import android.content.Context
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import tech.notifly.application.IApplicationService
+import tech.notifly.http.IHttpClient
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
@@ -19,7 +16,7 @@ import tech.notifly.utils.NotiflyIdUtil.Namespace
 object NotiflyLogUtil {
     private const val LOG_EVENT_URI =
         "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
-    private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+    private const val MAX_RETRY_COUNT = 3
 
     private fun <K, V, R> deepMapValues(input: Map<K, V>, transform: (V) -> R): Map<K, R> {
         return input.mapValues { (_, value) ->
@@ -144,18 +141,15 @@ object NotiflyLogUtil {
             eventParams
         )
 
-        val request =
-            Request.Builder().url(LOG_EVENT_URI).header("Authorization", notiflyCognitoIdToken)
-                .header("Content-Type", "application/json").post(requestBody).build()
+        val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+        val response = httpClient.post(
+            LOG_EVENT_URI, requestBody, mapOf(
+                "Authorization" to notiflyCognitoIdToken
+            )
+        )
 
-        val response = N.HTTP_CLIENT.newCall(request).execute()
-        Logger.d("response: $response")
-        val resultJson = response.body?.let { JSONObject(it.string()) } ?: JSONObject()
-        Logger.d("resultJson: $resultJson")
-
-        // invalidate and retry
-        if (resultJson.optString("message") == "The incoming token has expired" && retryCount < 1) {
-            NotiflyAuthUtil.invalidateCognitoIdToken(context)
+        if (!response.isSuccess && retryCount < MAX_RETRY_COUNT) {
+            Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
             logEventInternal(
                 context,
                 eventName,
@@ -164,6 +158,10 @@ object NotiflyLogUtil {
                 isInternalEvent,
                 retryCount + 1
             )
+        } else if (!response.isSuccess) {
+            Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
+        } else {
+            Logger.d("[NotiflyLogUtil] Event logged. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
         }
     }
 
@@ -181,7 +179,7 @@ object NotiflyLogUtil {
         appVersion: String,
         externalUserId: String?,
         eventParams: Map<String, Any?>,
-    ): RequestBody {
+    ): JSONObject {
         val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
         val sdkType = NotiflySDKInfoUtil.getSdkType()
 
@@ -211,7 +209,6 @@ object NotiflyLogUtil {
 
         val body = JSONObject().put("records", records)
 
-        Logger.d(body.toString())
-        return body.toString().toRequestBody(JSON_MEDIA_TYPE)
+        return body
     }
 }
