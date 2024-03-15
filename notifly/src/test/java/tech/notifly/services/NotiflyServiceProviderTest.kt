@@ -1,6 +1,6 @@
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import tech.notifly.services.NotiflyServiceProvider.getService
 import tech.notifly.services.NotiflyServiceProvider.register
 import tech.notifly.services.NotiflyServiceProvider.unregister
@@ -15,7 +15,7 @@ class NotiflyServiceProviderTest {
             get() = "TestService"
     }
 
-    @Before
+    @BeforeEach
     @Throws(Exception::class)
     fun setUp() {
         // Ensure the service registration map is clear before each test
@@ -34,9 +34,9 @@ class NotiflyServiceProviderTest {
         )
 
         // Verify that the retrieved service is the same as the one registered
-        Assert.assertNotNull("Service should not be null", retrievedService)
-        Assert.assertEquals(
-            "Service names should match", "TestService", retrievedService.serviceName
+        assertNotNull(retrievedService, "Service should not be null")
+        assertEquals(
+            retrievedService.serviceName, "TestService", "Service names should match"
         )
     }
 
@@ -53,6 +53,6 @@ class NotiflyServiceProviderTest {
         )
 
         // Verify that the service is no longer available
-        Assert.assertNull("Service should be null after unregistration", retrievedService)
+        assertNull(retrievedService, "Service should be null after unregistration")
     }
 }

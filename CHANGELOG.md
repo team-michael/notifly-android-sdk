@@ -5,6 +5,7 @@
     - Application lifecycle listeners are added to avoid redundant fetching of user states.
 - Push notification click event handler interface is added to allow developers to customize push
   notification click events.
+- Okhttp3 dependency is now removed from the SDK.
 - Proguard rules and consumer proguard rules are re-organized to avoid unexpected behavior.
 
 # 1.4.3
