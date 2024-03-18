@@ -84,9 +84,15 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
         if (!isCurrentActivityNull || isContextActivity) {
             entryState = ApplicationEntryAction.APP_OPEN
             if (isCurrentActivityNull && isContextActivity) {
+                // If the current activity is null, but the context is an activity, then the app is being opened
                 current = context as Activity?
                 activityReferences = 1
                 nextResumeIsFirstActivity = false
+
+                if (_firstStarted) {
+                    _firstStarted = false
+                    applicationLifecycleNotifier.fire { it.onFirstFocus() }
+                }
             }
         } else {
             nextResumeIsFirstActivity = true
