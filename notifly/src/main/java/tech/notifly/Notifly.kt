@@ -24,13 +24,14 @@ import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.sdk.NotiflySdkControlToken
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
+import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.sdk.NotiflySdkWrapperType
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
-import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.utils.NotiflyUserUtil
+import tech.notifly.utils.NotiflyUtil
 
 object Notifly {
     private var isInitialized: Boolean = false
@@ -43,6 +44,10 @@ object Notifly {
         username: String,
         password: String,
     ) {
+        if (!NotiflyUtil.isValidProjectId(projectId)) {
+            Logger.e("Invalid project ID. Please check your project ID.")
+            return
+        }
         storeProjectMetadata(context, projectId, username, password)
         initializeWithContext(context)
     }
