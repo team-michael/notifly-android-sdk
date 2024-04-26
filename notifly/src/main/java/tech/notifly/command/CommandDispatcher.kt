@@ -1,8 +1,8 @@
 package tech.notifly.command
 
-import tech.notifly.sdkstate.NotiflySdkState
-import tech.notifly.sdkstate.NotiflySdkStateManager
-import tech.notifly.sdkstate.ISdkLifecycleListener
+import tech.notifly.sdk.NotiflySdkState
+import tech.notifly.sdk.NotiflySdkStateManager
+import tech.notifly.sdk.ISdkLifecycleListener
 import tech.notifly.command.models.CommandBase
 import tech.notifly.command.models.CommandType
 import tech.notifly.utils.Logger

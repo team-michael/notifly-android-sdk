@@ -1,4 +1,4 @@
-package tech.notifly.sdkstate
+package tech.notifly.sdk
 
 import tech.notifly.utils.EventProducer
 

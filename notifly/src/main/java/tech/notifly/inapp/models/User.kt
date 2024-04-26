@@ -3,11 +3,12 @@ package tech.notifly.inapp.models
 import android.content.Context
 import org.json.JSONException
 import org.json.JSONObject
+import tech.notifly.sdk.NotiflySdkInfo
+import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyDeviceUtil
-import tech.notifly.utils.NotiflySDKInfoUtil
 
 data class EventIntermediateCounts(
     val dt: String, val name: String, val count: Int, val eventParams: Map<String, Any?>
@@ -132,8 +133,9 @@ data class UserData(
             val platform = NotiflyDeviceUtil.getPlatform()
             val osVersion = NotiflyDeviceUtil.getOsVersion()
             val appVersion = NotiflyDeviceUtil.getAppVersion(context)
-            val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
-            val sdkType = NotiflySDKInfoUtil.getSdkType().toLowerCaseName()
+            val sdkVersion = NotiflySdkWrapperInfo.getSdkVersion() ?: NotiflySdkInfo.getSdkVersion()
+            val sdkType =
+                NotiflySdkWrapperInfo.getSdkType()?.toLowerCaseName() ?: NotiflySdkInfo.getSdkType()
 
             try {
                 // random_bucket_number can either be an int or a string
@@ -212,8 +214,9 @@ data class UserData(
             val platform = NotiflyDeviceUtil.getPlatform()
             val osVersion = NotiflyDeviceUtil.getOsVersion()
             val appVersion = NotiflyDeviceUtil.getAppVersion(context)
-            val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
-            val sdkType = NotiflySDKInfoUtil.getSdkType().toLowerCaseName()
+            val sdkVersion = NotiflySdkWrapperInfo.getSdkVersion() ?: NotiflySdkInfo.getSdkVersion()
+            val sdkType =
+                NotiflySdkWrapperInfo.getSdkType()?.toLowerCaseName() ?: NotiflySdkInfo.getSdkType()
 
             return UserData(
                 platform = platform,

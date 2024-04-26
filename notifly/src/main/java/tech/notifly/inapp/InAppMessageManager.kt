@@ -3,8 +3,6 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
-import tech.notifly.sdkstate.NotiflySdkState
-import tech.notifly.sdkstate.NotiflySdkStateManager
 import tech.notifly.application.IApplicationService
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
@@ -17,6 +15,8 @@ import tech.notifly.inapp.models.TriggeringEventFilterUnit
 import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.UserData
 import tech.notifly.inapp.models.ValueType
+import tech.notifly.sdk.NotiflySdkState
+import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
@@ -330,7 +330,7 @@ object InAppMessageManager {
         val templateName = campaign.message.templateName ?: return false
         val groups = campaign.segmentInfo?.conditionGroup
 
-        if (campaign.triggeringEvent != eventName) {
+        if (!campaign.triggeringConditions.match(eventName)) {
             return false
         }
 

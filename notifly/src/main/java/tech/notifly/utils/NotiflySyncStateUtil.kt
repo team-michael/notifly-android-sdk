@@ -87,14 +87,23 @@ object NotiflySyncStateUtil {
                     throw NullPointerException("[NotiflyStateSynchronizer] Failed to sync state: response is not a valid JSON")
                 }
 
-                val campaignsJsonArray = jsonResponse.getJSONArray("campaignData")
+                val campaignsJsonArray = try {
+                    jsonResponse.getJSONArray("campaignData")
+                } catch (e: JSONException) {
+                    Logger.e(
+                        "[NotiflyStateSynchronizer] Failed to sync state: encountered error while working with JSON",
+                        e
+                    )
+                    throw NullPointerException("[NotiflyStateSynchronizer] Failed to sync state: campaign data is not a valid JSON array")
+                }
                 val campaigns = mutableListOf<Campaign>()
 
                 var failedCount = 0
                 for (i in 0 until campaignsJsonArray.length()) {
-                    val campaignJsonObject = campaignsJsonArray.getJSONObject(i)
-                    val campaign = try {
-                        Campaign.fromJSONObject(campaignJsonObject) ?: continue
+                    try {
+                        val campaignJsonObject = campaignsJsonArray.getJSONObject(i)
+                        val campaign = Campaign.fromJSONObject(campaignJsonObject)
+                        campaigns.add(campaign)
                     } catch (e: JSONException) {
                         Logger.w(
                             "[Notifly] Failed to parse campaign: encountered error while working with JSON",
@@ -103,7 +112,6 @@ object NotiflySyncStateUtil {
                         failedCount++
                         continue
                     }
-                    campaigns.add(campaign)
                 }
 
                 if (failedCount > 0) {

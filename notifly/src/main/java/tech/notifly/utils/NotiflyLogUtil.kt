@@ -8,6 +8,8 @@ import org.json.JSONObject
 import tech.notifly.application.IApplicationService
 import tech.notifly.http.IHttpClient
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.sdk.NotiflySdkInfo
+import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
@@ -180,8 +182,9 @@ object NotiflyLogUtil {
         externalUserId: String?,
         eventParams: Map<String, Any?>,
     ): JSONObject {
-        val sdkVersion = NotiflySDKInfoUtil.getSdkVersion()
-        val sdkType = NotiflySDKInfoUtil.getSdkType()
+        val sdkVersion = NotiflySdkWrapperInfo.getSdkVersion() ?: NotiflySdkInfo.getSdkVersion()
+        val sdkType =
+            NotiflySdkWrapperInfo.getSdkType()?.toLowerCaseName() ?: NotiflySdkInfo.getSdkType()
 
         // Replace any null values in eventParams with JSONObject.NULL
         val sanitizedParams = deepMapValues(eventParams) { it ?: JSONObject.NULL }
@@ -199,7 +202,9 @@ object NotiflyLogUtil {
                 )
             ).put("project_id", prjId).put("platform", NotiflyDeviceUtil.getPlatform())
             .put("os_version", osVersion).put("app_version", appVersion)
-            .put("sdk_version", sdkVersion).put("sdk_type", sdkType.toLowerCaseName()).put(
+            .put("sdk_version", sdkVersion).put(
+                "sdk_type", sdkType
+            ).put(
                 "external_user_id",
                 if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId
             )

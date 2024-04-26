@@ -21,13 +21,15 @@ import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.push.PushNotificationManager
 import tech.notifly.push.interfaces.INotificationClickListener
-import tech.notifly.sdkstate.NotiflySdkState
-import tech.notifly.sdkstate.NotiflySdkStateManager
+import tech.notifly.sdk.NotiflySdkControlToken
+import tech.notifly.sdk.NotiflySdkState
+import tech.notifly.sdk.NotiflySdkStateManager
+import tech.notifly.sdk.NotiflySdkWrapperType
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
-import tech.notifly.utils.NotiflySDKInfoUtil
+import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.utils.NotiflyUserUtil
 
 object Notifly {
@@ -192,13 +194,13 @@ object Notifly {
 
     @JvmStatic
     @Suppress("UNUSED_PARAMETER")
-    fun setSdkVersion(token: NotiflyControlToken, version: String) {
-        NotiflySDKInfoUtil.setSdkVersion(version)
+    fun setSdkVersion(token: NotiflySdkControlToken, version: String) {
+        NotiflySdkWrapperInfo.setSdkVersion(version)
     }
 
     @JvmStatic
     @Suppress("UNUSED_PARAMETER")
-    fun setSdkType(token: NotiflyControlToken, type: NotiflySdkType) {
-        NotiflySDKInfoUtil.setSdkType(type)
+    fun setSdkType(token: NotiflySdkControlToken, type: NotiflySdkWrapperType) {
+        NotiflySdkWrapperInfo.setSdkType(type)
     }
 }
