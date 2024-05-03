@@ -10,6 +10,7 @@ interface IPushNotification : Serializable {
     val androidNotificationId: Int
     val notiflyMessageId: String?
     val importance: Importance?
+    val disableBadge: Boolean?
     val url: String?
     val imageUrl: String?
 
