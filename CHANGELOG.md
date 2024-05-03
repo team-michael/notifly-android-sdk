@@ -1,3 +1,7 @@
+# 1.5.1
+
+- Support option to disable push notification badge on Android 8.0 and above.
+
 # 1.5.0
 
 - Lots of improvements for push notification feature.
