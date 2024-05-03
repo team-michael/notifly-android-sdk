@@ -25,6 +25,8 @@ data class PushNotification(
     override val notiflyMessageId: String? = null,
     /** The importance of the notification. Can be "high", "normal", or "low" */
     override val importance: Importance? = null,
+    /** Whether to show a badge on the app icon */
+    override val disableBadge: Boolean? = null,
     /** The URL to open when the notification is clicked */
     override val url: String? = null,
     /** The URL of the image to display in the notification */
@@ -119,6 +121,7 @@ data class PushNotification(
                         else -> null
                     }
                 } else null,
+                disableBadge = if (notiflyJSONObject.has("db")) notiflyJSONObject.getBoolean("db") else null,
                 // The below fields are not yet supported by the Notifly SDK
 //                channelId = if (notiflyJSONObject.has("chid")) notiflyJSONObject.getString("chid") else null,
 //                icon = if (notiflyJSONObject.has("ic")) notiflyJSONObject.getString("ic") else null,
