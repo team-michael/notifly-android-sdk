@@ -141,8 +141,9 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             NotiflyNotificationChannelUtil.createNotificationChannels(context)
         }
 
-        val channelId =
-            NotiflyNotificationChannelUtil.getNotificationChannelId(pushNotification.importance)
+        val channelId = NotiflyNotificationChannelUtil.getNotificationChannelId(
+            pushNotification.importance, pushNotification.disableBadge
+        )
         val priority = NotiflyNotificationChannelUtil.getSystemPriority(pushNotification.importance)
         val notificationIcon = getNotificationIcon(context)
 
