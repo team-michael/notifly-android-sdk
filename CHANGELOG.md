@@ -1,3 +1,11 @@
+# 1.6.0
+
+- `Triggering conditions` feature is now supported for in-app-message.
+    - `triggering_event` field is not used anymore.
+- Uses `updated_at` instead of `last_updated_timestamp` for campaign.
+- Add request header `X-Notifly-SDK-Version` and `X-Notifly-SDK-Wrapper` to identify the SDK version
+  and derived SDK such as Flutter, React Native SDKs.
+
 # 1.5.1
 
 - Support option to disable push notification badge on Android 8.0 and above.

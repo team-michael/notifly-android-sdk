@@ -34,8 +34,8 @@
 
 # To keep methods in Notifly
 #-keep class tech.notifly.Notifly { *; }
-#-keep class tech.notifly.NotiflySdkType { *; }
-#-keep class tech.notifly.NotiflyControlToken { *; }
+#-keep class tech.notifly.sdk.NotiflySdkType { *; }
+#-keep class tech.notifly.sdk.NotiflyControlToken { *; }
 #
 #-keep class tech.notifly.push.interfaces.** { *; }
 

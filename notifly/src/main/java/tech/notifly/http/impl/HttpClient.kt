@@ -12,6 +12,8 @@ import org.json.JSONObject
 import tech.notifly.http.HttpClientOptions
 import tech.notifly.http.HttpResponse
 import tech.notifly.http.IHttpClient
+import tech.notifly.sdk.NotiflySdkInfo
+import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.utils.Logger
 import java.net.ConnectException
 import java.net.HttpURLConnection
@@ -78,6 +80,18 @@ internal class HttpClient(
                 con.connectTimeout = timeout
                 con.readTimeout = timeout
 
+                val sdkVersion = NotiflySdkWrapperInfo.getSdkVersion()
+                val sdkType = NotiflySdkWrapperInfo.getSdkType()
+                con.setRequestProperty(
+                    "X-Notifly-SDK-Version", "notifly/android/${NotiflySdkInfo.getSdkVersion()}"
+                )
+                if (sdkVersion !== null && sdkType !== null) {
+                    con.setRequestProperty(
+                        "X-Notifly-SDK-Wrapper",
+                        "notifly/${sdkType.toLowerCaseName()}/${sdkVersion}"
+                    )
+                }
+
                 if (jsonBody != null) {
                     con.doInput = true
                 }
@@ -93,6 +107,8 @@ internal class HttpClient(
                         con.setRequestProperty(key, value)
                     }
                 }
+
+                Logger.d("HttpClient: $url/$method - Request Headers: ${con.requestProperties}")
 
                 if (jsonBody != null) {
                     val strJsonBody = jsonBody.toString()
