@@ -30,6 +30,7 @@ import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
+import tech.notifly.utils.N
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.NotiflyUtil
 
@@ -157,11 +158,43 @@ object Notifly {
 
     @JvmStatic
     fun setUserProperties(context: Context, params: Map<String, Any?>) {
+        val timezone = params[N.KEY_TIMEZONE_PROPERTY] as? String
+        if (timezone != null && !NotiflyUtil.isValidTimezoneId(timezone)) {
+            Logger.e("Invalid timezone ID. Please check your timezone ID.")
+            return
+        }
         CommandDispatcher.dispatch(
             SetUserPropertiesCommand(
                 SetUserPropertiesPayload(
                     context = context, params = params
                 )
+            )
+        )
+    }
+
+    @JvmStatic
+    fun setPhoneNumber(context: Context, phoneNumber: String) {
+        setUserProperties(
+            context, mapOf(
+                N.KEY_PHONE_NUMBER_PROPERTY to phoneNumber
+            )
+        )
+    }
+
+    @JvmStatic
+    fun setEmail(context: Context, email: String) {
+        setUserProperties(
+            context, mapOf(
+                N.KEY_EMAIL_PROPERTY to email
+            )
+        )
+    }
+
+    @JvmStatic
+    fun setTimezone(context: Context, timezone: String) {
+        setUserProperties(
+            context, mapOf(
+                N.KEY_TIMEZONE_PROPERTY to timezone
             )
         )
     }

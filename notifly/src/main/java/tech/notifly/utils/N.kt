@@ -29,4 +29,11 @@ internal object N {
      * Prefix of internal event
      */
     const val INTERNAL_EVENT_PREFIX = "notifly__"
+
+    /**
+     * Reserved key for special user properties
+     */
+    const val KEY_TIMEZONE_PROPERTY = "\$timezone"
+    const val KEY_PHONE_NUMBER_PROPERTY = "\$phone_number"
+    const val KEY_EMAIL_PROPERTY = "\$email"
 }

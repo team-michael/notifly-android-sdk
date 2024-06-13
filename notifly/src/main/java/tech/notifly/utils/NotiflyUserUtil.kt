@@ -67,7 +67,8 @@ object NotiflyUserUtil {
                     "user_agent" to userAgent
                 ),
                 "notif_auth_status" to notifAuthStatus,
-                "in_app_message_disabled" to InAppMessageManager.disabled
+                "in_app_message_disabled" to InAppMessageManager.disabled,
+                "timezone" to NotiflyUtil.getCurrentTimezone()
             )
 
             NotiflyLogUtil.logEvent(
