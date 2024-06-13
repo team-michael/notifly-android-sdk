@@ -158,10 +158,19 @@ object Notifly {
 
     @JvmStatic
     fun setUserProperties(context: Context, params: Map<String, Any?>) {
-        val timezone = params[N.KEY_TIMEZONE_PROPERTY] as? String
-        if (timezone != null && !NotiflyUtil.isValidTimezoneId(timezone)) {
-            Logger.e("Invalid timezone ID. Please check your timezone ID.")
+        if (params.isEmpty()) {
+            Logger.w("Empty user properties. Please provide at least one user property.")
             return
+        }
+        if (params[N.KEY_TIMEZONE_PROPERTY] != null) {
+            val timezone = params[N.KEY_TIMEZONE_PROPERTY] as? String
+            if (timezone == null || !NotiflyUtil.isValidTimezoneId(timezone)) {
+                Logger.w("Invalid timezone ID $timezone. Please check your timezone ID. Omitting timezone property.")
+                val newParams = params.toMutableMap().apply {
+                    remove(N.KEY_TIMEZONE_PROPERTY)
+                }
+                return setUserProperties(context, newParams)
+            }
         }
         CommandDispatcher.dispatch(
             SetUserPropertiesCommand(
