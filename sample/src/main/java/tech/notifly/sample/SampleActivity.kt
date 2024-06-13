@@ -57,6 +57,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.Notifly
 import tech.notifly.sample.ui.theme.NotiflyAndroidSDKTheme
+import java.util.TimeZone
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.callSuspend
@@ -296,6 +297,10 @@ class SampleActivity : ComponentActivity() {
             val context = LocalContext.current
             var userId: String by remember { mutableStateOf("") }
 
+            var phoneNumber: String by remember { mutableStateOf("") }
+            var email: String by remember { mutableStateOf("") }
+            var timezone: String by remember { mutableStateOf("") }
+
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Notifly", fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
@@ -320,6 +325,22 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
+                        Log.w(TAG, "Empty event name input")
+                        // Show alert for empty event name input
+                        val builder = AlertDialog.Builder(context)
+                        builder.setTitle("Current Timezone")
+                        builder.setMessage(TimeZone.getDefault().id)
+                        builder.setPositiveButton("Thanks!", null)
+                        val dialog = builder.create()
+                        dialog.show()
+                        return@Button
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Get Timezone")
+                }
+
+                Button(
+                    onClick = {
                         try {
                             val (instance, function) = reflectObjectFunction(
                                 "tech.notifly.utils.NotiflyTimerUtil", "getTimestampMicros"
@@ -334,7 +355,8 @@ class SampleActivity : ComponentActivity() {
                     Text(text = "Get Timestamp Micros")
                 }
 
-                TextField(value = userId,
+                TextField(
+                    value = userId,
                     onValueChange = { userId = it },
                     label = { Text("User ID") },
                     modifier = Modifier.padding(top = 8.dp)
@@ -366,6 +388,82 @@ class SampleActivity : ComponentActivity() {
                 ) {
                     Text(text = "Remove User ID")
                 }
+
+                TextField(
+                    value = phoneNumber,
+                    onValueChange = { phoneNumber = it },
+                    label = { Text("Set Phone Number") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        if (phoneNumber.isNotEmpty()) {
+                            Notifly.setPhoneNumber(context, phoneNumber)
+                        } else {
+                            // Show alert for empty user ID input
+                            val builder = AlertDialog.Builder(context)
+                            builder.setTitle("Error")
+                            builder.setMessage("Please enter a phone number.")
+                            builder.setPositiveButton("OK", null)
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Set Phone Number")
+                }
+
+                TextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Set Email") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        if (email.isNotEmpty()) {
+                            Notifly.setEmail(context, email)
+                        } else {
+                            // Show alert for empty user ID input
+                            val builder = AlertDialog.Builder(context)
+                            builder.setTitle("Error")
+                            builder.setMessage("Please enter a email.")
+                            builder.setPositiveButton("OK", null)
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Set Email")
+                }
+
+                TextField(
+                    value = timezone,
+                    onValueChange = { timezone = it },
+                    label = { Text("Set Timezone") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        if (timezone.isNotEmpty()) {
+                            Notifly.setTimezone(context, timezone)
+                        } else {
+                            // Show alert for empty user ID input
+                            val builder = AlertDialog.Builder(context)
+                            builder.setTitle("Error")
+                            builder.setMessage("Please enter timezone.")
+                            builder.setPositiveButton("OK", null)
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
+                    }, modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(text = "Set Timezone")
+                }
+
                 TrackEventSection()
                 SetUserPropertiesSection()
                 NavigatorButtonsSection()
@@ -384,12 +482,14 @@ class SampleActivity : ComponentActivity() {
         var selectedPropertyValueType by remember { mutableStateOf(VALUE_TYPES[0]) }
 
         return Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            OutlinedTextField(value = propertyName,
+            OutlinedTextField(
+                value = propertyName,
                 onValueChange = { propertyName = it },
                 label = { Text("User Property Name") },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(value = propertyValue,
+            OutlinedTextField(
+                value = propertyValue,
                 onValueChange = { propertyValue = it },
                 label = { Text("User Property Value") },
                 modifier = Modifier.fillMaxWidth()
@@ -466,12 +566,14 @@ class SampleActivity : ComponentActivity() {
         }
 
         return Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            TextField(value = eventName,
+            TextField(
+                value = eventName,
                 onValueChange = { eventName = it },
                 label = { Text("Event Name") },
                 modifier = Modifier.padding(top = 8.dp)
             )
-            OutlinedTextField(value = eventParamsStringified,
+            OutlinedTextField(
+                value = eventParamsStringified,
                 onValueChange = { eventParamsStringified = it },
                 label = { Text("Event Params (Stringified JSON)") },
                 modifier = Modifier.padding(top = 8.dp)

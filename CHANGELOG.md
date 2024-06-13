@@ -1,3 +1,8 @@
+# 1.6.1
+
+- Add `setTimezone`, `setPhoneNumber`, `setEmail` methods.
+- Now SDK automatically tracks the user's timezone for device property.
+
 # 1.6.0
 
 - `Triggering conditions` feature is now supported for in-app-message.
