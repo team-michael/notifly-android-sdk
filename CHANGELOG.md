@@ -1,4 +1,4 @@
-# 1.6.1
+# 1.7.0
 
 - Add `setTimezone`, `setPhoneNumber`, `setEmail` methods.
 - Now SDK automatically tracks the user's timezone for device property.
