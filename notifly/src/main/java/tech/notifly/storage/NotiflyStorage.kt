@@ -9,7 +9,8 @@ import tech.notifly.utils.Logger
 
 internal object NotiflyStorage {
 
-    private const val PREFERENCES_NAME = "NotiflyAndroidSDK"
+    private const val ENCRYPTED_SHARED_PREFERENCES_NAME = "NotiflyAndroidSDK"
+    private const val PLAIN_SHARED_PREFERENCES_NAME = "NotiflyAndroidSDKPlainStorage"
     private lateinit var notiflySharedPreferences: SharedPreferences
 
     private fun getSharedPreferences(context: Context): SharedPreferences {
@@ -31,16 +32,17 @@ internal object NotiflyStorage {
     }
 
     private fun createSharedPreferences(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE).also {
-            notiflySharedPreferences = it
-        }
+        return context.getSharedPreferences(PLAIN_SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+            .also {
+                notiflySharedPreferences = it
+            }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun createEncryptedSharedPreferencesOrThrow(context: Context): SharedPreferences {
         return EncryptedSharedPreferences.create(
-            PREFERENCES_NAME,
-            PREFERENCES_NAME,
+            ENCRYPTED_SHARED_PREFERENCES_NAME,
+            ENCRYPTED_SHARED_PREFERENCES_NAME,
             context,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
