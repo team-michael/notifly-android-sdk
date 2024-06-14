@@ -5,5 +5,5 @@ ext {
 
     /* Module */
     moduleCompileSdkVersion = 33
-    moduleMinSdkVersion = 23
+    moduleMinSdkVersion = 21
 }

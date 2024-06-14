@@ -1,3 +1,8 @@
+# 1.7.1
+
+- Fix crash issue when EncryptedSharedPreferences creation has failed.
+- Downgrade the minimum SDK version to 21.
+
 # 1.7.0
 
 - Add `setTimezone`, `setPhoneNumber`, `setEmail` methods.
