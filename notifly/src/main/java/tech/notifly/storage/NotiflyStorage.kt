@@ -2,7 +2,10 @@ package tech.notifly.storage
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.security.crypto.EncryptedSharedPreferences
+import tech.notifly.utils.Logger
 
 internal object NotiflyStorage {
 
@@ -12,14 +15,36 @@ internal object NotiflyStorage {
     private fun getSharedPreferences(context: Context): SharedPreferences {
         return when {
             this::notiflySharedPreferences.isInitialized -> notiflySharedPreferences
-            else -> EncryptedSharedPreferences.create(
-                PREFERENCES_NAME,
-                PREFERENCES_NAME,
-                context,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            ).also { notiflySharedPreferences = it }
+            else -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        createEncryptedSharedPreferencesOrThrow(context)
+                    } catch (e: Exception) {
+                        Logger.e("[Notifly] Failed to create EncryptedSharedPreferences: $e. Falling back to default SharedPreferences.")
+                        createSharedPreferences(context)
+                    }
+                } else {
+                    createSharedPreferences(context)
+                }
+            }
         }
+    }
+
+    private fun createSharedPreferences(context: Context): SharedPreferences {
+        return context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE).also {
+            notiflySharedPreferences = it
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun createEncryptedSharedPreferencesOrThrow(context: Context): SharedPreferences {
+        return EncryptedSharedPreferences.create(
+            PREFERENCES_NAME,
+            PREFERENCES_NAME,
+            context,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        ).also { notiflySharedPreferences = it }
     }
 
     private fun getInt(context: Context, key: String, defaultValue: Int): Int {
@@ -42,7 +67,9 @@ internal object NotiflyStorage {
         return getSharedPreferences(context).getString(key, defaultValue) ?: defaultValue
     }
 
-    private fun getStringNullable(context: Context, key: String, defaultValue: String?): String? {
+    private fun getStringNullable(
+        context: Context, key: String, defaultValue: String?
+    ): String? {
         return getSharedPreferences(context).getString(key, defaultValue)
     }
 
