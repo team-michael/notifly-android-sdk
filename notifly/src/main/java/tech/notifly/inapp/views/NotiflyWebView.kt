@@ -9,6 +9,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.net.Uri
 import android.net.http.SslError
+import android.os.Build
 import android.util.AttributeSet
 import android.webkit.JavascriptInterface
 import android.webkit.SslErrorHandler
@@ -73,7 +74,11 @@ class NotiflyWebView @JvmOverloads constructor(
                 super.onReceivedError(view, request, error)
                 pageLoadedSuccessfully = false
                 Logger.w("NotiflyWebView.onReceivedError: $error")
-                errorMessage = error?.description.toString()
+                errorMessage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    error?.description.toString()
+                } else {
+                    error?.toString()
+                }
             }
 
             override fun onReceivedHttpError(
@@ -293,7 +298,6 @@ class NotiflyWebView @JvmOverloads constructor(
                     "[Notifly] Unexpected error occurs while handling in-app message button click event. This error is mostly caused by invalid url you have entered.",
                     e
                 )
-                (context as Activity).finish()
             }
         }
 
