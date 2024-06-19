@@ -48,7 +48,7 @@ object OSUtils {
         return hasFlag
     }
 
-    fun openURLInBrowserIntent(uri: Uri): Intent {
+    fun openURLInBrowserIntent(uri: Uri, flags: Int? = null): Intent {
         var uri = uri
         var type = if (uri.scheme != null) SchemaType.fromString(uri.scheme) else null
 
@@ -67,12 +67,17 @@ object OSUtils {
             }
 
             SchemaType.HTTPS, SchemaType.HTTP -> intent = Intent(Intent.ACTION_VIEW, uri)
-            else -> intent = Intent(Intent.ACTION_VIEW, uri)
         }
+
         intent.addFlags(
-            Intent.FLAG_ACTIVITY_NEW_TASK,
+            flags ?: Intent.FLAG_ACTIVITY_NEW_TASK,
         )
         return intent
+    }
+
+    fun isInAppLink(uri: Uri): Boolean {
+        val type = SchemaType.fromString(uri.scheme)
+        return type == null
     }
 
     enum class SchemaType(private val text: String) {
