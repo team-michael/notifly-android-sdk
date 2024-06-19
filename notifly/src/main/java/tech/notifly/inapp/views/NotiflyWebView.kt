@@ -27,8 +27,10 @@ import tech.notifly.command.models.TrackEventCommand
 import tech.notifly.command.models.TrackEventPayload
 import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
+import tech.notifly.sdk.NotiflySdkPrefs
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyTimerUtil
+import tech.notifly.utils.OSUtils
 import kotlin.math.roundToInt
 
 class NotiflyWebView @JvmOverloads constructor(
@@ -239,7 +241,6 @@ class NotiflyWebView @JvmOverloads constructor(
                     "close" -> {
                         Logger.d("In-app message close button clicked")
                         logInAppMessageButtonClick("close_button_click", buttonName)
-                        (context as Activity).finish()
                     }
 
                     "main_button" -> {
@@ -247,10 +248,11 @@ class NotiflyWebView @JvmOverloads constructor(
                         logInAppMessageButtonClick("main_button_click", buttonName)
                         if (link != null && link != "null") {
                             Logger.d("In-app message main button link: link")
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
-                            context.startActivity(intent)
+                            val intent = getIntent(link)
+                            if (intent != null) {
+                                context.startActivity(intent)
+                            }
                         }
-                        (context as Activity).finish()
                     }
 
                     "hide_in_app_message" -> {
@@ -282,7 +284,6 @@ class NotiflyWebView @JvmOverloads constructor(
                                 )
                             )
                         }
-                        (context as Activity).finish()
                     }
 
                     "survey_submit_button" -> {
@@ -290,7 +291,6 @@ class NotiflyWebView @JvmOverloads constructor(
                         logInAppMessageButtonClick(
                             "survey_submit_button_click", buttonName, extraData
                         )
-                        (context as Activity).finish()
                     }
                 }
             } catch (e: Exception) {
@@ -298,6 +298,8 @@ class NotiflyWebView @JvmOverloads constructor(
                     "[Notifly] Unexpected error occurs while handling in-app message button click event. This error is mostly caused by invalid url you have entered.",
                     e
                 )
+            } finally {
+                (context as Activity).finish()
             }
         }
 
@@ -321,6 +323,26 @@ class NotiflyWebView @JvmOverloads constructor(
                     )
                 )
             )
+        }
+    }
+
+    private fun getIntent(url: String?): Intent? {
+        val uri = if (url != null) {
+            Uri.parse(url.trim { it <= ' ' })
+        } else {
+            null
+        }
+
+        return if (uri != null) {
+            if (OSUtils.isInAppLink(uri)) {
+                val intentFlags = NotiflySdkPrefs.inAppMessage.getIntentFlagsForInAppLinkOpening()
+                Logger.v("Opening in-app link with flags: $intentFlags")
+                OSUtils.openURLInBrowserIntent(uri, intentFlags)
+            } else {
+                OSUtils.openURLInBrowserIntent(uri)
+            }
+        } else {
+            null
         }
     }
 

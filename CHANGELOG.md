@@ -1,3 +1,7 @@
+# 1.7.2
+
+- Add InAppMessagePrefs class to manage in-app message preferences.
+
 # 1.7.1
 
 - Fix crash issue when EncryptedSharedPreferences creation has failed.

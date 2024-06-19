@@ -2,6 +2,7 @@ package tech.notifly.sample
 
 
 import android.app.Application
+import android.content.Intent
 import android.util.Log
 import tech.notifly.Notifly
 import tech.notifly.push.interfaces.INotificationClickEvent
@@ -12,6 +13,7 @@ class SampleApplication : Application() {
         super.onCreate()
 
         Notifly.setLogLevel(Log.VERBOSE)
+        Notifly.preferences.inAppMessage.setIntentFlagsForInAppLinkOpening(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
         Notifly.initialize(
             context = applicationContext,
