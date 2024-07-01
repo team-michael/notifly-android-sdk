@@ -1,3 +1,7 @@
+# 1.7.3
+
+- Remove redundant `Set User ID` call from the SDK.
+
 # 1.7.2
 
 - Add InAppMessagePrefs class to manage in-app message preferences.
