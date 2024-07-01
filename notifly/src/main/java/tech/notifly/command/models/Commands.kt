@@ -57,11 +57,14 @@ class SetUserIdCommand(
             try {
                 if (userId.isNullOrEmpty()) {
                     NotiflyUserUtil.removeUserId(context)
-                } else {
-                    val params = mapOf(
-                        N.KEY_EXTERNAL_USER_ID to userId
+                } else if (!areUserIdsSame) {
+                    NotiflyUserUtil.setUserProperties(
+                        context, mapOf(
+                            N.KEY_EXTERNAL_USER_ID to userId
+                        )
                     )
-                    NotiflyUserUtil.setUserProperties(context, params)
+                } else {
+                    // No-op
                 }
                 // Refresh state only when user ID is changed
                 if (!areUserIdsSame) {
