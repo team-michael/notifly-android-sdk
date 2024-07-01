@@ -15,7 +15,8 @@ object NotiflyUserUtil {
     suspend fun setUserProperties(context: Context, params: Map<String, Any?>) {
         try {
             val newParams = params.toMutableMap()
-            if (params.containsKey(N.KEY_EXTERNAL_USER_ID)) {
+            if (params[N.KEY_EXTERNAL_USER_ID] is String) {
+                val externalUserIdToSet = params[N.KEY_EXTERNAL_USER_ID] as String
                 val previousNotiflyUserId = NotiflyAuthUtil.getNotiflyUserId(context)
                 val previousExternalUserId =
                     NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
@@ -26,7 +27,7 @@ object NotiflyUserUtil {
                 NotiflyStorage.put(
                     context,
                     NotiflyStorageItem.EXTERNAL_USER_ID,
-                    params[N.KEY_EXTERNAL_USER_ID] as String?
+                    externalUserIdToSet,
                 )
                 NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
 
