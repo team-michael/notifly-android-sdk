@@ -1,6 +1,6 @@
 # 1.7.3
 
-- Remove redundant `Set User ID` call from the SDK.
+- Remove `pauseTimers` and `resumeTimers` from 
 
 # 1.7.2
 

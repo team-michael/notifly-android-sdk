@@ -69,7 +69,7 @@ class SampleActivity : ComponentActivity() {
     companion object {
         const val TAG = "NotiflySample"
         private const val PERMISSION_REQUEST_CODE = 101
-        private val VALUE_TYPES = listOf("TEXT", "INT", "BOOL", "LIST")
+        private val VALUE_TYPES = listOf("TEXT", "INT", "BOOL", "LIST", "NULL")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -492,7 +492,8 @@ class SampleActivity : ComponentActivity() {
                 value = propertyValue,
                 onValueChange = { propertyValue = it },
                 label = { Text("User Property Value") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = selectedPropertyValueType != "NULL"
             )
             ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
                 expanded = propertyValueTypeSelectionExpanded,
@@ -527,12 +528,12 @@ class SampleActivity : ComponentActivity() {
             }
             Button(
                 onClick = {
-                    if (propertyName.isEmpty() || propertyValue.isEmpty()) {
+                    if (propertyName.isEmpty()) {
                         Log.w(TAG, "Empty user property input")
                         // Show alert for empty user property input
                         val builder = AlertDialog.Builder(context)
                         builder.setTitle("Error")
-                        builder.setMessage("Please enter a user property name and value.")
+                        builder.setMessage("Please enter a user property name.")
                         builder.setPositiveButton("OK", null)
                         val dialog = builder.create()
                         dialog.show()
