@@ -1,6 +1,10 @@
+# 1.7.4
+
+- Remove WebView timer manipulations such as `pauseTimers` and `resumeTimers` for in-app messages.
+
 # 1.7.3
 
-- Remove `pauseTimers` and `resumeTimers` from 
+- Remove redundant `Set User ID` call from the SDK.
 
 # 1.7.2
 
