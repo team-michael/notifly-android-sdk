@@ -71,12 +71,10 @@ class NotiflyInAppMessageActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
-        mNotiflyWebView?.pauseTimers()
     }
 
     override fun onResume() {
         super.onResume()
-        mNotiflyWebView?.resumeTimers()
     }
 
     private fun onWebViewLoadedComplete(modalProperties: JSONObject?, eventLogData: EventLogData) {
