@@ -16,8 +16,7 @@ import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflyIdUtil.Namespace
 
 object NotiflyLogUtil {
-    private const val LOG_EVENT_URI =
-        "https://12lnng07q2.execute-api.ap-northeast-2.amazonaws.com/prod/records"
+    private const val LOG_EVENT_URI = "https://e.notifly.tech/records"
     private const val MAX_RETRY_COUNT = 3
 
     private fun <K, V, R> deepMapValues(input: Map<K, V>, transform: (V) -> R): Map<K, R> {

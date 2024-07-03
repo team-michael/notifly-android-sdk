@@ -1,3 +1,7 @@
+# 1.8.0
+
+- Change API hostname for tracking events
+
 # 1.7.4
 
 - Remove WebView timer manipulations such as `pauseTimers` and `resumeTimers` for in-app messages.
