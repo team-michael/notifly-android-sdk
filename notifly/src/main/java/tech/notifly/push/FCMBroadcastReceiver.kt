@@ -85,7 +85,6 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         val pushNotification = PushNotification.fromIntentExtras(bundle)
         if (pushNotification != null) {
             val isAppInForeground = OSUtils.isAppInForeground(context)
-            logPushDelivered(context, pushNotification, isAppInForeground)
             showPushNotification(context, pushNotification, isAppInForeground)
         } else {
             Logger.d("FCM message is not valid or not a message from Notifly. Ignoring...")
@@ -169,6 +168,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             NotificationManagerCompat.from(context).notify(notificationId, notification)
+            logPushDelivered(context, pushNotification, wasAppInForeground)
         } else {
             Logger.w("POST_NOTIFICATIONS permission is not granted")
         }

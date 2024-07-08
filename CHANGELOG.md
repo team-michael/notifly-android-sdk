@@ -1,3 +1,7 @@
+# 1.8.1
+
+- Fix `push_delivered` event logging when notification permission is not granted
+
 # 1.8.0
 
 - Change API hostname for tracking events
