@@ -1,3 +1,7 @@
+# 1.8.2
+
+- Fix recents are ignored when the app is launched with notification click event.
+
 # 1.8.1
 
 - Fix `push_delivered` event logging when notification permission is not granted
