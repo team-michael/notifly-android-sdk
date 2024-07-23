@@ -6,10 +6,10 @@ import tech.notifly.sdk.ISdkLifecycleListener
 import tech.notifly.command.models.CommandBase
 import tech.notifly.command.models.CommandType
 import tech.notifly.utils.Logger
-import java.util.PriorityQueue
+import java.util.concurrent.PriorityBlockingQueue
 
 object CommandDispatcher : ISdkLifecycleListener {
-    private val pendingCommandsQueue: PriorityQueue<CommandBase> = PriorityQueue()
+    private val pendingCommandsQueue: PriorityBlockingQueue<CommandBase> = PriorityBlockingQueue()
 
     fun dispatch(command: CommandBase) {
         when (NotiflySdkStateManager.getState()) {

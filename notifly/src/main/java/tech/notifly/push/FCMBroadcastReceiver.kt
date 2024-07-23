@@ -97,7 +97,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         val campaignId = pushNotification.campaignId
         val notiflyMessageId = pushNotification.notiflyMessageId
 
-        NotiflyLogUtil.logEventSync(
+        NotiflyLogUtil.logEventNonBlocking(
             context, "push_delivered", mapOf(
                 "type" to "message_event",
                 "channel" to "push-notification",
