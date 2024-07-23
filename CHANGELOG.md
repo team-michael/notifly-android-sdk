@@ -1,3 +1,8 @@
+# 1.8.3
+
+- Change `PriorityQueue` to `PriorityBlockingQueue` to avoid `NullPointerException` caused by
+  concurrent access to the queue.
+
 # 1.8.2
 
 - Fix recents are ignored when the app is launched with notification click event.

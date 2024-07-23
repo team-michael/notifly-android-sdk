@@ -29,7 +29,7 @@ object NotiflyLogUtil {
         } as Map<K, R>
     }
 
-    fun logEventSync(
+    fun logEventNonBlocking(
         context: Context,
         eventName: String,
         eventParams: Map<String, Any?> = emptyMap(),
