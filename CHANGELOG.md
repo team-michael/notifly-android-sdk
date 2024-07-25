@@ -1,3 +1,10 @@
+# 1.9.0
+
+- To mitigate the problem that campaign data remains in memory with stale data, the SDK now
+  refreshes the campaign data when below conditions are all met:
+  - The app is focused (foreground)
+  - `campaignRevalidationInterval` has passed since the last campaign data refresh
+
 # 1.8.3
 
 - Change `PriorityQueue` to `PriorityBlockingQueue` to avoid `NullPointerException` caused by
