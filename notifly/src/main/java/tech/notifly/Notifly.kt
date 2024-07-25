@@ -42,6 +42,13 @@ object Notifly {
     @JvmStatic
     val preferences = NotiflySdkPrefs
 
+    /**
+     * Initialize Notifly SDK from the context.
+     * @param context The context of the application.
+     * @param projectId The project ID of the Notifly project.
+     * @param username Provided username of the Notifly Project.
+     * @param password Provided password of the Notifly Project.
+     */
     @JvmStatic
     fun initialize(
         context: Context,
@@ -148,6 +155,13 @@ object Notifly {
         }
     }
 
+    /**
+     * Sets the user ID for the current user.
+     * If the user ID is null, the user ID will be cleared.
+     *
+     * @param context The context of the application.
+     * @param userId The user ID of the current user.
+     */
     @JvmStatic
     @JvmOverloads
     fun setUserId(
@@ -163,11 +177,29 @@ object Notifly {
         )
     }
 
+    /**
+     * Disables in-app message.
+     * In-app message will not be shown after this method is called.
+     * Generally you don't need to call this method.
+     * Consider disabling in-app message when your application is webview-based and you want to expose in-browser messages (in-web messages).
+     */
     @JvmStatic
     fun disableInAppMessage() {
         InAppMessageManager.disable()
     }
 
+    /**
+     * Sets the user properties for the current user.
+     * User properties are key-value pairs that can be used to segment users.
+     *
+     * There are special property keys that are reserved for specific purposes:
+     * - `$phone_number`: The phone number of the user. You can also use `setPhoneNumber` method to set this property.
+     * - `$email`: The email address of the user. You can also use `setEmail` method to set this property.
+     * - `$timezone`: The timezone ID of the user. You can also use `setTimezone` method to set this property.
+     *
+     * @param context The context of the application.
+     * @param params The user properties to set.
+     */
     @JvmStatic
     fun setUserProperties(context: Context, params: Map<String, Any?>) {
         if (params.isEmpty()) {
@@ -193,6 +225,14 @@ object Notifly {
         )
     }
 
+    /**
+     * Sets the phone number of the current user.
+     * This is a convenience method for setting the phone number user property.
+     * You can also use `setUserProperties` method with `$phone_number` key to set the phone number.
+     *
+     * @param context The context of the application.
+     * @param phoneNumber The phone number of the user.
+     */
     @JvmStatic
     fun setPhoneNumber(context: Context, phoneNumber: String) {
         setUserProperties(
@@ -202,6 +242,14 @@ object Notifly {
         )
     }
 
+    /**
+     * Sets the email address of the current user.
+     * This is a convenience method for setting the email user property.
+     * You can also use `setUserProperties` method with `$email` key to set the email.
+     *
+     * @param context The context of the application.
+     * @param email The email address of the user.
+     */
     @JvmStatic
     fun setEmail(context: Context, email: String) {
         setUserProperties(
@@ -211,6 +259,17 @@ object Notifly {
         )
     }
 
+    /**
+     * Sets the timezone ID of the current user.
+     * This is a convenience method for setting the timezone user property.
+     * You can also use `setUserProperties` method with `$timezone` key to set the timezone.
+     *
+     * @param context The context of the application.
+     * @param timezone
+     * The timezone ID of the user. For example, "Asia/Seoul".
+     * Invalid timezone IDs will be ignored.
+     * See [IANA Timezone Database](https://www.iana.org/time-zones) for the list of valid timezone IDs.
+     */
     @JvmStatic
     fun setTimezone(context: Context, timezone: String) {
         setUserProperties(
@@ -220,6 +279,17 @@ object Notifly {
         )
     }
 
+    /**
+     * Tracks an event with the given event name and event parameters.
+     * Event parameters are key-value pairs that can be used to provide additional information about the event.
+     *
+     * @param context The context of the application.
+     * @param eventName The name of the event.
+     * @param eventParams The event parameters.
+     * @param segmentationEventParamKeys
+     * The keys to segment the event parameters. Currently limited to single key only.
+     * If the key is provided, you can perform the advanced event-based segmentation with the parameter.
+     */
     @JvmStatic
     @JvmOverloads
     fun trackEvent(
@@ -241,22 +311,42 @@ object Notifly {
         )
     }
 
+    /**
+     * Adds listener for push notification click event.
+     * @param listener The listener to add.
+     */
     @JvmStatic
     fun addNotificationClickListener(listener: INotificationClickListener) {
         PushNotificationManager.addClickListener(listener)
     }
 
+    /**
+     * Sets the log level for the Notifly SDK.
+     * @param level The log level to set.
+     */
     @JvmStatic
     fun setLogLevel(level: Int) {
         Logger.setLogLevel(level)
     }
 
+    /**
+     * This is the internal method for setting the SDK version.
+     * This method is not intended to be called by the client.
+     *
+     * DO NOT CALL THIS METHOD DIRECTLY.
+     */
     @JvmStatic
     @Suppress("UNUSED_PARAMETER")
     fun setSdkVersion(token: NotiflySdkControlToken, version: String) {
         NotiflySdkWrapperInfo.setSdkVersion(version)
     }
 
+    /**
+     * This is the internal method for setting the SDK type.
+     * This method is not intended to be called by the client.
+     *
+     * DO NOT CALL THIS METHOD DIRECTLY.
+     */
     @JvmStatic
     @Suppress("UNUSED_PARAMETER")
     fun setSdkType(token: NotiflySdkControlToken, type: NotiflySdkWrapperType) {
