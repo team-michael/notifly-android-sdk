@@ -42,6 +42,12 @@ class NotiflyInAppMessageActivity : Activity() {
         isActivityRunning = true
         Logger.d("NotiflyInAppMessageActivity.onCreate")
 
+        try {
+            mNotiflyWebView?.resumeTimers()
+        } catch (e: Exception) {
+            Logger.e("Error resuming webview timers", e)
+        }
+
         setContentView(R.layout.activity_notifly_in_app_message)
 
         val (url, modalProperties) = handleIntent(intent)
