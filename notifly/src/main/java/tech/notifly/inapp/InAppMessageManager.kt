@@ -25,6 +25,8 @@ import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
 
 object InAppMessageManager {
+    private const val MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS = 1000 * 60 * 3L // 3 minutes
+
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
     val IS_IN_APP_MESSAGE_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
@@ -33,9 +35,28 @@ object InAppMessageManager {
     @Volatile
     private var isInitialized = false
 
-    private lateinit var campaigns: MutableList<Campaign>
+    private var campaigns: MutableList<Campaign>? = null
+        set(value) = run {
+            field = value
+            campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
+        }
+
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
+
+    var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
+        set(value) = run {
+            if (value < MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS) {
+                Logger.w(
+                    "[Notifly] Campaign revalidation interval is less than the minimum value of $MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS. Ignoring."
+                )
+            } else {
+                field = value
+            }
+        }
+    private var campaignLastFetchedAt: Long? = null
+    private val shouldRevalidateCampaign: Boolean
+        get() = campaignLastFetchedAt == null || NotiflyTimerUtil.getTimestampMillis() - campaignLastFetchedAt!! > campaignRevalidationIntervalMillis
 
     fun disable() {
         disabled = true
@@ -80,6 +101,31 @@ object InAppMessageManager {
         }
 
         sync(context, shouldMergeData)
+    }
+
+    @Throws(NullPointerException::class)
+    suspend fun maybeRevalidateCampaigns(context: Context) {
+        if (disabled) {
+            Logger.i("[Notifly] InAppMessage feature is disabled.")
+            return
+        }
+
+        if (!IS_IN_APP_MESSAGE_SUPPORTED) {
+            Logger.i("[Notifly] InAppMessageManager is not supported on this device.")
+            return
+        }
+
+        if (!isInitialized) {
+            Logger.w("[Notifly] InAppMessageManager is not initialized.")
+            return
+        }
+
+        if (shouldRevalidateCampaign) {
+            syncCampaigns(context)
+            campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
+        } else {
+            Logger.v("[Notifly] Not revalidating campaigns since the interval has not passed.")
+        }
     }
 
     fun updateUserProperties(params: Map<String, Any?>) {
@@ -193,7 +239,7 @@ object InAppMessageManager {
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
         if (applicationService.isInForeground) {
             Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
-            scheduleCampaigns(context, campaigns, externalUserId, sanitizedEventName, eventParams)
+            scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
         }
         ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
     }
@@ -215,7 +261,7 @@ object InAppMessageManager {
         try {
             NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
-            val syncStateResult = NotiflySyncStateUtil.syncState(context)
+            val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
             campaigns = syncStateResult.campaigns
             eventCounts = if (shouldMergeData) {
@@ -235,6 +281,16 @@ object InAppMessageManager {
             Logger.d("userData: $userData")
 
             NotiflySdkStateManager.setState(NotiflySdkState.READY)
+        } catch (e: Exception) {
+            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+            throw e
+        }
+    }
+
+    @Throws(NullPointerException::class)
+    private suspend fun syncCampaigns(context: Context) {
+        try {
+            campaigns = NotiflySyncStateUtil.fetchCampaigns(context)
         } catch (e: Exception) {
             NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
             throw e

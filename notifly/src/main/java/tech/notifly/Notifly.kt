@@ -90,9 +90,17 @@ object Notifly {
 
                 applicationService.addApplicationLifecycleHandler(object :
                     BaseApplicationLifecycleHandler() {
-                    override fun onFirstFocus() {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            initializeInAppMessageManagerAndStartSession(context)
+                    override fun onFocus(first: Boolean) {
+                        if (first) {
+                            // Application is brought into the foreground for the first time
+                            CoroutineScope(Dispatchers.IO).launch {
+                                initializeInAppMessageManagerAndStartSession(context)
+                            }
+                        } else {
+                            // Application is brought into the foreground
+                            CoroutineScope(Dispatchers.IO).launch {
+                                InAppMessageManager.maybeRevalidateCampaigns(context)
+                            }
                         }
                     }
                 })

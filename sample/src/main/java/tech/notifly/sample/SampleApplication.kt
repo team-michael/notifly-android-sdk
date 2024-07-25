@@ -13,7 +13,10 @@ class SampleApplication : Application() {
         super.onCreate()
 
         Notifly.setLogLevel(Log.VERBOSE)
-        Notifly.preferences.inAppMessage.setIntentFlagsForInAppLinkOpening(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        Notifly.preferences.inAppMessage.apply {
+            setIntentFlagsForInAppLinkOpening(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            setCampaignRevalidationIntervalMillis(1000 * 60 * 1)
+        }
 
         Notifly.initialize(
             context = applicationContext,

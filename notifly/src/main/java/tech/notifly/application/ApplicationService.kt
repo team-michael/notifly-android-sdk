@@ -91,7 +91,7 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
 
                 if (_firstStarted) {
                     _firstStarted = false
-                    applicationLifecycleNotifier.fire { it.onFirstFocus() }
+                    applicationLifecycleNotifier.fire { it.onFocus(true) }
                 }
             }
         } else {
@@ -220,11 +220,12 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
 
     private fun handleFocus() {
         if (!isInForeground || nextResumeIsFirstActivity) {
+            var first: Boolean = false
+
             if (_firstStarted) {
                 Logger.d("ApplicationService.handleFocus: application is first started")
                 _firstStarted = false
-
-                applicationLifecycleNotifier.fire { it.onFirstFocus() }
+                first = true
             }
 
             Logger.d(
@@ -237,7 +238,7 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
                 entryState = ApplicationEntryAction.APP_OPEN
             }
 
-            applicationLifecycleNotifier.fire { it.onFocus() }
+            applicationLifecycleNotifier.fire { it.onFocus(first) }
         } else {
             Logger.d("ApplicationService.handleFocus: application never lost focus")
         }
