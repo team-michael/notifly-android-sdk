@@ -1,3 +1,8 @@
+# 1.9.1
+
+- Call `WebView.resumeTimers` explicitly at the start of the in-app message rendering process to prevent
+  the in-app message from not being displayed in some cases.
+
 # 1.9.0
 
 - To mitigate the problem that campaign data remains in memory with stale data, the SDK now
