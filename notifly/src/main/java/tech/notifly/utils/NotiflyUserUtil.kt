@@ -20,16 +20,12 @@ object NotiflyUserUtil {
                 val previousNotiflyUserId = NotiflyAuthUtil.getNotiflyUserId(context)
                 val previousExternalUserId =
                     NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-                if (previousExternalUserId == null) {
-                    Logger.i("[Notifly] <External User ID> not found.")
-                }
 
                 NotiflyStorage.put(
                     context,
                     NotiflyStorageItem.EXTERNAL_USER_ID,
                     externalUserIdToSet,
                 )
-                NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
 
                 newParams += mapOf<String, Any?>(
                     N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
@@ -46,7 +42,6 @@ object NotiflyUserUtil {
 
     suspend fun removeUserId(context: Context) {
         NotiflyStorage.clear(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-        NotiflyStorage.clear(context, NotiflyStorageItem.USER_ID)
         NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
     }
 
