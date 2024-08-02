@@ -1,3 +1,7 @@
+# 1.9.2
+
+- Fix the issue that the notifly user ID sometimes gets out-of-sync with the external user ID.
+
 # 1.9.1
 
 - Call `WebView.resumeTimers` explicitly at the start of the in-app message rendering process to prevent
