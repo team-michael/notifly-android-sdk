@@ -49,17 +49,12 @@ internal object NotiflyAuthUtil {
      */
     @Throws(IllegalStateException::class)
     suspend fun getNotiflyUserId(context: Context): String {
-        // early-return cached value if exists
-        val encodedUserId: String? = NotiflyStorage.get(context, NotiflyStorageItem.USER_ID)
-        if (encodedUserId != null) return encodedUserId
-
-        // retrieve and put new user-id
         val projectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
             ?: throw IllegalStateException("[Notifly] <Project ID> not found. You should call Notifly.initialize first")
         val externalUserId: String? =
             NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
 
-        val notiflyUserId = when {
+        return when {
             externalUserId != null -> NotiflyIdUtil.generate(
                 NotiflyIdUtil.Namespace.NAMESPACE_REGISTERED_USER_ID,
                 "${projectId}${externalUserId}"
@@ -70,9 +65,6 @@ internal object NotiflyAuthUtil {
                 "${projectId}${NotiflyFirebaseUtil.getFcmToken()}"
             )
         }
-
-        NotiflyStorage.put(context, NotiflyStorageItem.USER_ID, notiflyUserId)
-        return notiflyUserId
     }
 
     /**
