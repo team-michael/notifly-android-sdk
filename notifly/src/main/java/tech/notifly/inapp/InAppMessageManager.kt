@@ -103,7 +103,7 @@ object InAppMessageManager {
         sync(context, shouldMergeData)
     }
 
-    @Throws(NullPointerException::class)
+
     suspend fun maybeRevalidateCampaigns(context: Context) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
@@ -287,13 +287,12 @@ object InAppMessageManager {
         }
     }
 
-    @Throws(NullPointerException::class)
     private suspend fun syncCampaigns(context: Context) {
         try {
             campaigns = NotiflySyncStateUtil.fetchCampaigns(context)
         } catch (e: Exception) {
+            Logger.e("Failed to fetch campaigns", e)
             NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
-            throw e
         }
     }
 
