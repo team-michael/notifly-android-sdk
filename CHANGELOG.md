@@ -1,3 +1,7 @@
+# 1.9.3
+
+- Fix crashing issue when the app revalidates the campaign data from the server. 
+
 # 1.9.2
 
 - Fix the issue that the notifly user ID sometimes gets out-of-sync with the external user ID.
