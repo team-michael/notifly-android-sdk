@@ -1,3 +1,7 @@
+# 1.9.4
+
+- Add `CATEGORY_BROWSABLE` flag to the intent when opening the URL in the push notification.
+
 # 1.9.3
 
 - Fix crashing issue when the app revalidates the campaign data from the server. 
