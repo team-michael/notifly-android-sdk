@@ -66,7 +66,10 @@ object OSUtils {
                 intent.data = uri
             }
 
-            SchemaType.HTTPS, SchemaType.HTTP -> intent = Intent(Intent.ACTION_VIEW, uri)
+            SchemaType.HTTPS, SchemaType.HTTP -> intent =
+                Intent(Intent.ACTION_VIEW, uri).addCategory(
+                    Intent.CATEGORY_BROWSABLE
+                )
         }
 
         intent.addFlags(
