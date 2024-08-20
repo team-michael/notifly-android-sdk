@@ -152,6 +152,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             .setContentIntent(pendingIntent).setAutoCancel(true).setPriority(priority)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
+        PushNotificationManager.applyInterceptors(builder, pushNotification)
+
         if (bitmap != null) {
             builder.setStyle(
                 NotificationCompat.BigPictureStyle().bigPicture(bitmap)
