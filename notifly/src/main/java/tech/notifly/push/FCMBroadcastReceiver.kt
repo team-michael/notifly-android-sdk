@@ -152,14 +152,14 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             .setContentIntent(pendingIntent).setAutoCancel(true).setPriority(priority)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        PushNotificationManager.applyInterceptors(builder, pushNotification)
-
         if (bitmap != null) {
             builder.setStyle(
                 NotificationCompat.BigPictureStyle().bigPicture(bitmap)
                     .bigLargeIcon(null as Bitmap?)
             )
         }
+
+        PushNotificationManager.applyInterceptors(builder, pushNotification)
 
         val notification = builder.build()
         Logger.d("FCMBroadcastReceiver notification: $notification")
