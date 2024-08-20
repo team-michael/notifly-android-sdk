@@ -323,7 +323,7 @@ object Notifly {
 
     /**
      * Adds interceptor to manipulate push notification before display.
-     * @param interceptor The listener to add.
+     * @param interceptor The interceptor to add.
      */
     @JvmStatic
     fun addNotificationInterceptor(interceptor: INotificationInterceptor) {
