@@ -4,9 +4,13 @@ package tech.notifly.sample
 import android.app.Application
 import android.content.Intent
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import tech.notifly.Notifly
 import tech.notifly.push.interfaces.INotificationClickEvent
 import tech.notifly.push.interfaces.INotificationClickListener
+import tech.notifly.push.interfaces.INotificationInterceptor
+import tech.notifly.push.interfaces.IPushNotification
 
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -28,6 +32,16 @@ class SampleApplication : Application() {
         Notifly.addNotificationClickListener(object : INotificationClickListener {
             override fun onClick(event: INotificationClickEvent) {
                 Log.d("SampleApplication", "Notification clicked: ${event.notification.toString()}")
+            }
+        })
+
+        Notifly.addNotificationInterceptor(object : INotificationInterceptor {
+            override fun intercept(
+                builder: NotificationCompat.Builder,
+                notification: IPushNotification
+            ): NotificationCompat.Builder {
+                builder.setColor(ContextCompat.getColor(applicationContext, R.color.teal_700));
+                return builder
             }
         })
 
