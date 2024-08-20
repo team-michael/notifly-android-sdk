@@ -1,3 +1,7 @@
+# 1.10.0
+
+- Add `addNotificationInterceptor` interface to provide a customization of NotificationCompat. 
+
 # 1.9.4
 
 - Add `CATEGORY_BROWSABLE` flag to the intent when opening the URL in the push notification.
