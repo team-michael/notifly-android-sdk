@@ -2,7 +2,7 @@ package tech.notifly.push
 
 import androidx.core.app.NotificationCompat
 import tech.notifly.push.impl.NotificationClickEvent
-import tech.notifly.push.interceptors.INotificationInterceptor
+import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.EventProducer

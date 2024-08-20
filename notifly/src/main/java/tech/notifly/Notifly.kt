@@ -20,7 +20,7 @@ import tech.notifly.http.impl.HttpClient
 import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.push.PushNotificationManager
-import tech.notifly.push.interceptors.INotificationInterceptor
+import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.sdk.NotiflySdkControlToken
 import tech.notifly.sdk.NotiflySdkPrefs

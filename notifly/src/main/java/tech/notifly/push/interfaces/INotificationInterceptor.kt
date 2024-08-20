@@ -1,7 +1,6 @@
-package tech.notifly.push.interceptors
+package tech.notifly.push.interfaces
 
 import androidx.core.app.NotificationCompat
-import tech.notifly.push.interfaces.IPushNotification
 
 interface INotificationInterceptor {
     fun intercept(
