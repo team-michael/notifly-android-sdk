@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to be released'
+        required: true
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Read Changelog Entry
+        id: read_changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ github.event.inputs.version }}
+          path: ./CHANGELOG.md
+
+      - name: Create Release
+        if: steps.read_changelog.outputs.changes
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
+          body: ${{ steps.read_changelog.outputs.changes }}
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger JitPack Build
+        run: |
+          JITPACK_BUILD_URL="https://jitpack.io/com/github/team-michael/notifly-android-sdk/${{ github.event.inputs.version }}/build.log"
+          echo "Triggering JitPack build for ${{ github.event.inputs.version }}"
+          curl -I $JITPACK_BUILD_URL
+
+      - name: Notify Build Trigger
+        run: echo "JitPack build triggered successfully for version ${{ github.event.inputs.version }}."
