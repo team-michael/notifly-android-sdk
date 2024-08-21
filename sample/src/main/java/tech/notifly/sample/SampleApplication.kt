@@ -36,11 +36,11 @@ class SampleApplication : Application() {
         })
 
         Notifly.addNotificationInterceptor(object : INotificationInterceptor {
-            override fun intercept(
+            override fun postBuild(
                 builder: NotificationCompat.Builder,
                 notification: IPushNotification
             ): NotificationCompat.Builder {
-                builder.setColor(ContextCompat.getColor(applicationContext, R.color.teal_700));
+                builder.setColor(ContextCompat.getColor(applicationContext, R.color.purple_700));
                 return builder
             }
         })

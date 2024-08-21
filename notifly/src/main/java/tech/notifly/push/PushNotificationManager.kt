@@ -41,12 +41,12 @@ object PushNotificationManager {
         interceptors.remove(interceptor)
     }
 
-    fun applyInterceptors(
+    fun applyPostBuild(
         builder: NotificationCompat.Builder,
         notification: IPushNotification,
     ) {
         for (interceptor in interceptors) {
-            interceptor.intercept(builder, notification)
+            interceptor.postBuild(builder, notification)
         }
     }
 }
