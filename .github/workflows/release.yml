@@ -33,11 +33,39 @@ jobs:
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Wait for JitPack to recognize the new tag
+      - name: Wait for 10 seconds
+        run: sleep 10
+
       - name: Trigger JitPack Build
         run: |
           JITPACK_BUILD_URL="https://jitpack.io/com/github/team-michael/notifly-android-sdk/${{ github.event.inputs.version }}/build.log"
           echo "Triggering JitPack build for ${{ github.event.inputs.version }}"
-          curl -I $JITPACK_BUILD_URL
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $JITPACK_BUILD_URL)
+            if [ $HTTP_STATUS -eq 200 ]; then
+              echo "JitPack build triggered successfully for version ${{ github.event.inputs.version }}."
+              exit 0
+            elif [ $HTTP_STATUS -eq 404 ]; then
+              echo "Received 404 error. Retrying in 5 seconds..."
+              sleep 5
+              RETRY_COUNT=$((RETRY_COUNT+1))
+            else
+              echo "Received unexpected HTTP status code: $HTTP_STATUS"
+              exit 1
+            fi
+          done
+          
+          echo "Failed to trigger JitPack build after $MAX_RETRIES attempts."
+          exit 1
 
       - name: Notify Build Trigger
+        if: success()
         run: echo "JitPack build triggered successfully for version ${{ github.event.inputs.version }}."
+
+      - name: Notify Build Trigger Failure
+        if: failure()
+        run: echo "Failed to trigger JitPack build for version ${{ github.event.inputs.version }}."
