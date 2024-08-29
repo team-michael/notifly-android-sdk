@@ -159,6 +159,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             )
         }
 
+        PushNotificationManager.applyPostBuild(builder, pushNotification)
+
         val notification = builder.build()
         Logger.d("FCMBroadcastReceiver notification: $notification")
 

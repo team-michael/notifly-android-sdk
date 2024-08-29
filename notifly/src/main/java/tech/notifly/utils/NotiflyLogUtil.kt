@@ -208,7 +208,7 @@ object NotiflyLogUtil {
                 if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId
             )
 
-        val record = JSONObject().put("data", data.toString()).put("partitionKey", notiflyUserId)
+        val record = JSONObject().put("data", data.toString()).put("partitionKey", notiflyDeviceId)
         val records = JSONArray().put(record)
 
         val body = JSONObject().put("records", records)

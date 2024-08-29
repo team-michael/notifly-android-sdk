@@ -16,12 +16,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Read Changelog Entry
+      - name: Read Changelog
         id: read_changelog
+        if: "!endsWith(github.event.inputs.version, 'SNAPSHOT')"
         uses: mindsers/changelog-reader-action@v2
         with:
           version: ${{ github.event.inputs.version }}
-          path: ./CHANGELOG.md
 
       - name: Create Release
         if: steps.read_changelog.outputs.changes
