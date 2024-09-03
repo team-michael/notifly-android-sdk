@@ -11,24 +11,27 @@ import java.util.Locale
 
 object InAppMessageUtils {
     fun getViewDimensions(
-        modalProps: JSONObject?, screenWidth: Float, screenHeight: Float
+        modalProps: JSONObject?,
+        screenWidth: Float,
+        screenHeight: Float,
     ): Pair<Float, Float> {
+        val viewWidth: Float =
+            when {
+                modalProps == null -> screenWidth
+                modalProps.has("width") -> modalProps.getInt("width").toFloat()
+                modalProps.has("width_vw") -> screenWidth * (modalProps.getInt("width_vw") / 100f)
+                modalProps.has("width_vh") -> screenHeight * (modalProps.getInt("width_vh") / 100f)
+                else -> screenWidth
+            }
 
-        val viewWidth: Float = when {
-            modalProps == null -> screenWidth
-            modalProps.has("width") -> modalProps.getInt("width").toFloat()
-            modalProps.has("width_vw") -> screenWidth * (modalProps.getInt("width_vw") / 100f)
-            modalProps.has("width_vh") -> screenHeight * (modalProps.getInt("width_vh") / 100f)
-            else -> screenWidth
-        }
-
-        val viewHeight: Float = when {
-            modalProps == null -> screenHeight
-            modalProps.has("height") -> modalProps.getInt("height").toFloat()
-            modalProps.has("height_vh") -> screenHeight * (modalProps.getInt("height_vh") / 100f)
-            modalProps.has("height_vw") -> screenWidth * (modalProps.getInt("height_vw") / 100f)
-            else -> screenHeight
-        }
+        val viewHeight: Float =
+            when {
+                modalProps == null -> screenHeight
+                modalProps.has("height") -> modalProps.getInt("height").toFloat()
+                modalProps.has("height_vh") -> screenHeight * (modalProps.getInt("height_vh") / 100f)
+                modalProps.has("height_vw") -> screenWidth * (modalProps.getInt("height_vw") / 100f)
+                else -> screenHeight
+            }
 
         val minWidth = getNullableIntProperty(modalProps, "min_width")
         val maxWidth = getNullableIntProperty(modalProps, "max_width")
@@ -37,27 +40,35 @@ object InAppMessageUtils {
 
         return Pair(
             getViewDimensionWithLimits(viewWidth, minWidth, maxWidth),
-            getViewDimensionWithLimits(viewHeight, minHeight, maxHeight)
+            getViewDimensionWithLimits(viewHeight, minHeight, maxHeight),
         )
     }
 
-    private fun getNullableIntProperty(props: JSONObject?, name: String): Int? {
-        return props?.let {
+    private fun getNullableIntProperty(
+        props: JSONObject?,
+        name: String,
+    ): Int? =
+        props?.let {
             if (it.has(name)) it.getInt(name) else null
         }
-    }
 
-    private fun getViewDimensionWithLimits(dimension: Float, min: Int?, max: Int?): Float {
-        return when {
+    private fun getViewDimensionWithLimits(
+        dimension: Float,
+        min: Int?,
+        max: Int?,
+    ): Float =
+        when {
             min != null && dimension < min -> min.toFloat()
             max != null && dimension > max -> max.toFloat()
             else -> dimension
         }
-    }
 
     @Suppress("DEPRECATION")
-    fun getScreenWidthAndHeight(activity: Activity, density: Float): Pair<Float, Float> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    fun getScreenWidthAndHeight(
+        activity: Activity,
+        density: Float,
+    ): Pair<Float, Float> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val windowMetrics = activity.windowManager.currentWindowMetrics
             val insets =
                 windowMetrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
@@ -73,7 +84,6 @@ object InAppMessageUtils {
             val screenHeightDp = (screenSize.y / density)
             Pair(screenWidthDp, screenHeightDp)
         }
-    }
 
     fun getKSTCalendarDateString(daysOffset: Int = 0): String {
         val calendar = Calendar.getInstance()

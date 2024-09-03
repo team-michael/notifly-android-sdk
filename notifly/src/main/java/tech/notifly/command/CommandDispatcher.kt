@@ -1,10 +1,10 @@
 package tech.notifly.command
 
-import tech.notifly.sdk.NotiflySdkState
-import tech.notifly.sdk.NotiflySdkStateManager
-import tech.notifly.sdk.ISdkLifecycleListener
 import tech.notifly.command.models.CommandBase
 import tech.notifly.command.models.CommandType
+import tech.notifly.sdk.ISdkLifecycleListener
+import tech.notifly.sdk.NotiflySdkState
+import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.utils.Logger
 import java.util.concurrent.PriorityBlockingQueue
 
@@ -29,7 +29,10 @@ object CommandDispatcher : ISdkLifecycleListener {
         }
     }
 
-    override fun onStateChanged(prevState: NotiflySdkState, newState: NotiflySdkState) {
+    override fun onStateChanged(
+        prevState: NotiflySdkState,
+        newState: NotiflySdkState,
+    ) {
         Logger.v("[Notifly] Notifly SDK state changed: $prevState -> $newState")
         if (newState == NotiflySdkState.READY) {
             Logger.v("==== Executing pending commands ====")

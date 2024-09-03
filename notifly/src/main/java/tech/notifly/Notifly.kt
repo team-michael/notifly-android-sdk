@@ -20,8 +20,8 @@ import tech.notifly.http.impl.HttpClient
 import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.push.PushNotificationManager
-import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.push.interfaces.INotificationClickListener
+import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.sdk.NotiflySdkControlToken
 import tech.notifly.sdk.NotiflySdkPrefs
 import tech.notifly.sdk.NotiflySdkState
@@ -96,22 +96,24 @@ object Notifly {
                 NotiflyServiceProvider.register(IApplicationService::class.java, applicationService)
                 NotiflyServiceProvider.register(IHttpClient::class.java, httpClient)
 
-                applicationService.addApplicationLifecycleHandler(object :
-                    BaseApplicationLifecycleHandler() {
-                    override fun onFocus(first: Boolean) {
-                        if (first) {
-                            // Application is brought into the foreground for the first time
-                            CoroutineScope(Dispatchers.IO).launch {
-                                initializeInAppMessageManagerAndStartSession(context)
-                            }
-                        } else {
-                            // Application is brought into the foreground
-                            CoroutineScope(Dispatchers.IO).launch {
-                                InAppMessageManager.maybeRevalidateCampaigns(context)
+                applicationService.addApplicationLifecycleHandler(
+                    object :
+                        BaseApplicationLifecycleHandler() {
+                        override fun onFocus(first: Boolean) {
+                            if (first) {
+                                // Application is brought into the foreground for the first time
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    initializeInAppMessageManagerAndStartSession(context)
+                                }
+                            } else {
+                                // Application is brought into the foreground
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    InAppMessageManager.maybeRevalidateCampaigns(context)
+                                }
                             }
                         }
-                    }
-                })
+                    },
+                )
                 applicationService.start(context)
 
                 NotiflySdkStateManager.addSdkLifecycleListener(CommandDispatcher)
@@ -172,9 +174,10 @@ object Notifly {
         CommandDispatcher.dispatch(
             SetUserIdCommand(
                 SetUserIdPayload(
-                    context = context, userId = userId
-                )
-            )
+                    context = context,
+                    userId = userId,
+                ),
+            ),
         )
     }
 
@@ -202,7 +205,10 @@ object Notifly {
      * @param params The user properties to set.
      */
     @JvmStatic
-    fun setUserProperties(context: Context, params: Map<String, Any?>) {
+    fun setUserProperties(
+        context: Context,
+        params: Map<String, Any?>,
+    ) {
         if (params.isEmpty()) {
             Logger.w("Empty user properties. Please provide at least one user property.")
             return
@@ -211,18 +217,20 @@ object Notifly {
             val timezone = params[N.KEY_TIMEZONE_PROPERTY] as? String
             if (timezone == null || !NotiflyUtil.isValidTimezoneId(timezone)) {
                 Logger.w("Invalid timezone ID $timezone. Please check your timezone ID. Omitting timezone property.")
-                val newParams = params.toMutableMap().apply {
-                    remove(N.KEY_TIMEZONE_PROPERTY)
-                }
+                val newParams =
+                    params.toMutableMap().apply {
+                        remove(N.KEY_TIMEZONE_PROPERTY)
+                    }
                 return setUserProperties(context, newParams)
             }
         }
         CommandDispatcher.dispatch(
             SetUserPropertiesCommand(
                 SetUserPropertiesPayload(
-                    context = context, params = params
-                )
-            )
+                    context = context,
+                    params = params,
+                ),
+            ),
         )
     }
 
@@ -235,11 +243,15 @@ object Notifly {
      * @param phoneNumber The phone number of the user.
      */
     @JvmStatic
-    fun setPhoneNumber(context: Context, phoneNumber: String) {
+    fun setPhoneNumber(
+        context: Context,
+        phoneNumber: String,
+    ) {
         setUserProperties(
-            context, mapOf(
-                N.KEY_PHONE_NUMBER_PROPERTY to phoneNumber
-            )
+            context,
+            mapOf(
+                N.KEY_PHONE_NUMBER_PROPERTY to phoneNumber,
+            ),
         )
     }
 
@@ -252,11 +264,15 @@ object Notifly {
      * @param email The email address of the user.
      */
     @JvmStatic
-    fun setEmail(context: Context, email: String) {
+    fun setEmail(
+        context: Context,
+        email: String,
+    ) {
         setUserProperties(
-            context, mapOf(
-                N.KEY_EMAIL_PROPERTY to email
-            )
+            context,
+            mapOf(
+                N.KEY_EMAIL_PROPERTY to email,
+            ),
         )
     }
 
@@ -272,11 +288,15 @@ object Notifly {
      * See [IANA Timezone Database](https://www.iana.org/time-zones) for the list of valid timezone IDs.
      */
     @JvmStatic
-    fun setTimezone(context: Context, timezone: String) {
+    fun setTimezone(
+        context: Context,
+        timezone: String,
+    ) {
         setUserProperties(
-            context, mapOf(
-                N.KEY_TIMEZONE_PROPERTY to timezone
-            )
+            context,
+            mapOf(
+                N.KEY_TIMEZONE_PROPERTY to timezone,
+            ),
         )
     }
 
@@ -306,9 +326,9 @@ object Notifly {
                     eventName = eventName,
                     eventParams = eventParams,
                     segmentationEventParamKeys = segmentationEventParamKeys,
-                    isInternalEvent = false
-                )
-            )
+                    isInternalEvent = false,
+                ),
+            ),
         )
     }
 
@@ -347,7 +367,10 @@ object Notifly {
      */
     @JvmStatic
     @Suppress("UNUSED_PARAMETER")
-    fun setSdkVersion(token: NotiflySdkControlToken, version: String) {
+    fun setSdkVersion(
+        token: NotiflySdkControlToken,
+        version: String,
+    ) {
         NotiflySdkWrapperInfo.setSdkVersion(version)
     }
 
@@ -359,7 +382,10 @@ object Notifly {
      */
     @JvmStatic
     @Suppress("UNUSED_PARAMETER")
-    fun setSdkType(token: NotiflySdkControlToken, type: NotiflySdkWrapperType) {
+    fun setSdkType(
+        token: NotiflySdkControlToken,
+        type: NotiflySdkWrapperType,
+    ) {
         NotiflySdkWrapperInfo.setSdkType(type)
     }
 }

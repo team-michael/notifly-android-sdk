@@ -7,7 +7,10 @@ import tech.notifly.utils.Logger
 import java.util.UUID
 
 object InAppMessageScheduler {
-    fun schedule(context: Context, campaign: Campaign) {
+    fun schedule(
+        context: Context,
+        campaign: Campaign,
+    ) {
         val delay = campaign.delay ?: 0
         if (delay > 0) {
             Thread {
@@ -19,7 +22,10 @@ object InAppMessageScheduler {
         }
     }
 
-    private fun show(context: Context, campaign: Campaign) {
+    private fun show(
+        context: Context,
+        campaign: Campaign,
+    ) {
         if (NotiflyInAppMessageActivity.isActive) {
             Logger.d("NotiflyInAppMessageActivity is already active")
             return
@@ -30,21 +36,25 @@ object InAppMessageScheduler {
         val modalProperties = campaign.message.modalProperties
         val messageId = UUID.randomUUID().toString().replace("-", "")
 
-        context.startActivity(Intent(
-            context, NotiflyInAppMessageActivity::class.java
-        ).apply {
-            putExtra("in_app_message_campaign_id", campaignId)
-            putExtra("in_app_message_url", url)
-            putExtra("notifly_message_id", messageId)
-            putExtra("modal_properties", modalProperties)
-            putExtra("campaign_re_eligibility_specified", campaign.reEligibleCondition != null)
-            if (campaign.reEligibleCondition != null) {
-                putExtra("campaign_re_eligible_unit", campaign.reEligibleCondition.unit.name)
-                putExtra(
-                    "campaign_re_eligible_duration", campaign.reEligibleCondition.duration
-                )
-            }
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+        context.startActivity(
+            Intent(
+                context,
+                NotiflyInAppMessageActivity::class.java,
+            ).apply {
+                putExtra("in_app_message_campaign_id", campaignId)
+                putExtra("in_app_message_url", url)
+                putExtra("notifly_message_id", messageId)
+                putExtra("modal_properties", modalProperties)
+                putExtra("campaign_re_eligibility_specified", campaign.reEligibleCondition != null)
+                if (campaign.reEligibleCondition != null) {
+                    putExtra("campaign_re_eligible_unit", campaign.reEligibleCondition.unit.name)
+                    putExtra(
+                        "campaign_re_eligible_duration",
+                        campaign.reEligibleCondition.duration,
+                    )
+                }
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+        )
     }
 }

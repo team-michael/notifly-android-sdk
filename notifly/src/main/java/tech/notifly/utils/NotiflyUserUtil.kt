@@ -11,8 +11,10 @@ import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 
 object NotiflyUserUtil {
-
-    suspend fun setUserProperties(context: Context, params: Map<String, Any?>) {
+    suspend fun setUserProperties(
+        context: Context,
+        params: Map<String, Any?>,
+    ) {
         try {
             val newParams = params.toMutableMap()
             if (params[N.KEY_EXTERNAL_USER_ID] is String) {
@@ -27,10 +29,11 @@ object NotiflyUserUtil {
                     externalUserIdToSet,
                 )
 
-                newParams += mapOf<String, Any?>(
-                    N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
-                    N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
-                )
+                newParams +=
+                    mapOf<String, Any?>(
+                        N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
+                        N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
+                    )
             } else {
                 InAppMessageManager.updateUserProperties(newParams)
             }
@@ -54,18 +57,20 @@ object NotiflyUserUtil {
             val userAgent = System.getProperty("http.agent")
             val notifAuthStatus = getNotifAuthStatus(context).value
 
-            val openAppEventParams = mapOf(
-                "platform" to platform,
-                "device_model" to deviceModel,
-                "properties" to mapOf(
-                    "device_brand" to deviceBrand,
-                    "api_level" to apiLevel,
-                    "user_agent" to userAgent
-                ),
-                "notif_auth_status" to notifAuthStatus,
-                "in_app_message_disabled" to InAppMessageManager.disabled,
-                "timezone" to NotiflyUtil.getCurrentTimezone()
-            )
+            val openAppEventParams =
+                mapOf(
+                    "platform" to platform,
+                    "device_model" to deviceModel,
+                    "properties" to
+                        mapOf(
+                            "device_brand" to deviceBrand,
+                            "api_level" to apiLevel,
+                            "user_agent" to userAgent,
+                        ),
+                    "notif_auth_status" to notifAuthStatus,
+                    "in_app_message_disabled" to InAppMessageManager.disabled,
+                    "timezone" to NotiflyUtil.getCurrentTimezone(),
+                )
 
             NotiflyLogUtil.logEvent(
                 context,
@@ -77,22 +82,23 @@ object NotiflyUserUtil {
         }
     }
 
-    private fun getNotifAuthStatus(context: Context): NotificationAuthorizationStatus {
-        return if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+    private fun getNotifAuthStatus(context: Context): NotificationAuthorizationStatus =
+        if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
             NotificationAuthorizationStatus.AUTHORIZED
         } else {
             NotificationAuthorizationStatus.DENIED
         }
-    }
 
     fun mergeEventCounts(
-        first: MutableList<EventIntermediateCounts>, second: MutableList<EventIntermediateCounts>
+        first: MutableList<EventIntermediateCounts>,
+        second: MutableList<EventIntermediateCounts>,
     ): MutableList<EventIntermediateCounts> {
         val merged = first.toMutableList()
         for (secondEventCount in second) {
-            val index = merged.indexOfFirst {
-                secondEventCount.equalsTo(it)
-            }
+            val index =
+                merged.indexOfFirst {
+                    secondEventCount.equalsTo(it)
+                }
             if (index == -1) {
                 merged.add(secondEventCount)
             } else {

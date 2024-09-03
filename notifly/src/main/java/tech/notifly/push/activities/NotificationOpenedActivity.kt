@@ -35,11 +35,14 @@ class NotificationOpenedActivity : AppCompatActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getSerializableExtra("notification", IPushNotification::class.java)
-        } else {
-            @Suppress("DEPRECATION") intent.getSerializableExtra("notification") as? IPushNotification
-        }
+        val notification =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getSerializableExtra("notification", IPushNotification::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getSerializableExtra("notification")
+                    as? IPushNotification
+            }
 
         if (notification == null) {
             finish()
@@ -53,13 +56,17 @@ class NotificationOpenedActivity : AppCompatActivity() {
 
         // Log the push click event
         NotiflyLogUtil.logEventNonBlocking(
-            this, "push_click", mapOf(
+            this,
+            "push_click",
+            mapOf(
                 "type" to "message_event",
                 "channel" to "push-notification",
                 "campaign_id" to campaignId,
                 "notifly_message_id" to notiflyMessageId,
-                "status" to if (wasAppInForeground) "foreground" else "background"
-            ), listOf(), true
+                "status" to if (wasAppInForeground) "foreground" else "background",
+            ),
+            listOf(),
+            true,
         )
 
         // Fire callbacks for push click event
@@ -81,11 +88,12 @@ class NotificationOpenedActivity : AppCompatActivity() {
     }
 
     private fun getIntent(url: String?): Intent? {
-        val uri = if (url != null) {
-            Uri.parse(url.trim { it <= ' ' })
-        } else {
-            null
-        }
+        val uri =
+            if (url != null) {
+                Uri.parse(url.trim { it <= ' ' })
+            } else {
+                null
+            }
 
         return if (uri != null) {
             OSUtils.openURLInBrowserIntent(uri)

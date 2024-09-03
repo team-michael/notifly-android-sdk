@@ -8,5 +8,9 @@ class HttpResponse(
     val throwable: Throwable? = null,
 ) {
     val isSuccess: Boolean
-        get() = statusCode == HttpURLConnection.HTTP_OK || statusCode == HttpURLConnection.HTTP_ACCEPTED || statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || statusCode == HttpURLConnection.HTTP_CREATED
+        get() =
+            statusCode == HttpURLConnection.HTTP_OK ||
+                statusCode == HttpURLConnection.HTTP_ACCEPTED ||
+                statusCode == HttpURLConnection.HTTP_NOT_MODIFIED ||
+                statusCode == HttpURLConnection.HTTP_CREATED
 }

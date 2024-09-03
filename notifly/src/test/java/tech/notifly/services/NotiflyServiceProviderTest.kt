@@ -1,4 +1,6 @@
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tech.notifly.services.NotiflyServiceProvider.getService
@@ -29,14 +31,17 @@ class NotiflyServiceProviderTest {
         register(TestService::class.java, serviceInstance)
 
         // Retrieve the service
-        val retrievedService = getService(
-            TestService::class.java
-        )
+        val retrievedService =
+            getService(
+                TestService::class.java,
+            )
 
         // Verify that the retrieved service is the same as the one registered
         assertNotNull(retrievedService, "Service should not be null")
         assertEquals(
-            retrievedService.serviceName, "TestService", "Service names should match"
+            retrievedService.serviceName,
+            "TestService",
+            "Service names should match",
         )
     }
 
@@ -48,9 +53,10 @@ class NotiflyServiceProviderTest {
         unregister(TestService::class.java)
 
         // Attempt to retrieve the service after unregistration
-        val retrievedService = getService(
-            TestService::class.java
-        )
+        val retrievedService =
+            getService(
+                TestService::class.java,
+            )
 
         // Verify that the service is no longer available
         assertNull(retrievedService, "Service should be null after unregistration")

@@ -19,15 +19,17 @@ object NotiflyLogUtil {
     private const val LOG_EVENT_URI = "https://e.notifly.tech/records"
     private const val MAX_RETRY_COUNT = 3
 
-    private fun <K, V, R> deepMapValues(input: Map<K, V>, transform: (V) -> R): Map<K, R> {
-        return input.mapValues { (_, value) ->
+    private fun <K, V, R> deepMapValues(
+        input: Map<K, V>,
+        transform: (V) -> R,
+    ): Map<K, R> =
+        input.mapValues { (_, value) ->
             when (value) {
                 is Map<*, *> -> deepMapValues(value as Map<K, V>, transform)
                 is Collection<*> -> value.map { deepMapValues(mapOf(0 to it as V), transform)[0] }
                 else -> transform(value)
             }
         } as Map<K, R>
-    }
 
     fun logEventNonBlocking(
         context: Context,
@@ -39,7 +41,11 @@ object NotiflyLogUtil {
         GlobalScope.launch {
             try {
                 logEvent(
-                    context, eventName, eventParams, segmentationEventParamKeys, isInternalEvent
+                    context,
+                    eventName,
+                    eventParams,
+                    segmentationEventParamKeys,
+                    isInternalEvent,
                 )
             } catch (e: Exception) {
                 Logger.e("[Notifly] Failed logging the event. $e")
@@ -71,7 +77,7 @@ object NotiflyLogUtil {
                 externalUserId,
                 eventParams,
                 isInternalEvent,
-                segmentationEventParamKeys
+                segmentationEventParamKeys,
             )
         }
 
@@ -108,14 +114,16 @@ object NotiflyLogUtil {
         val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
         val notiflyExternalUserId: String? =
             NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-        val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
-            ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
+        val notiflyProjectId: String =
+            NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
 
         val externalDeviceId: String = NotiflyDeviceUtil.getExternalDeviceId(context)
-        val notiflyEventId = NotiflyIdUtil.generate(
-            Namespace.NAMESPACE_EVENT_ID,
-            "$notiflyUserId$eventName${NotiflyTimerUtil.getTimestampMillis()}"
-        )
+        val notiflyEventId =
+            NotiflyIdUtil.generate(
+                Namespace.NAMESPACE_EVENT_ID,
+                "$notiflyUserId$eventName${NotiflyTimerUtil.getTimestampMillis()}",
+            )
         val notiflyDeviceId =
             NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
 
@@ -126,28 +134,32 @@ object NotiflyLogUtil {
             Logger.w("[Notifly] Required parameter <FCM Token> is missing")
         }
 
-        val requestBody = createRequestBody(
-            notiflyUserId,
-            notiflyEventId,
-            eventName,
-            notiflyDeviceId,
-            externalDeviceId,
-            fcmToken,
-            isInternalEvent,
-            segmentationEventParamKeys,
-            notiflyProjectId,
-            osVersion,
-            appVersion,
-            notiflyExternalUserId,
-            eventParams
-        )
+        val requestBody =
+            createRequestBody(
+                notiflyUserId,
+                notiflyEventId,
+                eventName,
+                notiflyDeviceId,
+                externalDeviceId,
+                fcmToken,
+                isInternalEvent,
+                segmentationEventParamKeys,
+                notiflyProjectId,
+                osVersion,
+                appVersion,
+                notiflyExternalUserId,
+                eventParams,
+            )
 
         val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
-        val response = httpClient.post(
-            LOG_EVENT_URI, requestBody, mapOf(
-                "Authorization" to notiflyCognitoIdToken
+        val response =
+            httpClient.post(
+                LOG_EVENT_URI,
+                requestBody,
+                mapOf(
+                    "Authorization" to notiflyCognitoIdToken,
+                ),
             )
-        )
 
         if (!response.isSuccess && retryCount < MAX_RETRY_COUNT) {
             Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
@@ -157,7 +169,7 @@ object NotiflyLogUtil {
                 eventParams,
                 segmentationEventParamKeys,
                 isInternalEvent,
-                retryCount + 1
+                retryCount + 1,
             )
         } else if (!response.isSuccess) {
             Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
@@ -188,25 +200,40 @@ object NotiflyLogUtil {
         // Replace any null values in eventParams with JSONObject.NULL
         val sanitizedParams = deepMapValues(eventParams) { it ?: JSONObject.NULL }
 
-        val data = JSONObject().put("event_params", JSONObject(sanitizedParams)).put("id", eventId)
-            .put("name", eventName).put("notifly_user_id", notiflyUserId)
-            .put("time", NotiflyTimerUtil.getTimestampMicros())
-            .put("notifly_device_id", notiflyDeviceId).put("external_device_id", externalDeviceId)
-            .put(
-                "device_token", if (deviceToken.isNullOrEmpty()) JSONObject.NULL else deviceToken
-            ).put("is_internal_event", isInternalEvent).put(
-                "segmentation_event_param_keys",
-                if (segmentationEventParamKeys.isNullOrEmpty()) JSONObject.NULL else JSONArray(
-                    segmentationEventParamKeys
+        val data =
+            JSONObject()
+                .put("event_params", JSONObject(sanitizedParams))
+                .put("id", eventId)
+                .put("name", eventName)
+                .put("notifly_user_id", notiflyUserId)
+                .put("time", NotiflyTimerUtil.getTimestampMicros())
+                .put("notifly_device_id", notiflyDeviceId)
+                .put("external_device_id", externalDeviceId)
+                .put(
+                    "device_token",
+                    if (deviceToken.isNullOrEmpty()) JSONObject.NULL else deviceToken,
+                ).put("is_internal_event", isInternalEvent)
+                .put(
+                    "segmentation_event_param_keys",
+                    if (segmentationEventParamKeys.isNullOrEmpty()) {
+                        JSONObject.NULL
+                    } else {
+                        JSONArray(
+                            segmentationEventParamKeys,
+                        )
+                    },
+                ).put("project_id", prjId)
+                .put("platform", NotiflyDeviceUtil.getPlatform())
+                .put("os_version", osVersion)
+                .put("app_version", appVersion)
+                .put("sdk_version", sdkVersion)
+                .put(
+                    "sdk_type",
+                    sdkType,
+                ).put(
+                    "external_user_id",
+                    if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId,
                 )
-            ).put("project_id", prjId).put("platform", NotiflyDeviceUtil.getPlatform())
-            .put("os_version", osVersion).put("app_version", appVersion)
-            .put("sdk_version", sdkVersion).put(
-                "sdk_type", sdkType
-            ).put(
-                "external_user_id",
-                if (externalUserId.isNullOrEmpty()) JSONObject.NULL else externalUserId
-            )
 
         val record = JSONObject().put("data", data.toString()).put("partitionKey", notiflyDeviceId)
         val records = JSONArray().put(record)

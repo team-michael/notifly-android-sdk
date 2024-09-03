@@ -15,7 +15,9 @@ import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
 
 enum class CommandType {
-    SET_USER_ID, SET_USER_PROPERTIES, TRACK_EVENT,
+    SET_USER_ID,
+    SET_USER_PROPERTIES,
+    TRACK_EVENT,
 }
 
 abstract class CommandBase : Comparable<CommandBase> {
@@ -28,13 +30,11 @@ abstract class CommandBase : Comparable<CommandBase> {
         Logger.v("Executing command: $commandType")
     }
 
-    override fun compareTo(other: CommandBase): Int {
-        return timestamp.compareTo(other.timestamp)
-    }
+    override fun compareTo(other: CommandBase): Int = timestamp.compareTo(other.timestamp)
 }
 
 class SetUserIdCommand(
-    override val payload: SetUserIdPayload
+    override val payload: SetUserIdPayload,
 ) : CommandBase() {
     override val commandType = CommandType.SET_USER_ID
 
@@ -42,9 +42,11 @@ class SetUserIdCommand(
         super.execute()
 
         val context = payload.context
-        val previousExternalUserId = NotiflyStorage.get(
-            context, NotiflyStorageItem.EXTERNAL_USER_ID
-        )
+        val previousExternalUserId =
+            NotiflyStorage.get(
+                context,
+                NotiflyStorageItem.EXTERNAL_USER_ID,
+            )
         val userId = payload.userId
 
         val areUserIdsSame =
@@ -59,9 +61,10 @@ class SetUserIdCommand(
                     NotiflyUserUtil.removeUserId(context)
                 } else if (!areUserIdsSame) {
                     NotiflyUserUtil.setUserProperties(
-                        context, mapOf(
-                            N.KEY_EXTERNAL_USER_ID to userId
-                        )
+                        context,
+                        mapOf(
+                            N.KEY_EXTERNAL_USER_ID to userId,
+                        ),
                     )
                 } else {
                     // No-op
@@ -83,7 +86,7 @@ class SetUserIdCommand(
 }
 
 class SetUserPropertiesCommand(
-    override val payload: SetUserPropertiesPayload
+    override val payload: SetUserPropertiesPayload,
 ) : CommandBase() {
     override val commandType = CommandType.SET_USER_PROPERTIES
 
@@ -101,7 +104,7 @@ class SetUserPropertiesCommand(
 }
 
 class TrackEventCommand(
-    override val payload: TrackEventPayload
+    override val payload: TrackEventPayload,
 ) : CommandBase() {
     override val commandType = CommandType.TRACK_EVENT
 
@@ -112,7 +115,7 @@ class TrackEventCommand(
             payload.eventName,
             payload.eventParams,
             payload.segmentationEventParamKeys,
-            payload.isInternalEvent
+            payload.isInternalEvent,
         )
     }
 }

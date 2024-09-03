@@ -28,5 +28,6 @@ interface IApplicationService {
     var entryState: ApplicationEntryAction
 
     fun addApplicationLifecycleHandler(handler: IApplicationLifecycleHandler)
+
     fun removeApplicationLifecycleHandler(handler: IApplicationLifecycleHandler)
 }

@@ -23,11 +23,7 @@ object NotiflyTimerUtil {
         return lastTimestampMillis * 1000 + sequenceCounter
     }
 
-    fun getTimestampMillis(): Long {
-        return System.currentTimeMillis()
-    }
+    fun getTimestampMillis(): Long = System.currentTimeMillis()
 
-    fun getTimestampSeconds(): Int {
-        return floor(getTimestampMillis() / 1000.0).toInt()
-    }
+    fun getTimestampSeconds(): Int = floor(getTimestampMillis() / 1000.0).toInt()
 }

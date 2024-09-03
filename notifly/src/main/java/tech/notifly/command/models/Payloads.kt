@@ -7,11 +7,13 @@ interface PayloadBase {
 }
 
 data class SetUserIdPayload(
-    override val context: Context, val userId: String? = null
+    override val context: Context,
+    val userId: String? = null,
 ) : PayloadBase
 
 data class SetUserPropertiesPayload(
-    override val context: Context, val params: Map<String, Any?>
+    override val context: Context,
+    val params: Map<String, Any?>,
 ) : PayloadBase
 
 data class TrackEventPayload(
@@ -19,5 +21,5 @@ data class TrackEventPayload(
     val eventName: String,
     val eventParams: Map<String, Any?> = emptyMap(),
     val segmentationEventParamKeys: List<String>? = null,
-    val isInternalEvent: Boolean = false
+    val isInternalEvent: Boolean = false,
 ) : PayloadBase

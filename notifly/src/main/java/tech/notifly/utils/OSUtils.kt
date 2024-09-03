@@ -15,7 +15,9 @@ object OSUtils {
         if (appProcesses != null) {
             val packageName = context.packageName
             for (appProcess in appProcesses) {
-                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
+                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+                    appProcess.processName == packageName
+                ) {
                     return true
                 }
             }
@@ -31,15 +33,23 @@ object OSUtils {
     ): Boolean {
         var hasFlag = false
         try {
-            val configChanges = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                activity.packageManager.getActivityInfo(
-                    activity.componentName, PackageManager.ComponentInfoFlags.of(0)
-                ).configChanges
-            } else {
-                @Suppress("DEPRECATION") activity.packageManager.getActivityInfo(
-                    activity.componentName, 0
-                ).configChanges
-            }
+            val configChanges =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    activity
+                        .packageManager
+                        .getActivityInfo(
+                            activity.componentName,
+                            PackageManager.ComponentInfoFlags.of(0),
+                        ).configChanges
+                } else {
+                    @Suppress("DEPRECATION")
+                    activity
+                        .packageManager
+                        .getActivityInfo(
+                            activity.componentName,
+                            0,
+                        ).configChanges
+                }
             val flagInt = configChanges and configChangeFlag
             hasFlag = flagInt != 0
         } catch (e: PackageManager.NameNotFoundException) {
@@ -48,7 +58,10 @@ object OSUtils {
         return hasFlag
     }
 
-    fun openURLInBrowserIntent(uri: Uri, flags: Int? = null): Intent {
+    fun openURLInBrowserIntent(
+        uri: Uri,
+        flags: Int? = null,
+    ): Intent {
         var uri = uri
         var type = if (uri.scheme != null) SchemaType.fromString(uri.scheme) else null
 
@@ -66,10 +79,11 @@ object OSUtils {
                 intent.data = uri
             }
 
-            SchemaType.HTTPS, SchemaType.HTTP -> intent =
-                Intent(Intent.ACTION_VIEW, uri).addCategory(
-                    Intent.CATEGORY_BROWSABLE
-                )
+            SchemaType.HTTPS, SchemaType.HTTP ->
+                intent =
+                    Intent(Intent.ACTION_VIEW, uri).addCategory(
+                        Intent.CATEGORY_BROWSABLE,
+                    )
         }
 
         intent.addFlags(
@@ -83,8 +97,12 @@ object OSUtils {
         return type == null
     }
 
-    enum class SchemaType(private val text: String) {
-        DATA("data"), HTTPS("https"), HTTP("http"), ;
+    enum class SchemaType(
+        private val text: String,
+    ) {
+        DATA("data"),
+        HTTPS("https"),
+        HTTP("http"), ;
 
         companion object {
             fun fromString(text: String?): SchemaType? {

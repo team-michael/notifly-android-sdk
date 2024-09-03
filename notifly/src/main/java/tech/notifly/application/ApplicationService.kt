@@ -13,7 +13,10 @@ import tech.notifly.utils.EventProducer
 import tech.notifly.utils.Logger
 import tech.notifly.utils.OSUtils
 
-class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGlobalLayoutListener {
+class ApplicationService :
+    IApplicationService,
+    ActivityLifecycleCallbacks,
+    OnGlobalLayoutListener {
     private val applicationLifecycleNotifier = EventProducer<IApplicationLifecycleHandler>()
 
     private var _appContext: Context? = null
@@ -24,7 +27,7 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
         get() = entryState.isAppOpen || entryState.isNotificationClick
     override var entryState: ApplicationEntryAction = ApplicationEntryAction.APP_CLOSE
 
-    private var _firstStarted: Boolean = true
+    private var firstStarted: Boolean = true
 
     private var _current: Activity? = null
     override var current: Activity?
@@ -36,7 +39,11 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
 
             if (value != null) {
                 try {
-                    value.window.decorView.viewTreeObserver.addOnGlobalLayoutListener(this)
+                    value
+                        .window
+                        .decorView
+                        .viewTreeObserver
+                        .addOnGlobalLayoutListener(this)
                 } catch (e: RuntimeException) {
                     // Related to Unity Issue #239 on Github
                     // https://github.com/OneSignal/OneSignal-Unity-SDK/issues/239
@@ -59,20 +66,22 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
         val application = context.applicationContext as Application
         application.registerActivityLifecycleCallbacks(this)
 
-        val configuration = object : ComponentCallbacks {
-            override fun onConfigurationChanged(newConfig: Configuration) {
-                // If Activity contains the configChanges orientation flag, re-create the view this way
-                if (current != null && OSUtils.hasConfigChangeFlag(
-                        current!!,
-                        ActivityInfo.CONFIG_ORIENTATION,
-                    )
-                ) {
-                    onOrientationChanged(newConfig.orientation, current!!)
+        val configuration =
+            object : ComponentCallbacks {
+                override fun onConfigurationChanged(newConfig: Configuration) {
+                    // If Activity contains the configChanges orientation flag, re-create the view this way
+                    if (current != null &&
+                        OSUtils.hasConfigChangeFlag(
+                            current!!,
+                            ActivityInfo.CONFIG_ORIENTATION,
+                        )
+                    ) {
+                        onOrientationChanged(newConfig.orientation, current!!)
+                    }
                 }
-            }
 
-            override fun onLowMemory() {}
-        }
+                override fun onLowMemory() {}
+            }
 
         application.registerComponentCallbacks(configuration)
 
@@ -89,8 +98,8 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
                 activityReferences = 1
                 nextResumeIsFirstActivity = false
 
-                if (_firstStarted) {
-                    _firstStarted = false
+                if (firstStarted) {
+                    firstStarted = false
                     applicationLifecycleNotifier.fire { it.onFocus(true) }
                 }
             }
@@ -119,7 +128,7 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
 
     override fun onActivityStarted(activity: Activity) {
         Logger.d(
-            "ApplicationService.onActivityStarted($activityReferences,$entryState): $activity"
+            "ApplicationService.onActivityStarted($activityReferences,$entryState): $activity",
         )
 
         if (current == activity) {
@@ -201,7 +210,11 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
 
         handleLostFocus()
 
-        activity.window.decorView.viewTreeObserver.addOnGlobalLayoutListener(this)
+        activity
+            .window
+            .decorView
+            .viewTreeObserver
+            .addOnGlobalLayoutListener(this)
 
         handleFocus()
     }
@@ -222,9 +235,9 @@ class ApplicationService : IApplicationService, ActivityLifecycleCallbacks, OnGl
         if (!isInForeground || nextResumeIsFirstActivity) {
             var first: Boolean = false
 
-            if (_firstStarted) {
+            if (firstStarted) {
                 Logger.d("ApplicationService.handleFocus: application is first started")
-                _firstStarted = false
+                firstStarted = false
                 first = true
             }
 

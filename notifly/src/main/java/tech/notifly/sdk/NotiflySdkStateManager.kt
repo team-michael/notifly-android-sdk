@@ -8,9 +8,7 @@ object NotiflySdkStateManager {
 
     private val sdkLifecycleListeners = EventProducer<ISdkLifecycleListener>()
 
-    fun getState(): NotiflySdkState {
-        return state
-    }
+    fun getState(): NotiflySdkState = state
 
     fun setState(newState: NotiflySdkState) {
         if (state == newState) {

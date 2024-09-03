@@ -10,49 +10,56 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tech.notifly.http.HttpClientOptions
 
-class HttpClientTests {
+class HttpClientTest {
     @BeforeEach
     fun setUp() {
         // Do not log anything because JUnit tests do not have a android logger
-        tech.notifly.utils.Logger.setLogLevel(7)
+        tech
+            .notifly
+            .utils
+            .Logger
+            .setLogLevel(7)
     }
 
     @Test
-    fun `timeout request will give a bad response`() = runBlocking {
-        // Given
-        val mockResponse = MockHttpConnectionFactory.MockResponse()
-        val mockHttpClientOptions = HttpClientOptions(200, 200)
-        mockResponse.mockRequestTime = 10000
+    fun `timeout request will give a bad response`() =
+        runBlocking {
+            // Given
+            val mockResponse = MockHttpConnectionFactory.MockResponse()
+            val mockHttpClientOptions = HttpClientOptions(200, 200)
+            mockResponse.mockRequestTime = 10000
 
-        val factory = MockHttpConnectionFactory(mockResponse)
-        val httpClient = HttpClient(factory, mockHttpClientOptions)
+            val factory = MockHttpConnectionFactory(mockResponse)
+            val httpClient = HttpClient(factory, mockHttpClientOptions)
 
-        // When
-        val response = httpClient.get("https://api.notifly.tech/mocking/timeout", null)
+            // When
+            val response = httpClient.get("https://api.notifly.tech/mocking/timeout", null)
 
-        // Then
-        assertEquals(0, response.statusCode)
-        assertNotNull(response.throwable)
-        assertTrue(response.throwable is TimeoutCancellationException)
-    }
-
-    @Test
-    fun `Error response`() = runBlocking {
-        // Given
-        val payload = "ERROR RESPONSE"
-        val mockResponse = MockHttpConnectionFactory.MockResponse().apply {
-            status = 400
-            errorResponseBody = payload
+            // Then
+            assertEquals(0, response.statusCode)
+            assertNotNull(response.throwable)
+            assertTrue(response.throwable is TimeoutCancellationException)
         }
 
-        val factory = MockHttpConnectionFactory(mockResponse)
-        val httpClient = HttpClient(factory, HttpClientOptions(200, 200))
+    @Test
+    fun `Error response`() =
+        runBlocking {
+            // Given
+            val payload = "ERROR RESPONSE"
+            val mockResponse =
+                MockHttpConnectionFactory.MockResponse().apply {
+                    status = 400
+                    errorResponseBody = payload
+                }
 
-        // When
-        val response = httpClient.post("https://api.notifly.tech/mocking/error", JSONObject(), null)
+            val factory = MockHttpConnectionFactory(mockResponse)
+            val httpClient = HttpClient(factory, HttpClientOptions(200, 200))
 
-        // Then
-        assertEquals(400, response.statusCode)
-        assertEquals(payload, response.payload)
-    }
+            // When
+            val response = httpClient.post("https://api.notifly.tech/mocking/error", JSONObject(), null)
+
+            // Then
+            assertEquals(400, response.statusCode)
+            assertEquals(payload, response.payload)
+        }
 }
