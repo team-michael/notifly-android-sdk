@@ -26,37 +26,43 @@ internal object NotiflyNotificationChannelUtil {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun createNotificationChannels(context: Context) {
-        val channelsWithBadge = mutableListOf(
-            NotificationChannel(
-                NOTIFLY_HIGH_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
-                "Notifly High Importance Channel",
-                NotificationManager.IMPORTANCE_HIGH
-            ), NotificationChannel(
-                NOTIFLY_NORMAL_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
-                "Notifly Normal Importance Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ), NotificationChannel(
-                NOTIFLY_LOW_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
-                "Notifly Low Importance Channel",
-                NotificationManager.IMPORTANCE_LOW
+        val channelsWithBadge =
+            mutableListOf(
+                NotificationChannel(
+                    NOTIFLY_HIGH_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
+                    "Notifly High Importance Channel",
+                    NotificationManager.IMPORTANCE_HIGH,
+                ),
+                NotificationChannel(
+                    NOTIFLY_NORMAL_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
+                    "Notifly Normal Importance Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
+                NotificationChannel(
+                    NOTIFLY_LOW_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
+                    "Notifly Low Importance Channel",
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
             )
-        )
 
-        val channelsWithoutBadge = mutableListOf(
-            NotificationChannel(
-                NOTIFLY_HIGH_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
-                "Notifly High Importance Channel Without Badge",
-                NotificationManager.IMPORTANCE_HIGH
-            ), NotificationChannel(
-                NOTIFLY_NORMAL_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
-                "Notifly Normal Importance Channel Without Badge",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ), NotificationChannel(
-                NOTIFLY_LOW_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
-                "Notifly Low Importance Channel Without Badge",
-                NotificationManager.IMPORTANCE_LOW
+        val channelsWithoutBadge =
+            mutableListOf(
+                NotificationChannel(
+                    NOTIFLY_HIGH_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
+                    "Notifly High Importance Channel Without Badge",
+                    NotificationManager.IMPORTANCE_HIGH,
+                ),
+                NotificationChannel(
+                    NOTIFLY_NORMAL_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
+                    "Notifly Normal Importance Channel Without Badge",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
+                NotificationChannel(
+                    NOTIFLY_LOW_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
+                    "Notifly Low Importance Channel Without Badge",
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
             )
-        )
         for (channel in channelsWithoutBadge) {
             channel.setShowBadge(false)
         }
@@ -66,17 +72,19 @@ internal object NotiflyNotificationChannelUtil {
         notificationManager.createNotificationChannels(channels)
     }
 
-    fun getSystemPriority(importance: Importance?): Int {
-        return when (importance) {
+    fun getSystemPriority(importance: Importance?): Int =
+        when (importance) {
             Importance.HIGH -> NotificationCompat.PRIORITY_HIGH
             Importance.NORMAL -> NotificationCompat.PRIORITY_DEFAULT
             Importance.LOW -> NotificationCompat.PRIORITY_LOW
             else -> NotificationCompat.PRIORITY_DEFAULT
         }
-    }
 
-    fun getNotificationChannelId(importance: Importance?, disableBadge: Boolean?): String {
-        return when (importance) {
+    fun getNotificationChannelId(
+        importance: Importance?,
+        disableBadge: Boolean?,
+    ): String =
+        when (importance) {
             Importance.HIGH -> {
                 if (disableBadge == true) {
                     NOTIFLY_HIGH_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID
@@ -109,5 +117,4 @@ internal object NotiflyNotificationChannelUtil {
                 }
             }
         }
-    }
 }

@@ -22,7 +22,9 @@ object NotiflySyncStateUtil {
     )
 
     enum class FetchStateScope {
-        CAMPAIGN, USER;
+        CAMPAIGN,
+        USER,
+        ;
 
         fun toLowerCase() = name.lowercase()
     }
@@ -31,8 +33,8 @@ object NotiflySyncStateUtil {
     private const val SYNC_STATE_MAX_RETRY_COUNT_ON_401 = 3
 
     @Throws(NullPointerException::class)
-    suspend fun fetchState(context: Context): FetchStateOutput {
-        return withContext(Dispatchers.IO) {
+    suspend fun fetchState(context: Context): FetchStateOutput =
+        withContext(Dispatchers.IO) {
             try {
                 val jsonResponse = makeRequest(context)
                 val campaigns = parseCampaignsFromResponse(jsonResponse)
@@ -42,47 +44,53 @@ object NotiflySyncStateUtil {
                 FetchStateOutput(campaigns, eventCounts, userData)
             } catch (e: JSONException) {
                 Logger.e(
-                    "[Notifly] Failed to sync state: encountered error while working with JSON", e
+                    "[Notifly] Failed to sync state: encountered error while working with JSON",
+                    e,
                 )
                 throw NullPointerException("[Notifly] Failed to sync state: encountered error while working with JSON")
             }
         }
-    }
 
     @Throws(NullPointerException::class)
-    suspend fun fetchCampaigns(context: Context): MutableList<Campaign> {
-        return withContext(Dispatchers.IO) {
+    suspend fun fetchCampaigns(context: Context): MutableList<Campaign> =
+        withContext(Dispatchers.IO) {
             val response = makeRequest(context, FetchStateScope.CAMPAIGN)
             parseCampaignsFromResponse(response)
         }
-    }
 
     @Throws(NullPointerException::class)
     private suspend fun makeRequest(
-        context: Context, scope: FetchStateScope? = null, retryCount: Int = 0
+        context: Context,
+        scope: FetchStateScope? = null,
+        retryCount: Int = 0,
     ): JSONObject {
         val notiflyCognitoIdToken: String =
             NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
                 ?: NotiflyAuthUtil.invalidateCognitoIdToken(context) // invalidate if not set
         val notiflyUserId: String = NotiflyAuthUtil.getNotiflyUserId(context)
 
-        val notiflyProjectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
-            ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
+        val notiflyProjectId: String =
+            NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
 
         val externalDeviceId: String = NotiflyDeviceUtil.getExternalDeviceId(context)
         val notiflyDeviceId =
             NotiflyIdUtil.generate(NotiflyIdUtil.Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
 
         val url =
-            "$SYNC_STATE_BASE_URI/$notiflyProjectId/$notiflyUserId?channel=in-app-message&deviceId=$notiflyDeviceId" + (scope?.let { "&scope=${it.toLowerCase()}" }
-                ?: "")
+            "$SYNC_STATE_BASE_URI/$notiflyProjectId/$notiflyUserId?channel=in-app-message&deviceId=$notiflyDeviceId" + (
+                scope?.let { "&scope=${it.toLowerCase()}" }
+                    ?: ""
+            )
 
         val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
-        val response = httpClient.get(
-            url, mapOf(
-                "Authorization" to "Bearer $notiflyCognitoIdToken"
+        val response =
+            httpClient.get(
+                url,
+                mapOf(
+                    "Authorization" to "Bearer $notiflyCognitoIdToken",
+                ),
             )
-        )
         if (!response.isSuccess) {
             if (response.statusCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
                 // Invalid token
@@ -92,17 +100,22 @@ object NotiflySyncStateUtil {
                         NotiflyAuthUtil.invalidateCognitoIdToken(context)
                     } catch (e: Exception) {
                         Logger.e(
-                            "[NotiflyStateSynchronizer] Failed to invalidate cognito id token", e
+                            "[NotiflyStateSynchronizer] Failed to invalidate cognito id token",
+                            e,
                         )
                         throw NullPointerException("[NotiflyStateSynchronizer] Failed to invalidate cognito id token")
                     }
                     return makeRequest(context, scope, retryCount + 1)
                 } else {
                     Logger.e("[NotiflyStateSynchronizer] Sync state failed with 401. Max retry count reached.")
-                    throw NullPointerException("[NotiflyStateSynchronizer] Sync state failed. Response: ${response.payload} ${response.statusCode}")
+                    throw NullPointerException(
+                        "[NotiflyStateSynchronizer] Sync state failed. Response: ${response.payload} ${response.statusCode}",
+                    )
                 }
             } else {
-                throw NullPointerException("[NotiflyStateSynchronizer] Sync state failed. Response: ${response.payload} ${response.statusCode}")
+                throw NullPointerException(
+                    "[NotiflyStateSynchronizer] Sync state failed. Response: ${response.payload} ${response.statusCode}",
+                )
             }
         }
 
@@ -111,7 +124,7 @@ object NotiflySyncStateUtil {
         } catch (e: JSONException) {
             Logger.e(
                 "[NotiflyStateSynchronizer] Failed to sync state: encountered error while working with JSON",
-                e
+                e,
             )
             throw NullPointerException("[NotiflyStateSynchronizer] Failed to sync state: response is not a valid JSON")
         }
@@ -119,15 +132,16 @@ object NotiflySyncStateUtil {
 
     @Throws(NullPointerException::class)
     private fun parseCampaignsFromResponse(jsonResponse: JSONObject): MutableList<Campaign> {
-        val campaignsJsonArray = try {
-            jsonResponse.getJSONArray("campaignData")
-        } catch (e: JSONException) {
-            Logger.e(
-                "[NotiflyStateSynchronizer] Failed to sync state: encountered error while working with JSON",
-                e
-            )
-            throw NullPointerException("[NotiflyStateSynchronizer] Failed to sync state: campaign data is not a valid JSON array")
-        }
+        val campaignsJsonArray =
+            try {
+                jsonResponse.getJSONArray("campaignData")
+            } catch (e: JSONException) {
+                Logger.e(
+                    "[NotiflyStateSynchronizer] Failed to sync state: encountered error while working with JSON",
+                    e,
+                )
+                throw NullPointerException("[NotiflyStateSynchronizer] Failed to sync state: campaign data is not a valid JSON array")
+            }
 
         val campaigns = mutableListOf<Campaign>()
         var failedCount = 0
@@ -139,7 +153,7 @@ object NotiflySyncStateUtil {
             } catch (e: JSONException) {
                 Logger.w(
                     "[Notifly] Failed to parse campaign: encountered error while working with JSON",
-                    e
+                    e,
                 )
                 failedCount++
                 continue
@@ -170,7 +184,8 @@ object NotiflySyncStateUtil {
 
     @Throws(NullPointerException::class)
     private suspend fun parseUserDataFromResponse(
-        context: Context, jsonResponse: JSONObject
+        context: Context,
+        jsonResponse: JSONObject,
     ): UserData {
         val userDataJsonObject = jsonResponse.getJSONObject("userData")
         return UserData.fromJSONObject(context, userDataJsonObject)

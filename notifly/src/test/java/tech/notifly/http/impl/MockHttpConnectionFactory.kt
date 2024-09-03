@@ -33,17 +33,13 @@ internal class MockHttpConnectionFactory(
     ) : HttpURLConnection(url) {
         override fun disconnect() {}
 
-        override fun usingProxy(): Boolean {
-            return false
-        }
+        override fun usingProxy(): Boolean = false
 
         @Throws(IOException::class)
         override fun connect() {
         }
 
-        override fun getHeaderField(name: String): String {
-            return mockResponse.mockProps[name]!!
-        }
+        override fun getHeaderField(name: String): String = mockResponse.mockProps[name]!!
 
         @Throws(IOException::class)
         override fun getResponseCode(): Int {
@@ -58,9 +54,7 @@ internal class MockHttpConnectionFactory(
             return mockResponse.status
         }
 
-        override fun getOutputStream(): OutputStream {
-            return NullOutputStream()
-        }
+        override fun getOutputStream(): OutputStream = NullOutputStream()
 
         @Throws(IOException::class)
         override fun getInputStream(): InputStream {

@@ -4,7 +4,6 @@ package tech.notifly.utils
  * Static values used internally
  */
 internal object N {
-
     /**
      * Regardless of [NotiflySdkType], Platform Information is fixed to "Android"
      */
@@ -12,7 +11,7 @@ internal object N {
 
     /**
      * Reserved Key for backward compatibility based on User Property or Event Logging.
- */
+     */
     const val KEY_EXTERNAL_USER_ID = "external_user_id"
 
     /**

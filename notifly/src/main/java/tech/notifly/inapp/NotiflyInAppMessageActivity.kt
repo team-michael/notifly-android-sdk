@@ -18,7 +18,6 @@ import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyTimerUtil
 import kotlin.math.roundToInt
 
-
 class NotiflyInAppMessageActivity : Activity() {
     companion object {
         private const val DEFAULT_BACKGROUND_OPACITY = 0.2
@@ -53,19 +52,21 @@ class NotiflyInAppMessageActivity : Activity() {
         val eventLogData = getEventLogData(intent)
         val templateName: String? = modalProperties?.optString("template_name")
 
-        mNotiflyWebView = findViewById<NotiflyWebView>(R.id.webView).apply {
-            this.visibility = View.INVISIBLE
+        mNotiflyWebView =
+            findViewById<NotiflyWebView>(R.id.webView).apply {
+                this.visibility = View.INVISIBLE
 
-            Logger.v("Visibility: ${this.visibility}") // Should be 4 (INVISIBLE)
+                Logger.v("Visibility: ${this.visibility}") // Should be 4 (INVISIBLE)
 
-            initialize(modalProperties, eventLogData, templateName, {
-                this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
-                    modalProperties, eventLogData
-                )
-            }, this@NotiflyInAppMessageActivity::onWebViewLoadedWithError)
+                initialize(modalProperties, eventLogData, templateName, {
+                    this@NotiflyInAppMessageActivity.onWebViewLoadedComplete(
+                        modalProperties,
+                        eventLogData,
+                    )
+                }, this@NotiflyInAppMessageActivity::onWebViewLoadedWithError)
 
-            loadUrl(url)
-        }
+                loadUrl(url)
+            }
     }
 
     override fun onResume() {
@@ -77,7 +78,10 @@ class NotiflyInAppMessageActivity : Activity() {
         super.onResume()
     }
 
-    private fun onWebViewLoadedComplete(modalProperties: JSONObject?, eventLogData: EventLogData) {
+    private fun onWebViewLoadedComplete(
+        modalProperties: JSONObject?,
+        eventLogData: EventLogData,
+    ) {
         if (mNotiflyWebView == null) {
             Logger.e("NotiflyWebView is null! Cannot show in app message")
             finish()
@@ -94,7 +98,8 @@ class NotiflyInAppMessageActivity : Activity() {
         Logger.v("shouldInterceptTouchEvent: $shouldInterceptTouchEvent")
         Logger.v("backgroundOpacity: $backgroundOpacity")
         setupTouchInterceptorLayout(
-            shouldInterceptTouchEvent, backgroundOpacity
+            shouldInterceptTouchEvent,
+            backgroundOpacity,
         )
 
         Logger.v("Previous visibility: ${mNotiflyWebView!!.visibility}") // Should be 4 (INVISIBLE)
@@ -102,29 +107,36 @@ class NotiflyInAppMessageActivity : Activity() {
         mNotiflyWebView!!.bringToFront()
         Logger.v("Visibility: ${mNotiflyWebView!!.visibility}") // 0
 
-        val eventParams = mutableMapOf<String, Any?>(
-            "type" to "message_event",
-            "channel" to "in-app-message",
-            "campaign_id" to eventLogData.campaignId,
-            "notifly_message_id" to eventLogData.notiflyMessageId,
-        )
+        val eventParams =
+            mutableMapOf<String, Any?>(
+                "type" to "message_event",
+                "channel" to "in-app-message",
+                "campaign_id" to eventLogData.campaignId,
+                "notifly_message_id" to eventLogData.notiflyMessageId,
+            )
 
         val campaignHiddenUntil = eventLogData.campaignHiddenUntil
         if (campaignHiddenUntil != null) {
-            eventParams["hide_until_data"] = mapOf(
-                eventLogData.campaignId to campaignHiddenUntil
-            )
+            eventParams["hide_until_data"] =
+                mapOf(
+                    eventLogData.campaignId to campaignHiddenUntil,
+                )
             InAppMessageManager.updateHideUntilData(
-                eventLogData.campaignId, campaignHiddenUntil
+                eventLogData.campaignId,
+                campaignHiddenUntil,
             )
         }
 
         CommandDispatcher.dispatch(
             TrackEventCommand(
                 TrackEventPayload(
-                    this, "in_app_message_show", eventParams, listOf(), true
-                )
-            )
+                    this,
+                    "in_app_message_show",
+                    eventParams,
+                    listOf(),
+                    true,
+                ),
+            ),
         )
     }
 
@@ -149,15 +161,19 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private fun setupTouchInterceptorLayout(
-        shouldInterceptTouchEvent: Boolean, backgroundOpacity: Double
+        shouldInterceptTouchEvent: Boolean,
+        backgroundOpacity: Double,
     ) {
         val touchInterceptorLayout =
             findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
 
         touchInterceptorLayout.setBackgroundColor(
             Color.argb(
-                (backgroundOpacity.coerceIn(0.0, 1.0) * 255).roundToInt(), 0, 0, 0
-            )
+                (backgroundOpacity.coerceIn(0.0, 1.0) * 255).roundToInt(),
+                0,
+                0,
+                0,
+            ),
         )
 
         if (shouldInterceptTouchEvent) {
@@ -198,7 +214,8 @@ class NotiflyInAppMessageActivity : Activity() {
     private fun getCampaignHiddenUntil(intent: Intent): Int? {
         try {
             if (!intent.getBooleanExtra(
-                    "campaign_re_eligibility_specified", false
+                    "campaign_re_eligibility_specified",
+                    false,
                 )
             ) {
                 return null

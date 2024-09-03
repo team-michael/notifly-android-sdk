@@ -10,7 +10,6 @@ import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 
 internal object NotiflyAuthUtil {
-
     private const val AUTHENTICATOR_URL = "https://api.notifly.tech/authorize"
 
     /**
@@ -21,12 +20,16 @@ internal object NotiflyAuthUtil {
      * @throws NullPointerException if failed to retrieve Cognito ID Token.
      */
     @Throws(NullPointerException::class)
-    suspend fun getCognitoIdToken(username: String, password: String): String {
+    suspend fun getCognitoIdToken(
+        username: String,
+        password: String,
+    ): String {
         val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
-        val requestBody = JSONObject().apply {
-            put("userName", username)
-            put("password", password)
-        }
+        val requestBody =
+            JSONObject().apply {
+                put("userName", username)
+                put("password", password)
+            }
 
         return withContext(Dispatchers.IO) {
             try {
@@ -43,27 +46,29 @@ internal object NotiflyAuthUtil {
         }
     }
 
-
     /**
      * @throws IllegalStateException is thrown if <Project ID> not found.
      */
     @Throws(IllegalStateException::class)
     suspend fun getNotiflyUserId(context: Context): String {
-        val projectId: String = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
-            ?: throw IllegalStateException("[Notifly] <Project ID> not found. You should call Notifly.initialize first")
+        val projectId: String =
+            NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+                ?: throw IllegalStateException("[Notifly] <Project ID> not found. You should call Notifly.initialize first")
         val externalUserId: String? =
             NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
 
         return when {
-            externalUserId != null -> NotiflyIdUtil.generate(
-                NotiflyIdUtil.Namespace.NAMESPACE_REGISTERED_USER_ID,
-                "${projectId}${externalUserId}"
-            )
+            externalUserId != null ->
+                NotiflyIdUtil.generate(
+                    NotiflyIdUtil.Namespace.NAMESPACE_REGISTERED_USER_ID,
+                    "${projectId}$externalUserId",
+                )
 
-            else -> NotiflyIdUtil.generate(
-                NotiflyIdUtil.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
-                "${projectId}${NotiflyFirebaseUtil.getFcmToken()}"
-            )
+            else ->
+                NotiflyIdUtil.generate(
+                    NotiflyIdUtil.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
+                    "${projectId}${NotiflyFirebaseUtil.getFcmToken()}",
+                )
         }
     }
 
@@ -75,11 +80,11 @@ internal object NotiflyAuthUtil {
     suspend fun invalidateCognitoIdToken(context: Context): String {
         val username: String =
             NotiflyStorage.get(context, NotiflyStorageItem.USERNAME) ?: throw IllegalStateException(
-                "[Notifly] username not found. You should call Notifly.initialize before this."
+                "[Notifly] username not found. You should call Notifly.initialize before this.",
             )
         val password: String =
             NotiflyStorage.get(context, NotiflyStorageItem.PASSWORD) ?: throw IllegalStateException(
-                "[Notifly] password not found. You should call Notifly.initialize before this."
+                "[Notifly] password not found. You should call Notifly.initialize before this.",
             )
 
         val newCognitoIdToken = getCognitoIdToken(username, password)

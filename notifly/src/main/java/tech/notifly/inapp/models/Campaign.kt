@@ -18,7 +18,7 @@ data class Campaign(
     val triggeringConditions: TriggeringConditions,
     val triggeringEventFilters: TriggeringEventFilters?,
     val delay: Int?,
-    val reEligibleCondition: ReEligibleCondition? = null
+    val reEligibleCondition: ReEligibleCondition? = null,
 ) : Comparable<Campaign> {
     override fun compareTo(other: Campaign): Int {
         // Compare based on age
@@ -41,20 +41,23 @@ data class Campaign(
         @Throws(JSONException::class)
         fun fromJSONObject(from: JSONObject): Campaign {
             val testing = if (from.has("testing")) from.getBoolean("testing") else false
-            val whitelist = if (testing) {
-                if (from.has("whitelist")) {
-                    val whitelistJSONArray = from.getJSONArray("whitelist")
-                    val whitelist = mutableListOf<String>()
-                    for (i in 0 until whitelistJSONArray.length()) {
-                        whitelist.add(whitelistJSONArray.getString(i))
+            val whitelist =
+                if (testing) {
+                    if (from.has("whitelist")) {
+                        val whitelistJSONArray = from.getJSONArray("whitelist")
+                        val whitelist = mutableListOf<String>()
+                        for (i in 0 until whitelistJSONArray.length()) {
+                            whitelist.add(whitelistJSONArray.getString(i))
+                        }
+                        whitelist
+                    } else {
+                        throw JSONException(
+                            "If campaign is configured as testing campaign, whitelist field should be specified.",
+                        )
                     }
-                    whitelist
                 } else {
-                    throw JSONException("If campaign is configured as testing campaign, whitelist field should be specified.")
+                    null
                 }
-            } else {
-                null
-            }
 
             val id = from.getString("id") // Campaign ID
             val channel =
@@ -67,45 +70,63 @@ data class Campaign(
                 throw JSONException("Campaign segment type is not condition.")
             }
             val start = from.getJSONArray("starts").getLong(0)
-            val end = from.get("end").let {
-                if (it == JSONObject.NULL) null else (it as Int).toLong()
-            }
+            val end =
+                from.get("end").let {
+                    if (it == JSONObject.NULL) null else (it as Int).toLong()
+                }
 
             val messageObject = from.getJSONObject("message")
             val url = messageObject.getString("html_url")
             val modalPropertiesObject = messageObject.getJSONObject("modal_properties")
             val templateName =
-                if (modalPropertiesObject.has("template_name")) modalPropertiesObject.getString("template_name") else null
+                if (modalPropertiesObject.has(
+                        "template_name",
+                    )
+                ) {
+                    modalPropertiesObject.getString("template_name")
+                } else {
+                    null
+                }
             val message = Message(url, modalPropertiesObject.toString(), templateName)
 
             val segmentInfoObject = from.getJSONObject("segment_info")
-            val segmentInfo = SegmentInfo.fromJSONObject(segmentInfoObject)
-                ?: throw JSONException("Failed to parse segment info")
+            val segmentInfo =
+                SegmentInfo.fromJSONObject(segmentInfoObject)
+                    ?: throw JSONException("Failed to parse segment info")
 
-            val triggeringConditions = if (from.has("triggering_conditions")) {
-                val triggeringConditionsJSONArray = from.getJSONArray("triggering_conditions")
-                TriggeringConditions.fromJSONObject(triggeringConditionsJSONArray)
-            } else {
-                throw JSONException("Campaign should have triggering conditions")
-            }
-            val triggeringEventFilters = if (from.has("triggering_event_filters")) {
-                val triggeringEventFiltersJSONArray = from.get("triggering_event_filters")
-                if (triggeringEventFiltersJSONArray == JSONObject.NULL) {
-                    null
+            val triggeringConditions =
+                if (from.has("triggering_conditions")) {
+                    val triggeringConditionsJSONArray = from.getJSONArray("triggering_conditions")
+                    TriggeringConditions.fromJSONObject(triggeringConditionsJSONArray)
                 } else {
-                    TriggeringEventFilters.fromJSONObject(triggeringEventFiltersJSONArray as JSONArray)
+                    throw JSONException("Campaign should have triggering conditions")
                 }
-            } else {
-                null
-            }
+            val triggeringEventFilters =
+                if (from.has("triggering_event_filters")) {
+                    val triggeringEventFiltersJSONArray = from.get("triggering_event_filters")
+                    if (triggeringEventFiltersJSONArray == JSONObject.NULL) {
+                        null
+                    } else {
+                        TriggeringEventFilters.fromJSONObject(triggeringEventFiltersJSONArray as JSONArray)
+                    }
+                } else {
+                    null
+                }
             val delay = if (from.has("delay")) from.getInt("delay") else 0
 
-            val reEligibleCondition = if (from.has("re_eligible_condition")) {
-                val value = from.get("re_eligible_condition")
-                if (value == JSONObject.NULL) null else ReEligibleCondition.fromJSONObject(
-                    value as JSONObject
-                )
-            } else null
+            val reEligibleCondition =
+                if (from.has("re_eligible_condition")) {
+                    val value = from.get("re_eligible_condition")
+                    if (value == JSONObject.NULL) {
+                        null
+                    } else {
+                        ReEligibleCondition.fromJSONObject(
+                            value as JSONObject,
+                        )
+                    }
+                } else {
+                    null
+                }
 
             return Campaign(
                 id = id,
@@ -120,7 +141,7 @@ data class Campaign(
                 triggeringConditions = triggeringConditions,
                 triggeringEventFilters = triggeringEventFilters,
                 delay = delay,
-                reEligibleCondition = reEligibleCondition
+                reEligibleCondition = reEligibleCondition,
             )
         }
     }
@@ -128,30 +149,33 @@ data class Campaign(
 
 data class Message(
     val url: String,
-    val modalProperties: String, // JSON-stringified string. InAppMessageActivity will handle this
-    val templateName: String?
+    // JSON-stringified string. InAppMessageActivity will handle this
+    val modalProperties: String,
+    val templateName: String?,
 )
 
 data class SegmentInfo(
-    val conditionGroup: List<ConditionGroup>, val groupOperator: GroupOperator
+    val conditionGroup: List<ConditionGroup>,
+    val groupOperator: GroupOperator,
 ) {
     companion object {
         @Throws(JSONException::class)
         fun fromJSONObject(segmentInfo: JSONObject): SegmentInfo? {
             try {
-                val groups = if (segmentInfo.has("groups")) {
-                    val groupsArray = segmentInfo.getJSONArray("groups")
-                    val conditionGroups = mutableListOf<ConditionGroup>()
-                    for (i in 0 until groupsArray.length()) {
-                        val groupObject = groupsArray.getJSONObject(i)
-                        val conditionGroup =
-                            ConditionGroup.fromJSONObject(groupObject) ?: return null
-                        conditionGroups.add(conditionGroup)
+                val groups =
+                    if (segmentInfo.has("groups")) {
+                        val groupsArray = segmentInfo.getJSONArray("groups")
+                        val conditionGroups = mutableListOf<ConditionGroup>()
+                        for (i in 0 until groupsArray.length()) {
+                            val groupObject = groupsArray.getJSONObject(i)
+                            val conditionGroup =
+                                ConditionGroup.fromJSONObject(groupObject) ?: return null
+                            conditionGroups.add(conditionGroup)
+                        }
+                        conditionGroups
+                    } else {
+                        return null
                     }
-                    conditionGroups
-                } else {
-                    return null
-                }
 
                 val groupOperator = if (groups.size > 1) GroupOperator.OR else GroupOperator.NULL
                 return SegmentInfo(groups, groupOperator)
@@ -163,7 +187,8 @@ data class SegmentInfo(
 }
 
 data class ConditionGroup(
-    val conditions: List<Condition>, val conditionOperator: ConditionOperator
+    val conditions: List<Condition>,
+    val conditionOperator: ConditionOperator,
 ) {
     companion object {
         @Throws(JSONException::class, ClassCastException::class)
@@ -186,74 +211,88 @@ data class Condition(
     val unit: SegmentConditionUnitType,
     val operator: Operator,
     val value: Any?,
-    val attribute: String?, // Only for user and device
-    val event: String?, // Only for event
-    val eventConditionType: EventBasedConditionType?, // Only for event
-    val secondaryValue: Int?, // Only for event
-    val valueType: ValueType?, // Only for user and device
-    val comparisonParameter: String?, // Only for user and device - used only when useEventParamsAsConditionValue is true
-    val useEventParamsAsConditionValue: Boolean? // Only for user and device
+    // Only for user and device
+    val attribute: String?,
+    // Only for event
+    val event: String?,
+    // Only for event
+    val eventConditionType: EventBasedConditionType?,
+    // Only for event
+    val secondaryValue: Int?,
+    // Only for user and device
+    val valueType: ValueType?,
+    // Only for user and device - used only when useEventParamsAsConditionValue is true
+    val comparisonParameter: String?,
+    // Only for user and device
+    val useEventParamsAsConditionValue: Boolean?,
 ) {
     companion object {
         @Throws(JSONException::class, ClassCastException::class)
         fun fromJSONObject(conditionObject: JSONObject): Condition? {
-            val unit = when (conditionObject.getString("unit")) {
-                "event" -> SegmentConditionUnitType.EVENT
-                "user" -> SegmentConditionUnitType.USER
-                "user_metadata" -> SegmentConditionUnitType.USER_METADATA
-                "device" -> SegmentConditionUnitType.DEVICE
-                else -> return null
-            }
+            val unit =
+                when (conditionObject.getString("unit")) {
+                    "event" -> SegmentConditionUnitType.EVENT
+                    "user" -> SegmentConditionUnitType.USER
+                    "user_metadata" -> SegmentConditionUnitType.USER_METADATA
+                    "device" -> SegmentConditionUnitType.DEVICE
+                    else -> return null
+                }
 
             val operator =
                 getSegmentOperator(unit, conditionObject.getString("operator")) ?: return null
-            val value = if (conditionObject.has("value")) {
-                conditionObject.get("value").let {
-                    if (it == JSONObject.NULL) null else it
+            val value =
+                if (conditionObject.has("value")) {
+                    conditionObject.get("value").let {
+                        if (it == JSONObject.NULL) null else it
+                    }
+                } else {
+                    null
                 }
-            } else {
-                null
-            }
-            val valueType = when (conditionObject.optString("valueType")) {
-                "TEXT" -> ValueType.TEXT
-                "INT" -> ValueType.INT
-                "BOOL" -> ValueType.BOOL
-                else -> null
-            }
-            val event = if (conditionObject.has("event")) {
-                conditionObject.getString("event")
-            } else {
-                null
-            }
-            val attribute = if (conditionObject.has("attribute")) {
-                conditionObject.getString("attribute")
-            } else {
-                null
-            }
-            val eventConditionType = if (conditionObject.has("event_condition_type")) {
-                when (conditionObject.getString("event_condition_type")) {
-                    "count X" -> EventBasedConditionType.COUNT_X
-                    "count X in Y days" -> EventBasedConditionType.COUNT_X_IN_Y_DAYS
-                    else -> return null
+            val valueType =
+                when (conditionObject.optString("valueType")) {
+                    "TEXT" -> ValueType.TEXT
+                    "INT" -> ValueType.INT
+                    "BOOL" -> ValueType.BOOL
+                    else -> null
                 }
-            } else {
-                null
-            }
+            val event =
+                if (conditionObject.has("event")) {
+                    conditionObject.getString("event")
+                } else {
+                    null
+                }
+            val attribute =
+                if (conditionObject.has("attribute")) {
+                    conditionObject.getString("attribute")
+                } else {
+                    null
+                }
+            val eventConditionType =
+                if (conditionObject.has("event_condition_type")) {
+                    when (conditionObject.getString("event_condition_type")) {
+                        "count X" -> EventBasedConditionType.COUNT_X
+                        "count X in Y days" -> EventBasedConditionType.COUNT_X_IN_Y_DAYS
+                        else -> return null
+                    }
+                } else {
+                    null
+                }
             val secondaryValue =
                 if (eventConditionType == EventBasedConditionType.COUNT_X_IN_Y_DAYS) {
                     conditionObject.getInt("secondary_value")
                 } else {
                     null
                 }
-            val useEventParamsAsConditionValue = if (unit == SegmentConditionUnitType.EVENT) {
-                null
-            } else {
-                if (conditionObject.has("useEventParamsAsConditionValue")) {
-                    conditionObject.getBoolean("useEventParamsAsConditionValue")
-                } else {
+            val useEventParamsAsConditionValue =
+                if (unit == SegmentConditionUnitType.EVENT) {
                     null
+                } else {
+                    if (conditionObject.has("useEventParamsAsConditionValue")) {
+                        conditionObject.getBoolean("useEventParamsAsConditionValue")
+                    } else {
+                        null
+                    }
                 }
-            }
             val comparisonParameter =
                 if (useEventParamsAsConditionValue !== null && useEventParamsAsConditionValue) {
                     if (conditionObject.has("comparison_parameter")) {
@@ -275,12 +314,13 @@ data class Condition(
                 secondaryValue,
                 valueType,
                 comparisonParameter,
-                useEventParamsAsConditionValue
+                useEventParamsAsConditionValue,
             )
         }
 
         private fun getSegmentOperator(
-            unit: SegmentConditionUnitType, segmentOperatorString: String
+            unit: SegmentConditionUnitType,
+            segmentOperatorString: String,
         ): Operator? {
             when (unit) {
                 SegmentConditionUnitType.EVENT -> {
@@ -320,14 +360,15 @@ data class ReEligibleCondition(
     companion object {
         @Throws(JSONException::class)
         fun fromJSONObject(input: JSONObject): ReEligibleCondition {
-            val unit = when (input.getString("unit")) {
-                "h" -> ReEligibleConditionUnitType.HOUR
-                "d" -> ReEligibleConditionUnitType.DAY
-                "w" -> ReEligibleConditionUnitType.WEEK
-                "m" -> ReEligibleConditionUnitType.MONTH
-                "infinite" -> ReEligibleConditionUnitType.INFINITE
-                else -> throw JSONException("Invalid unit type")
-            }
+            val unit =
+                when (input.getString("unit")) {
+                    "h" -> ReEligibleConditionUnitType.HOUR
+                    "d" -> ReEligibleConditionUnitType.DAY
+                    "w" -> ReEligibleConditionUnitType.WEEK
+                    "m" -> ReEligibleConditionUnitType.MONTH
+                    "infinite" -> ReEligibleConditionUnitType.INFINITE
+                    else -> throw JSONException("Invalid unit type")
+                }
 
             return ReEligibleCondition(unit, input.getInt("value"))
         }
@@ -335,11 +376,9 @@ data class ReEligibleCondition(
 }
 
 data class TriggeringConditions(
-    val conditions: List<TriggeringConditionGroup>
+    val conditions: List<TriggeringConditionGroup>,
 ) {
-    fun match(eventName: String): Boolean {
-        return conditions.any { conditionGroup -> conditionGroup.all { it.match(eventName) } }
-    }
+    fun match(eventName: String): Boolean = conditions.any { conditionGroup -> conditionGroup.all { it.match(eventName) } }
 
     companion object {
         @Throws(JSONException::class)
@@ -351,23 +390,40 @@ data class TriggeringConditions(
 
                 for (j in 0 until conditionGroup.length()) {
                     val conditionUnit = conditionGroup.getJSONObject(j)
-                    val type = when (conditionUnit.getString("type")) {
-                        "event_name" -> TriggeringConditionType.EVENT_NAME
-                        else -> throw JSONException("Failed to parse triggering conditions from given campaign: invalid condition type")
-                    }
-                    val operator = when (conditionUnit.getString("operator")) {
-                        "=" -> TriggeringConditionOperator.EQUALS
-                        "!=" -> TriggeringConditionOperator.NOT_EQUALS
-                        "starts_with" -> TriggeringConditionOperator.STARTS_WITH
-                        "does_not_start_with" -> TriggeringConditionOperator.DOES_NOT_START_WITH
-                        "ends_with" -> TriggeringConditionOperator.ENDS_WITH
-                        "does_not_end_with" -> TriggeringConditionOperator.DOES_NOT_END_WITH
-                        "contains" -> TriggeringConditionOperator.CONTAINS
-                        "does_not_contain" -> TriggeringConditionOperator.DOES_NOT_CONTAIN
-                        "matches_regex" -> TriggeringConditionOperator.MATCHES_REGEX
-                        "does_not_match_regex" -> TriggeringConditionOperator.DOES_NOT_MATCH_REGEX
-                        else -> throw JSONException("Failed to parse triggering conditions from given campaign: invalid operator")
-                    }
+                    val type =
+                        when (conditionUnit.getString("type")) {
+                            "event_name" -> TriggeringConditionType.EVENT_NAME
+
+                            else -> throw JSONException(
+                                "Failed to parse triggering conditions from given campaign: invalid condition type",
+                            )
+                        }
+                    val operator =
+                        when (conditionUnit.getString("operator")) {
+                            "=" -> TriggeringConditionOperator.EQUALS
+
+                            "!=" -> TriggeringConditionOperator.NOT_EQUALS
+
+                            "starts_with" -> TriggeringConditionOperator.STARTS_WITH
+
+                            "does_not_start_with" -> TriggeringConditionOperator.DOES_NOT_START_WITH
+
+                            "ends_with" -> TriggeringConditionOperator.ENDS_WITH
+
+                            "does_not_end_with" -> TriggeringConditionOperator.DOES_NOT_END_WITH
+
+                            "contains" -> TriggeringConditionOperator.CONTAINS
+
+                            "does_not_contain" -> TriggeringConditionOperator.DOES_NOT_CONTAIN
+
+                            "matches_regex" -> TriggeringConditionOperator.MATCHES_REGEX
+
+                            "does_not_match_regex" -> TriggeringConditionOperator.DOES_NOT_MATCH_REGEX
+
+                            else -> throw JSONException(
+                                "Failed to parse triggering conditions from given campaign: invalid operator",
+                            )
+                        }
                     val operand = conditionUnit.getString("operand")
 
                     conditionGroupList.add(TriggeringConditionUnit(type, operator, operand))
@@ -381,7 +437,7 @@ data class TriggeringConditions(
 }
 
 data class TriggeringEventFilters(
-    val filters: List<TriggeringEventFilterGroup>
+    val filters: List<TriggeringEventFilterGroup>,
 ) {
     companion object {
         @Throws(JSONException::class)
@@ -394,40 +450,54 @@ data class TriggeringEventFilters(
                 for (j in 0 until filterGroup.length()) {
                     val filterUnit = filterGroup.getJSONObject(j)
                     val key = filterUnit.getString("key")
-                    val operator = when (filterUnit.getString("operator")) {
-                        "IS_NULL" -> Operator.IS_NULL
-                        "IS_NOT_NULL" -> Operator.IS_NOT_NULL
-                        "=" -> Operator.EQUALS
-                        ">" -> Operator.GREATER_THAN
-                        ">=" -> Operator.GREATER_THAN_OR_EQUAL
-                        "<" -> Operator.LESS_THAN
-                        "<=" -> Operator.LESS_THAN_OR_EQUAL
-                        "<>" -> Operator.NOT_EQUALS
-                        "@>" -> Operator.CONTAINS
-                        else -> throw JSONException("Failed to parse triggering event filters from given campaign: invalid operator")
-                    }
-                    val value = if (filterUnit.has("value")) {
-                        filterUnit.get("value").let {
-                            if (it == JSONObject.NULL) null else it
+                    val operator =
+                        when (filterUnit.getString("operator")) {
+                            "IS_NULL" -> Operator.IS_NULL
+
+                            "IS_NOT_NULL" -> Operator.IS_NOT_NULL
+
+                            "=" -> Operator.EQUALS
+
+                            ">" -> Operator.GREATER_THAN
+
+                            ">=" -> Operator.GREATER_THAN_OR_EQUAL
+
+                            "<" -> Operator.LESS_THAN
+
+                            "<=" -> Operator.LESS_THAN_OR_EQUAL
+
+                            "<>" -> Operator.NOT_EQUALS
+
+                            "@>" -> Operator.CONTAINS
+
+                            else -> throw JSONException(
+                                "Failed to parse triggering event filters from given campaign: invalid operator",
+                            )
                         }
-                    } else {
-                        null
-                    }
-                    val valueType = if (filterUnit.has("value_type")) {
-                        val type = filterUnit.get("value_type")
-                        if (type == JSONObject.NULL || type !is String) {
-                            null
-                        } else {
-                            when (type) {
-                                "TEXT" -> ValueType.TEXT
-                                "INT" -> ValueType.INT
-                                "BOOL" -> ValueType.BOOL
-                                else -> null
+                    val value =
+                        if (filterUnit.has("value")) {
+                            filterUnit.get("value").let {
+                                if (it == JSONObject.NULL) null else it
                             }
+                        } else {
+                            null
                         }
-                    } else {
-                        null
-                    }
+                    val valueType =
+                        if (filterUnit.has("value_type")) {
+                            val type = filterUnit.get("value_type")
+                            if (type == JSONObject.NULL || type !is String) {
+                                null
+                            } else {
+                                when (type) {
+                                    "TEXT" -> ValueType.TEXT
+                                    "INT" -> ValueType.INT
+                                    "BOOL" -> ValueType.BOOL
+                                    else -> null
+                                }
+                            }
+                        } else {
+                            null
+                        }
 
                     filterGroupList.add(TriggeringEventFilterUnit(key, operator, value, valueType))
                 }
@@ -441,18 +511,26 @@ data class TriggeringEventFilters(
 data class TriggeringConditionUnit(
     val type: TriggeringConditionType,
     val operator: TriggeringConditionOperator,
-    val operand: String
+    val operand: String,
 ) {
-    fun match(eventName: String): Boolean {
-        return when (operator) {
+    fun match(eventName: String): Boolean =
+        when (operator) {
             TriggeringConditionOperator.EQUALS -> eventName == operand
+
             TriggeringConditionOperator.NOT_EQUALS -> eventName != operand
+
             TriggeringConditionOperator.STARTS_WITH -> eventName.startsWith(operand)
+
             TriggeringConditionOperator.DOES_NOT_START_WITH -> !eventName.startsWith(operand)
+
             TriggeringConditionOperator.ENDS_WITH -> eventName.endsWith(operand)
+
             TriggeringConditionOperator.DOES_NOT_END_WITH -> !eventName.endsWith(operand)
+
             TriggeringConditionOperator.CONTAINS -> eventName.contains(operand)
+
             TriggeringConditionOperator.DOES_NOT_CONTAIN -> !eventName.contains(operand)
+
             TriggeringConditionOperator.MATCHES_REGEX -> {
                 try {
                     eventName.matches(operand.toRegex())
@@ -469,14 +547,15 @@ data class TriggeringConditionUnit(
                 }
             }
         }
-    }
 }
 
 typealias TriggeringConditionGroup = List<TriggeringConditionUnit>
 
 data class TriggeringEventFilterUnit(
-    val key: String, val operator: Operator, val value: Any?, val valueType: ValueType?
+    val key: String,
+    val operator: Operator,
+    val value: Any?,
+    val valueType: ValueType?,
 )
 
 typealias TriggeringEventFilterGroup = List<TriggeringEventFilterUnit>
-

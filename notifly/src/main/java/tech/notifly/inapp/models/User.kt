@@ -11,18 +11,22 @@ import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyDeviceUtil
 
 data class EventIntermediateCounts(
-    val dt: String, val name: String, val count: Int, val eventParams: Map<String, Any?>
+    val dt: String,
+    val name: String,
+    val count: Int,
+    val eventParams: Map<String, Any?>,
 ) {
-    fun equalsTo(other: EventIntermediateCounts): Boolean {
-        return dt == other.dt && name == other.name && eventParams == other.eventParams
-    }
+    fun equalsTo(other: EventIntermediateCounts): Boolean = dt == other.dt && name == other.name && eventParams == other.eventParams
 
     fun merge(other: EventIntermediateCounts): EventIntermediateCounts {
         if (!this.equalsTo(other)) {
             throw IllegalArgumentException("Cannot merge EventIntermediateCounts with different dt, name, and event_params")
         }
         return EventIntermediateCounts(
-            dt, name, count + other.count, eventParams
+            dt,
+            name,
+            count + other.count,
+            eventParams,
         )
     }
 
@@ -42,9 +46,10 @@ data class EventIntermediateCounts(
                     val keys = eventParamsJSONObject.keys()
                     while (keys.hasNext()) {
                         val key = keys.next()
-                        eventParams[key] = eventParamsJSONObject.get(key).let {
-                            if (it == JSONObject.NULL) null else it
-                        }
+                        eventParams[key] =
+                            eventParamsJSONObject.get(key).let {
+                                if (it == JSONObject.NULL) null else it
+                            }
                     }
                 }
                 return EventIntermediateCounts(dt, name, count, eventParams)
@@ -69,14 +74,20 @@ data class UserData(
     val sdkVersion: String,
     val sdkType: String,
     val randomBucketNumber: Int?,
-    val updatedAt: String?, // Not used
+    // Not used
+    val updatedAt: String?,
     val userProperties: MutableMap<String, Any?>,
     val campaignHiddenUntil: MutableMap<String, Int>,
 ) {
-    fun get(context: Context, unit: SegmentConditionUnitType, field: String?): Any? {
+    fun get(
+        context: Context,
+        unit: SegmentConditionUnitType,
+        field: String?,
+    ): Any? {
         if (field == null) return null
         return when (unit) {
             SegmentConditionUnitType.USER -> userProperties[field]
+
             SegmentConditionUnitType.DEVICE -> {
                 when (field) {
                     "platform" -> platform
@@ -91,11 +102,14 @@ data class UserData(
 
             SegmentConditionUnitType.USER_METADATA -> {
                 when (field) {
-                    "external_user_id" -> NotiflyStorage.get(
-                        context, NotiflyStorageItem.EXTERNAL_USER_ID
-                    )
+                    "external_user_id" ->
+                        NotiflyStorage.get(
+                            context,
+                            NotiflyStorageItem.EXTERNAL_USER_ID,
+                        )
 
                     "random_bucket_number" -> randomBucketNumber
+
                     else -> null
                 }
             }
@@ -105,31 +119,39 @@ data class UserData(
     }
 
     fun merge(other: UserData): UserData {
-        val result = UserData(platform = other.platform,
-            osVersion = other.osVersion,
-            appVersion = other.appVersion,
-            sdkVersion = other.sdkVersion,
-            sdkType = other.sdkType,
-            randomBucketNumber = other.randomBucketNumber,
-            updatedAt = other.updatedAt,
-            userProperties = run {
-                val merged = mutableMapOf<String, Any?>()
-                merged.putAll(userProperties)
-                merged.putAll(other.userProperties)
-                merged
-            },
-            campaignHiddenUntil = run {
-                val merged = mutableMapOf<String, Int>()
-                merged.putAll(campaignHiddenUntil)
-                merged.putAll(other.campaignHiddenUntil)
-                merged
-            })
+        val result =
+            UserData(
+                platform = other.platform,
+                osVersion = other.osVersion,
+                appVersion = other.appVersion,
+                sdkVersion = other.sdkVersion,
+                sdkType = other.sdkType,
+                randomBucketNumber = other.randomBucketNumber,
+                updatedAt = other.updatedAt,
+                userProperties =
+                    run {
+                        val merged = mutableMapOf<String, Any?>()
+                        merged.putAll(userProperties)
+                        merged.putAll(other.userProperties)
+                        merged
+                    },
+                campaignHiddenUntil =
+                    run {
+                        val merged = mutableMapOf<String, Int>()
+                        merged.putAll(campaignHiddenUntil)
+                        merged.putAll(other.campaignHiddenUntil)
+                        merged
+                    },
+            )
         Logger.d("Merged UserData: $result")
         return result
     }
 
     companion object {
-        suspend fun fromJSONObject(context: Context, from: JSONObject): UserData {
+        suspend fun fromJSONObject(
+            context: Context,
+            from: JSONObject,
+        ): UserData {
             val platform = NotiflyDeviceUtil.getPlatform()
             val osVersion = NotiflyDeviceUtil.getOsVersion()
             val appVersion = NotiflyDeviceUtil.getAppVersion(context)
@@ -139,49 +161,59 @@ data class UserData(
 
             try {
                 // random_bucket_number can either be an int or a string
-                val randomBucketNumber = if (from.has("random_bucket_number")) {
-                    when (val randomBucketNumber = from.get("random_bucket_number")) {
-                        is Int -> {
-                            randomBucketNumber
-                        }
+                val randomBucketNumber =
+                    if (from.has("random_bucket_number")) {
+                        when (val randomBucketNumber = from.get("random_bucket_number")) {
+                            is Int -> {
+                                randomBucketNumber
+                            }
 
-                        is String -> {
-                            randomBucketNumber.toIntOrNull()
-                        }
+                            is String -> {
+                                randomBucketNumber.toIntOrNull()
+                            }
 
-                        else -> {
-                            null
+                            else -> {
+                                null
+                            }
                         }
+                    } else {
+                        null
                     }
-                } else null
 
                 val updatedAt = if (from.has("updated_at")) from.getString("updated_at") else null
 
                 val userPropertiesJSONObject =
                     if (from.has("user_properties")) from.getJSONObject("user_properties") else null
-                val userProperties = if (userPropertiesJSONObject != null) {
-                    val keys = userPropertiesJSONObject.keys()
-                    val userProperties = mutableMapOf<String, Any?>()
-                    while (keys.hasNext()) {
-                        val key = keys.next()
-                        userProperties[key] = userPropertiesJSONObject.get(key).let {
-                            if (it == JSONObject.NULL) null else it
+                val userProperties =
+                    if (userPropertiesJSONObject != null) {
+                        val keys = userPropertiesJSONObject.keys()
+                        val userProperties = mutableMapOf<String, Any?>()
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            userProperties[key] =
+                                userPropertiesJSONObject.get(key).let {
+                                    if (it == JSONObject.NULL) null else it
+                                }
                         }
+                        userProperties
+                    } else {
+                        mutableMapOf()
                     }
-                    userProperties
-                } else mutableMapOf()
 
                 val campaignHiddenUntilJSONObject =
                     if (from.has("campaign_hidden_until")) from.getJSONObject("campaign_hidden_until") else null
-                val campaignHiddenUntil = if (campaignHiddenUntilJSONObject != null) {
-                    val keys = campaignHiddenUntilJSONObject.keys()
-                    val result = mutableMapOf<String, Int>()
-                    while (keys.hasNext()) {
-                        val key = keys.next()
-                        result[key] = campaignHiddenUntilJSONObject.getInt(key)
+                val campaignHiddenUntil =
+                    if (campaignHiddenUntilJSONObject != null) {
+                        val keys = campaignHiddenUntilJSONObject.keys()
+                        val result = mutableMapOf<String, Int>()
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            result[key] = campaignHiddenUntilJSONObject.getInt(key)
+                        }
+                        result
+                    } else {
+                        mutableMapOf()
                     }
-                    result
-                } else mutableMapOf()
 
                 return UserData(
                     platform = platform,
@@ -192,7 +224,7 @@ data class UserData(
                     randomBucketNumber = randomBucketNumber,
                     updatedAt = updatedAt,
                     userProperties = userProperties,
-                    campaignHiddenUntil = campaignHiddenUntil
+                    campaignHiddenUntil = campaignHiddenUntil,
                 )
             } catch (e: JSONException) {
                 Logger.d("Error parsing UserData: $e")
@@ -205,7 +237,7 @@ data class UserData(
                     randomBucketNumber = null,
                     updatedAt = null,
                     userProperties = mutableMapOf(),
-                    campaignHiddenUntil = mutableMapOf()
+                    campaignHiddenUntil = mutableMapOf(),
                 )
             }
         }
@@ -227,7 +259,7 @@ data class UserData(
                 randomBucketNumber = null,
                 updatedAt = null,
                 userProperties = mutableMapOf(),
-                campaignHiddenUntil = mutableMapOf()
+                campaignHiddenUntil = mutableMapOf(),
             )
         }
     }

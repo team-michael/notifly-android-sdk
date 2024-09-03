@@ -8,11 +8,7 @@ object NotiflyUtil {
         return regex.matches(projectId)
     }
 
-    fun isValidTimezoneId(timezoneId: String): Boolean {
-        return TimeZone.getAvailableIDs().contains(timezoneId)
-    }
+    fun isValidTimezoneId(timezoneId: String): Boolean = TimeZone.getAvailableIDs().contains(timezoneId)
 
-    fun getCurrentTimezone(): String {
-        return TimeZone.getDefault().id
-    }
+    fun getCurrentTimezone(): String = TimeZone.getDefault().id
 }

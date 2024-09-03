@@ -1,6 +1,5 @@
 package tech.notifly.sample
 
-
 import android.app.Application
 import android.content.Intent
 import android.util.Log
@@ -29,21 +28,25 @@ class SampleApplication : Application() {
             password = BuildConfig.NOTIFLY_PASSWORD,
         )
 
-        Notifly.addNotificationClickListener(object : INotificationClickListener {
-            override fun onClick(event: INotificationClickEvent) {
-                Log.d("SampleApplication", "Notification clicked: ${event.notification.toString()}")
-            }
-        })
+        Notifly.addNotificationClickListener(
+            object : INotificationClickListener {
+                override fun onClick(event: INotificationClickEvent) {
+                    Log.d("SampleApplication", "Notification clicked: ${event.notification}")
+                }
+            },
+        )
 
-        Notifly.addNotificationInterceptor(object : INotificationInterceptor {
-            override fun postBuild(
-                builder: NotificationCompat.Builder,
-                notification: IPushNotification
-            ): NotificationCompat.Builder {
-                builder.setColor(ContextCompat.getColor(applicationContext, R.color.purple_700));
-                return builder
-            }
-        })
+        Notifly.addNotificationInterceptor(
+            object : INotificationInterceptor {
+                override fun postBuild(
+                    builder: NotificationCompat.Builder,
+                    notification: IPushNotification,
+                ): NotificationCompat.Builder {
+                    builder.setColor(ContextCompat.getColor(applicationContext, R.color.purple_700))
+                    return builder
+                }
+            },
+        )
 
         // OneSignal Initialization
         /*OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)

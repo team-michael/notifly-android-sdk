@@ -36,27 +36,31 @@ object InAppMessageManager {
     private var isInitialized = false
 
     private var campaigns: MutableList<Campaign>? = null
-        set(value) = run {
-            field = value
-            campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
-        }
+        set(value) =
+            run {
+                field = value
+                campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
+            }
 
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
 
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
-        set(value) = run {
-            if (value < MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS) {
-                Logger.w(
-                    "[Notifly] Campaign revalidation interval is less than the minimum value of $MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS. Ignoring."
-                )
-            } else {
-                field = value
+        set(value) =
+            run {
+                if (value < MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS) {
+                    Logger.w(
+                        "[Notifly] Campaign revalidation interval is less than the minimum value of $MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS. Ignoring.",
+                    )
+                } else {
+                    field = value
+                }
             }
-        }
     private var campaignLastFetchedAt: Long? = null
     private val shouldRevalidateCampaign: Boolean
-        get() = campaignLastFetchedAt == null || NotiflyTimerUtil.getTimestampMillis() - campaignLastFetchedAt!! > campaignRevalidationIntervalMillis
+        get() =
+            campaignLastFetchedAt == null ||
+                NotiflyTimerUtil.getTimestampMillis() - campaignLastFetchedAt!! > campaignRevalidationIntervalMillis
 
     fun disable() {
         disabled = true
@@ -84,7 +88,10 @@ object InAppMessageManager {
     }
 
     @Throws(NullPointerException::class)
-    suspend fun refresh(context: Context, shouldMergeData: Boolean = false) {
+    suspend fun refresh(
+        context: Context,
+        shouldMergeData: Boolean = false,
+    ) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
             return
@@ -102,7 +109,6 @@ object InAppMessageManager {
 
         sync(context, shouldMergeData)
     }
-
 
     suspend fun maybeRevalidateCampaigns(context: Context) {
         if (disabled) {
@@ -144,12 +150,15 @@ object InAppMessageManager {
             return
         }
 
-
         userData.userProperties += params
         Logger.v("[Notifly] Updated user data to $userData")
     }
 
-    private fun isReEligibleCampaign(campaignId: String, delay: Int?, now: Int): Boolean {
+    private fun isReEligibleCampaign(
+        campaignId: String,
+        delay: Int?,
+        now: Int,
+    ): Boolean {
         val hiddenUntil = userData.campaignHiddenUntil[campaignId]
         if (hiddenUntil != null && hiddenUntil < 0) {
             return false // Infinitely hidden
@@ -161,7 +170,11 @@ object InAppMessageManager {
         return (hiddenUntil == null) || (displayTime >= hiddenUntil)
     }
 
-    private fun isTemplateHiddenByUser(templateName: String, delay: Int?, now: Int): Boolean {
+    private fun isTemplateHiddenByUser(
+        templateName: String,
+        delay: Int?,
+        now: Int,
+    ): Boolean {
         val userProperties = userData.userProperties
 
         // Legacy
@@ -184,7 +197,10 @@ object InAppMessageManager {
         return false
     }
 
-    fun updateHideUntilData(campaignId: String, hideUntil: Int) {
+    fun updateHideUntilData(
+        campaignId: String,
+        hideUntil: Int,
+    ) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
             return
@@ -214,7 +230,7 @@ object InAppMessageManager {
         externalUserId: String?,
         eventParams: Map<String, Any?>,
         isInternalEvent: Boolean,
-        segmentationEventParamKeys: List<String>? = null
+        segmentationEventParamKeys: List<String>? = null,
     ) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
@@ -232,7 +248,7 @@ object InAppMessageManager {
         }
 
         Logger.v(
-            "[Notifly] maybeScheduleInAppMessagesAndIngestEvent called with $eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys"
+            "[Notifly] maybeScheduleInAppMessagesAndIngestEvent called with $eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys",
         )
 
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
@@ -252,28 +268,34 @@ object InAppMessageManager {
         }
     }
 
-    private fun sanitizeEventName(eventName: String, isInternalEvent: Boolean): String {
-        return if (isInternalEvent) "${N.INTERNAL_EVENT_PREFIX}$eventName" else eventName
-    }
+    private fun sanitizeEventName(
+        eventName: String,
+        isInternalEvent: Boolean,
+    ): String = if (isInternalEvent) "${N.INTERNAL_EVENT_PREFIX}$eventName" else eventName
 
     @Throws(NullPointerException::class)
-    private suspend fun sync(context: Context, shouldMergeData: Boolean) {
+    private suspend fun sync(
+        context: Context,
+        shouldMergeData: Boolean,
+    ) {
         try {
             NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
             val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
             campaigns = syncStateResult.campaigns
-            eventCounts = if (shouldMergeData) {
-                NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
-            } else {
-                syncStateResult.eventCounts
-            }
-            userData = if (shouldMergeData) {
-                userData.merge(syncStateResult.userData)
-            } else {
-                syncStateResult.userData
-            }
+            eventCounts =
+                if (shouldMergeData) {
+                    NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
+                } else {
+                    syncStateResult.eventCounts
+                }
+            userData =
+                if (shouldMergeData) {
+                    userData.merge(syncStateResult.userData)
+                } else {
+                    syncStateResult.userData
+                }
 
             Logger.d("InAppMessageManager fetched user state successfully.")
             Logger.d("campaigns: $campaigns")
@@ -299,7 +321,7 @@ object InAppMessageManager {
     private fun ingestEventInternal(
         eventName: String,
         eventParams: Map<String, Any?>,
-        segmentationEventParamKeys: List<String>? = null
+        segmentationEventParamKeys: List<String>? = null,
     ) {
         val formattedDate = InAppMessageUtils.getKSTCalendarDateString()
         val keyField = segmentationEventParamKeys?.getOrNull(0)
@@ -321,8 +343,11 @@ object InAppMessageManager {
             // If no existing row is found, create a new entry
             eventCounts.add(
                 EventIntermediateCounts(
-                    dt = formattedDate, name = eventName, count = 1, eventParams = eventParams
-                )
+                    dt = formattedDate,
+                    name = eventName,
+                    count = 1,
+                    eventParams = eventParams,
+                ),
             )
         }
     }
@@ -332,7 +357,7 @@ object InAppMessageManager {
         campaigns: List<Campaign>,
         externalUserId: String?,
         eventName: String,
-        eventParams: Map<String, Any?>
+        eventParams: Map<String, Any?>,
     ) {
         getCampaignsToSchedule(context, campaigns, externalUserId, eventName, eventParams).forEach {
             Logger.v("[Notifly] Scheduling campaign: $it")
@@ -345,12 +370,13 @@ object InAppMessageManager {
         campaigns: List<Campaign>,
         externalUserId: String?,
         eventName: String,
-        eventParams: Map<String, Any?>
-    ): List<Campaign> {
-        return filterCampaignsWithUniqueDelays(campaigns.filter {
-            evaluateCampaignVisibility(context, it, externalUserId, eventName, eventParams)
-        })
-    }
+        eventParams: Map<String, Any?>,
+    ): List<Campaign> =
+        filterCampaignsWithUniqueDelays(
+            campaigns.filter {
+                evaluateCampaignVisibility(context, it, externalUserId, eventName, eventParams)
+            },
+        )
 
     private fun filterCampaignsWithUniqueDelays(campaigns: List<Campaign>): List<Campaign> {
         if (campaigns.size <= 1) {
@@ -379,7 +405,7 @@ object InAppMessageManager {
         campaign: Campaign,
         externalUserId: String?,
         eventName: String,
-        eventParams: Map<String, Any?>
+        eventParams: Map<String, Any?>,
     ): Boolean {
         val now = NotiflyTimerUtil.getTimestampSeconds()
         val templateName = campaign.message.templateName ?: return false
@@ -397,8 +423,10 @@ object InAppMessageManager {
             }
         }
 
-        if (campaign.triggeringEventFilters != null && !matchTriggeringEventFilters(
-                eventParams, campaign.triggeringEventFilters
+        if (campaign.triggeringEventFilters != null &&
+            !matchTriggeringEventFilters(
+                eventParams,
+                campaign.triggeringEventFilters,
             )
         ) {
             return false
@@ -435,46 +463,53 @@ object InAppMessageManager {
     }
 
     private fun matchCondition(
-        context: Context, condition: Condition, eventParams: Map<String, Any?>
-    ): Boolean {
-        return when (condition.unit) {
+        context: Context,
+        condition: Condition,
+        eventParams: Map<String, Any?>,
+    ): Boolean =
+        when (condition.unit) {
             SegmentConditionUnitType.EVENT -> matchEventBasedCondition(condition)
             else -> matchUserPropertyBasedCondition(context, condition, eventParams)
         }
-    }
 
     private fun matchEventBasedCondition(condition: Condition): Boolean {
         val event = condition.event!!
         val eventConditionType = condition.eventConditionType!!
         val operator = condition.operator
-        val value = condition.value.let {
-            if (it !is Int) {
-                Logger.w("[Notifly] Malformed condition: value is not an integer.")
-                return false
-            } else {
-                it
-            }
-        }
-
-        val totalCount: Int = when (eventConditionType) {
-            EventBasedConditionType.COUNT_X -> {
-                eventCounts.filter { it.name == event }.sumOf { it.count }
+        val value =
+            condition.value.let {
+                if (it !is Int) {
+                    Logger.w("[Notifly] Malformed condition: value is not an integer.")
+                    return false
+                } else {
+                    it
+                }
             }
 
-            EventBasedConditionType.COUNT_X_IN_Y_DAYS -> {
-                val secondaryValue = condition.secondaryValue ?: return false
-                val start = InAppMessageUtils.getKSTCalendarDateString(-secondaryValue)
-                val end = InAppMessageUtils.getKSTCalendarDateString()
-                eventCounts.filter { it.name == event }.filter { it.dt in start..end }
-                    .sumOf { it.count }
+        val totalCount: Int =
+            when (eventConditionType) {
+                EventBasedConditionType.COUNT_X -> {
+                    eventCounts.filter { it.name == event }.sumOf { it.count }
+                }
+
+                EventBasedConditionType.COUNT_X_IN_Y_DAYS -> {
+                    val secondaryValue = condition.secondaryValue ?: return false
+                    val start = InAppMessageUtils.getKSTCalendarDateString(-secondaryValue)
+                    val end = InAppMessageUtils.getKSTCalendarDateString()
+                    eventCounts
+                        .filter { it.name == event }
+                        .filter { it.dt in start..end }
+                        .sumOf { it.count }
+                }
             }
-        }
 
         return compareEventBasedCondition(totalCount, operator, value)
     }
 
     private fun matchUserPropertyBasedCondition(
-        context: Context, condition: Condition, eventParams: Map<String, Any?>
+        context: Context,
+        condition: Condition,
+        eventParams: Map<String, Any?>,
     ): Boolean {
         val unit = condition.unit
         val operator = condition.operator
@@ -482,12 +517,13 @@ object InAppMessageManager {
         val useEventParamsAsConditionValue = condition.useEventParamsAsConditionValue ?: false
 
         val userAttributeValue = userData.get(context, unit, condition.attribute)
-        val value = if (useEventParamsAsConditionValue) {
-            val comparisonParameter = condition.comparisonParameter ?: return false
-            eventParams[comparisonParameter] ?: return false
-        } else {
-            condition.value
-        }
+        val value =
+            if (useEventParamsAsConditionValue) {
+                val comparisonParameter = condition.comparisonParameter ?: return false
+                eventParams[comparisonParameter] ?: return false
+            } else {
+                condition.value
+            }
 
         if (operator == Operator.IS_NULL || operator == Operator.IS_NOT_NULL) {
             return when (operator) {
@@ -502,40 +538,65 @@ object InAppMessageManager {
         }
 
         return when (operator) {
-            Operator.EQUALS -> Comparator.isEqual(
-                userAttributeValue, value, valueType
-            )
+            Operator.EQUALS ->
+                Comparator.isEqual(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.NOT_EQUALS -> Comparator.isNotEqual(
-                userAttributeValue, value, valueType
-            )
+            Operator.NOT_EQUALS ->
+                Comparator.isNotEqual(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.GREATER_THAN -> Comparator.isGreaterThan(
-                userAttributeValue, value, valueType
-            )
+            Operator.GREATER_THAN ->
+                Comparator.isGreaterThan(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.GREATER_THAN_OR_EQUAL -> Comparator.isGreaterThanOrEqual(
-                userAttributeValue, value, valueType
-            )
+            Operator.GREATER_THAN_OR_EQUAL ->
+                Comparator.isGreaterThanOrEqual(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.LESS_THAN -> Comparator.isLessThan(
-                userAttributeValue, value, valueType
-            )
+            Operator.LESS_THAN ->
+                Comparator.isLessThan(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.LESS_THAN_OR_EQUAL -> Comparator.isLessThanOrEqual(
-                userAttributeValue, value, valueType
-            )
+            Operator.LESS_THAN_OR_EQUAL ->
+                Comparator.isLessThanOrEqual(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.CONTAINS -> Comparator.contains(
-                userAttributeValue, value, valueType
-            )
+            Operator.CONTAINS ->
+                Comparator.contains(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
 
             else -> false // Should never happen
         }
     }
 
-    private fun compareEventBasedCondition(count: Int, op: Operator, value: Int): Boolean {
-        return when (op) {
+    private fun compareEventBasedCondition(
+        count: Int,
+        op: Operator,
+        value: Int,
+    ): Boolean =
+        when (op) {
             Operator.EQUALS -> count == value
             Operator.GREATER_THAN -> count > value
             Operator.GREATER_THAN_OR_EQUAL -> count >= value
@@ -543,24 +604,23 @@ object InAppMessageManager {
             Operator.LESS_THAN_OR_EQUAL -> count <= value
             else -> false
         }
-    }
 
     private fun matchTriggeringEventFilters(
-        eventParams: Map<String, Any?>, filters: TriggeringEventFilters
-    ): Boolean {
-        return filters.filters.any {
+        eventParams: Map<String, Any?>,
+        filters: TriggeringEventFilters,
+    ): Boolean =
+        filters.filters.any {
             matchTriggeringEventFilterGroup(eventParams, it)
         }
-    }
 
     private fun matchTriggeringEventFilterGroup(
-        eventParams: Map<String, Any?>, group: TriggeringEventFilterGroup
-    ): Boolean {
-        return group.all { matchTriggeringEventFilter(eventParams, it) }
-    }
+        eventParams: Map<String, Any?>,
+        group: TriggeringEventFilterGroup,
+    ): Boolean = group.all { matchTriggeringEventFilter(eventParams, it) }
 
     private fun matchTriggeringEventFilter(
-        eventParams: Map<String, Any?>, filter: TriggeringEventFilterUnit
+        eventParams: Map<String, Any?>,
+        filter: TriggeringEventFilterUnit,
     ): Boolean {
         val keyName = filter.key
         val operator = filter.operator
@@ -582,33 +642,54 @@ object InAppMessageManager {
         }
 
         return when (operator) {
-            Operator.EQUALS -> Comparator.isEqual(
-                eventParamValue, value, valueType
-            )
+            Operator.EQUALS ->
+                Comparator.isEqual(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.NOT_EQUALS -> Comparator.isNotEqual(
-                eventParamValue, value, valueType
-            )
+            Operator.NOT_EQUALS ->
+                Comparator.isNotEqual(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.GREATER_THAN -> Comparator.isGreaterThan(
-                eventParamValue, value, valueType
-            )
+            Operator.GREATER_THAN ->
+                Comparator.isGreaterThan(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.GREATER_THAN_OR_EQUAL -> Comparator.isGreaterThanOrEqual(
-                eventParamValue, value, valueType
-            )
+            Operator.GREATER_THAN_OR_EQUAL ->
+                Comparator.isGreaterThanOrEqual(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.LESS_THAN -> Comparator.isLessThan(
-                eventParamValue, value, valueType
-            )
+            Operator.LESS_THAN ->
+                Comparator.isLessThan(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.LESS_THAN_OR_EQUAL -> Comparator.isLessThanOrEqual(
-                eventParamValue, value, valueType
-            )
+            Operator.LESS_THAN_OR_EQUAL ->
+                Comparator.isLessThanOrEqual(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
-            Operator.CONTAINS -> Comparator.contains(
-                eventParamValue, value, valueType
-            )
+            Operator.CONTAINS ->
+                Comparator.contains(
+                    eventParamValue,
+                    value,
+                    valueType,
+                )
 
             else -> false // Should never happen
         }
@@ -617,9 +698,13 @@ object InAppMessageManager {
     private class Comparator {
         companion object {
             @Throws(ClassCastException::class, NumberFormatException::class)
-            private fun cast(value: Any, type: String): Any {
-                return when (type) {
+            private fun cast(
+                value: Any,
+                type: String,
+            ): Any =
+                when (type) {
                     "TEXT" -> value as? String ?: value.toString()
+
                     "INT" -> {
                         when (value) {
                             is Int -> value
@@ -631,6 +716,7 @@ object InAppMessageManager {
                     "BOOL" -> {
                         when (value) {
                             is Boolean -> value
+
                             is String -> {
                                 when (value) {
                                     "true" -> true
@@ -644,171 +730,250 @@ object InAppMessageManager {
                     }
 
                     "ARRAY" -> value as? List<*> ?: throw ClassCastException()
+
                     else -> throw ClassCastException("Unrecoverable type mismatch: invalid type $type")
                 }
-            }
 
-            fun isEqual(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun isEqual(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     when (type) {
-                        ValueType.TEXT -> cast(
-                            a, type.toString()
-                        ) as String == cast(b, type.toString()) as String
+                        ValueType.TEXT ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as String == cast(b, type.toString()) as String
 
-                        ValueType.INT -> cast(a, type.toString()) as Int == cast(
-                            b, type.toString()
-                        ) as Int
+                        ValueType.INT ->
+                            cast(a, type.toString()) as Int ==
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Int
 
-                        ValueType.BOOL -> cast(
-                            a, type.toString()
-                        ) as Boolean == cast(b, type.toString()) as Boolean
+                        ValueType.BOOL ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as Boolean == cast(b, type.toString()) as Boolean
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
 
-            fun isNotEqual(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun isNotEqual(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     when (type) {
-                        ValueType.TEXT -> cast(
-                            a, type.toString()
-                        ) as String != cast(b, type.toString()) as String
+                        ValueType.TEXT ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as String != cast(b, type.toString()) as String
 
-                        ValueType.INT -> cast(a, type.toString()) as Int != cast(
-                            b, type.toString()
-                        ) as Int
+                        ValueType.INT ->
+                            cast(a, type.toString()) as Int !=
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Int
 
-                        ValueType.BOOL -> cast(
-                            a, type.toString()
-                        ) as Boolean != cast(b, type.toString()) as Boolean
+                        ValueType.BOOL ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as Boolean != cast(b, type.toString()) as Boolean
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
 
-            fun isGreaterThan(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun isGreaterThan(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     when (type) {
-                        ValueType.TEXT -> cast(a, type.toString()) as String > cast(
-                            b, type.toString()
-                        ) as String
+                        ValueType.TEXT ->
+                            cast(a, type.toString()) as String >
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as String
 
-                        ValueType.INT -> cast(a, type.toString()) as Int > cast(
-                            b, type.toString()
-                        ) as Int
+                        ValueType.INT ->
+                            cast(a, type.toString()) as Int >
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Int
 
-                        ValueType.BOOL -> cast(
-                            a, type.toString()
-                        ) as Boolean > cast(b, type.toString()) as Boolean
+                        ValueType.BOOL ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as Boolean > cast(b, type.toString()) as Boolean
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
 
-            fun isGreaterThanOrEqual(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun isGreaterThanOrEqual(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     when (type) {
-                        ValueType.TEXT -> cast(
-                            a, type.toString()
-                        ) as String >= cast(b, type.toString()) as String
+                        ValueType.TEXT ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as String >= cast(b, type.toString()) as String
 
-                        ValueType.INT -> cast(a, type.toString()) as Int >= cast(
-                            b, type.toString()
-                        ) as Int
+                        ValueType.INT ->
+                            cast(a, type.toString()) as Int >=
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Int
 
-                        ValueType.BOOL -> cast(
-                            a, type.toString()
-                        ) as Boolean >= cast(b, type.toString()) as Boolean
+                        ValueType.BOOL ->
+                            cast(
+                                a,
+                                type.toString(),
+                            ) as Boolean >= cast(b, type.toString()) as Boolean
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
 
-            fun isLessThan(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun isLessThan(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     when (type) {
-                        ValueType.TEXT -> (cast(
-                            a, type.toString()
-                        ) as String) < (cast(b, type.toString()) as String)
+                        ValueType.TEXT ->
+                            (
+                                cast(
+                                    a,
+                                    type.toString(),
+                                ) as String
+                            ) < (cast(b, type.toString()) as String)
 
-                        ValueType.INT -> (cast(
-                            a, type.toString()
-                        ) as Int) < (cast(b, type.toString()) as Int)
+                        ValueType.INT ->
+                            (
+                                cast(
+                                    a,
+                                    type.toString(),
+                                ) as Int
+                            ) < (cast(b, type.toString()) as Int)
 
-                        ValueType.BOOL -> (cast(
-                            a, type.toString()
-                        ) as Boolean) < (cast(b, type.toString()) as Boolean)
+                        ValueType.BOOL ->
+                            (
+                                cast(
+                                    a,
+                                    type.toString(),
+                                ) as Boolean
+                            ) < (cast(b, type.toString()) as Boolean)
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
 
-            fun isLessThanOrEqual(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun isLessThanOrEqual(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     when (type) {
-                        ValueType.TEXT -> (cast(
-                            a, type.toString()
-                        ) as String) <= (cast(b, type.toString()) as String)
+                        ValueType.TEXT ->
+                            (
+                                cast(
+                                    a,
+                                    type.toString(),
+                                ) as String
+                            ) <= (cast(b, type.toString()) as String)
 
-                        ValueType.INT -> (cast(a, type.toString()) as Int) <= (cast(
-                            b, type.toString()
-                        ) as Int)
+                        ValueType.INT ->
+                            (cast(a, type.toString()) as Int) <= (
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Int
+                            )
 
-                        ValueType.BOOL -> (cast(
-                            a, type.toString()
-                        ) as Boolean) <= (cast(b, type.toString()) as Boolean)
+                        ValueType.BOOL ->
+                            (
+                                cast(
+                                    a,
+                                    type.toString(),
+                                ) as Boolean
+                            ) <= (cast(b, type.toString()) as Boolean)
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
 
-            fun contains(a: Any, b: Any, type: ValueType): Boolean {
-                return try {
+            fun contains(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean =
+                try {
                     val castedA = cast(a, "ARRAY") as List<*>
                     when (type) {
-                        ValueType.TEXT -> castedA.contains(
-                            cast(
-                                b, type.toString()
-                            ) as String
-                        )
+                        ValueType.TEXT ->
+                            castedA.contains(
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as String,
+                            )
 
-                        ValueType.INT -> castedA.contains(
-                            cast(
-                                b, type.toString()
-                            ) as Int
-                        )
+                        ValueType.INT ->
+                            castedA.contains(
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Int,
+                            )
 
-                        ValueType.BOOL -> castedA.contains(
-                            cast(
-                                b, type.toString()
-                            ) as Boolean
-                        )
+                        ValueType.BOOL ->
+                            castedA.contains(
+                                cast(
+                                    b,
+                                    type.toString(),
+                                ) as Boolean,
+                            )
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
                     false
                 }
-            }
         }
     }
 
-    private fun isValuePresent(value: Any?): Boolean {
-        return when (value) {
+    private fun isValuePresent(value: Any?): Boolean =
+        when (value) {
             null -> false
             is String -> value.isNotEmpty()
             else -> false
         }
-    }
 }

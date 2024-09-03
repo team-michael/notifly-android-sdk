@@ -19,9 +19,7 @@ class InAppMessagePrefs {
         InAppMessageManager.campaignRevalidationIntervalMillis = interval
     }
 
-    fun getCampaignRevalidationIntervalMillis(): Long {
-        return InAppMessageManager.campaignRevalidationIntervalMillis
-    }
+    fun getCampaignRevalidationIntervalMillis(): Long = InAppMessageManager.campaignRevalidationIntervalMillis
 
     /**
      * Sets the intent flags for opening the in-app link.
@@ -31,7 +29,5 @@ class InAppMessagePrefs {
         intentFlagsForInAppLinkOpening = flags
     }
 
-    fun getIntentFlagsForInAppLinkOpening(): Int? {
-        return intentFlagsForInAppLinkOpening
-    }
+    fun getIntentFlagsForInAppLinkOpening(): Int? = intentFlagsForInAppLinkOpening
 }

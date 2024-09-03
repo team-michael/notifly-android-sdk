@@ -65,7 +65,6 @@ import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.isAccessible
 
 class SampleActivity : ComponentActivity() {
-
     companion object {
         const val TAG = "NotiflySample"
         private const val PERMISSION_REQUEST_CODE = 101
@@ -80,7 +79,8 @@ class SampleActivity : ComponentActivity() {
             NotiflyAndroidSDKTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     SampleVerticalList(BuildConfig.NOTIFLY_USERNAME, BuildConfig.NOTIFLY_PASSWORD)
                 }
@@ -89,61 +89,73 @@ class SampleActivity : ComponentActivity() {
     }
 
     // Declare the launcher at the top of your Activity/Fragment:
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // FCM SDK (and your app) can post notifications.
-        } else {
-            // TODO: Inform user that that your app will not show notifications.
-            // Show alert dialog
-            AlertDialog.Builder(this).setTitle("Notification permission")
-                .setMessage("Michael requires notification permission to work properly.")
-                .setPositiveButton("OK") { dialog, _ ->
-                    dialog.dismiss()
-                }.show()
+    private val requestPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                // FCM SDK (and your app) can post notifications.
+            } else {
+                // TODO: Inform user that that your app will not show notifications.
+                // Show alert dialog
+                AlertDialog
+                    .Builder(this)
+                    .setTitle("Notification permission")
+                    .setMessage("Michael requires notification permission to work properly.")
+                    .setPositiveButton("OK") { dialog, _ ->
+                        dialog.dismiss()
+                    }.show()
+            }
         }
-    }
 
     private fun askNotificationPermission() {
         // This is only necessary for API level >= 33 (TIRAMISU)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS,
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 // FCM SDK (and your app) can post notifications.
-                Toast.makeText(this, "Notification permission already granted!", Toast.LENGTH_SHORT)
+                Toast
+                    .makeText(this, "Notification permission already granted!", Toast.LENGTH_SHORT)
                     .show()
             } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
                 // Display an educational UI explaining to the user the features that will be enabled
                 // by them granting the POST_NOTIFICATION permission. This UI should provide the user
                 // "OK" and "No thanks" buttons. If the user selects "OK," directly request the permission.
                 // If the user selects "No thanks," allow the user to continue without notifications.
-                AlertDialog.Builder(this).setTitle("Permission needed")
+                AlertDialog
+                    .Builder(this)
+                    .setTitle("Permission needed")
                     .setMessage("This app needs the notification permission to send you notifications.")
                     .setPositiveButton("ok") { _, _ ->
                         // directly request the permission
                         ActivityCompat.requestPermissions(
                             this,
                             arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                            PERMISSION_REQUEST_CODE
+                            PERMISSION_REQUEST_CODE,
                         )
                     }.setNegativeButton("No thanks") { dialog, _ ->
                         dialog.dismiss()
-                    }.create().show()
+                    }.create()
+                    .show()
             } else {
                 // Directly ask for the permission
                 ActivityCompat.requestPermissions(
-                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_REQUEST_CODE
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    PERMISSION_REQUEST_CODE,
                 )
             }
         }
     }
 
-
     @Composable
-    fun LabelTextRow(label: String, text: String) {
+    fun LabelTextRow(
+        label: String,
+        text: String,
+    ) {
         val context = LocalContext.current
         val stateText = remember { mutableStateOf(text) }
 
@@ -151,14 +163,17 @@ class SampleActivity : ComponentActivity() {
             stateText.value = text
         }
 
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = {
-                    copyTextToClipboard(context, label, stateText.value)
-                })
-            }) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onLongPress = {
+                            copyTextToClipboard(context, label, stateText.value)
+                        })
+                    },
+        ) {
             Text(
                 text = label,
                 fontSize = 12.sp,
@@ -176,7 +191,10 @@ class SampleActivity : ComponentActivity() {
     }
 
     @Composable
-    fun LabelTextColumn(label: String, text: String) {
+    fun LabelTextColumn(
+        label: String,
+        text: String,
+    ) {
         val context = LocalContext.current
         val stateText = remember { mutableStateOf(text) }
 
@@ -184,14 +202,17 @@ class SampleActivity : ComponentActivity() {
             stateText.value = text
         }
 
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = {
-                    copyTextToClipboard(context, label, stateText.value)
-                })
-            }) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onLongPress = {
+                            copyTextToClipboard(context, label, stateText.value)
+                        })
+                    },
+        ) {
             Text(
                 text = label,
                 fontSize = 12.sp,
@@ -202,15 +223,19 @@ class SampleActivity : ComponentActivity() {
                 text = text,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Normal,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
             )
         }
     }
 
     @Composable
-    fun NotiflyAuthenticatorSection(username: String, password: String) {
+    fun NotiflyAuthenticatorSection(
+        username: String,
+        password: String,
+    ) {
         val context = LocalContext.current
         val idToken = remember { mutableStateOf("loading...") }
         val fcmToken = remember { mutableStateOf("loading...") }
@@ -219,9 +244,11 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = idToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyAuthUtil", "getCognitoIdToken"
-                    )
+                    val (instance, function) =
+                        reflectObjectFunction(
+                            "tech.notifly.utils.NotiflyAuthUtil",
+                            "getCognitoIdToken",
+                        )
                     val token = function.callSuspend(instance, username, password) as String?
 
                     if (token != null) {
@@ -241,9 +268,11 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = fcmToken) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyFirebaseUtil", "getFcmToken"
-                    )
+                    val (instance, function) =
+                        reflectObjectFunction(
+                            "tech.notifly.utils.NotiflyFirebaseUtil",
+                            "getFcmToken",
+                        )
                     val token = function.callSuspend(instance) as String?
 
                     if (token != null) {
@@ -263,9 +292,11 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) = reflectObjectFunction(
-                        "tech.notifly.utils.NotiflyAuthUtil", "getNotiflyUserId"
-                    )
+                    val (instance, function) =
+                        reflectObjectFunction(
+                            "tech.notifly.utils.NotiflyAuthUtil",
+                            "getNotiflyUserId",
+                        )
                     val userId = function.callSuspend(instance, context) as String
 
                     notiflyUserId.value = userId
@@ -288,11 +319,15 @@ class SampleActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun SampleVerticalList(username: String, password: String) {
+    fun SampleVerticalList(
+        username: String,
+        password: String,
+    ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
         ) {
             val context = LocalContext.current
             var userId: String by remember { mutableStateOf("") }
@@ -309,16 +344,19 @@ class SampleActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         try {
-                            val (instance, function) = reflectObjectFunction(
-                                "tech.notifly.inapp.InAppMessageManager", "sync"
-                            )
+                            val (instance, function) =
+                                reflectObjectFunction(
+                                    "tech.notifly.inapp.InAppMessageManager",
+                                    "sync",
+                                )
                             CoroutineScope(Dispatchers.IO).launch {
                                 function.callSuspend(instance, context, false)
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error: $e")
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Force Sync State")
                 }
@@ -334,7 +372,8 @@ class SampleActivity : ComponentActivity() {
                         val dialog = builder.create()
                         dialog.show()
                         return@Button
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Get Timezone")
                 }
@@ -342,15 +381,18 @@ class SampleActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         try {
-                            val (instance, function) = reflectObjectFunction(
-                                "tech.notifly.utils.NotiflyTimerUtil", "getTimestampMicros"
-                            )
+                            val (instance, function) =
+                                reflectObjectFunction(
+                                    "tech.notifly.utils.NotiflyTimerUtil",
+                                    "getTimestampMicros",
+                                )
                             val timestampMicros = function.call(instance) as Long
                             Log.v("SampleApplication", "Timestamp Micros: $timestampMicros")
                         } catch (e: Exception) {
                             Log.e(TAG, "Error: $e")
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Get Timestamp Micros")
                 }
@@ -359,7 +401,7 @@ class SampleActivity : ComponentActivity() {
                     value = userId,
                     onValueChange = { userId = it },
                     label = { Text("User ID") },
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Button(
@@ -376,7 +418,8 @@ class SampleActivity : ComponentActivity() {
                             val dialog = builder.create()
                             dialog.show()
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Set User ID")
                 }
@@ -384,7 +427,8 @@ class SampleActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         Notifly.setUserId(context, null)
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Remove User ID")
                 }
@@ -393,7 +437,7 @@ class SampleActivity : ComponentActivity() {
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
                     label = { Text("Set Phone Number") },
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Button(
@@ -409,7 +453,8 @@ class SampleActivity : ComponentActivity() {
                             val dialog = builder.create()
                             dialog.show()
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Set Phone Number")
                 }
@@ -418,7 +463,7 @@ class SampleActivity : ComponentActivity() {
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Set Email") },
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Button(
@@ -434,7 +479,8 @@ class SampleActivity : ComponentActivity() {
                             val dialog = builder.create()
                             dialog.show()
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Set Email")
                 }
@@ -443,7 +489,7 @@ class SampleActivity : ComponentActivity() {
                     value = timezone,
                     onValueChange = { timezone = it },
                     label = { Text("Set Timezone") },
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Button(
@@ -459,7 +505,8 @@ class SampleActivity : ComponentActivity() {
                             val dialog = builder.create()
                             dialog.show()
                         }
-                    }, modifier = Modifier.padding(top = 8.dp)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(text = "Set Timezone")
                 }
@@ -486,20 +533,22 @@ class SampleActivity : ComponentActivity() {
                 value = propertyName,
                 onValueChange = { propertyName = it },
                 label = { Text("User Property Name") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = propertyValue,
                 onValueChange = { propertyValue = it },
                 label = { Text("User Property Value") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = selectedPropertyValueType != "NULL"
+                enabled = selectedPropertyValueType != "NULL",
             )
-            ExposedDropdownMenuBox(modifier = Modifier.padding(top = 8.dp),
+            ExposedDropdownMenuBox(
+                modifier = Modifier.padding(top = 8.dp),
                 expanded = propertyValueTypeSelectionExpanded,
                 onExpandedChange = {
                     propertyValueTypeSelectionExpanded = !propertyValueTypeSelectionExpanded
-                }) {
+                },
+            ) {
                 TextField(
                     // The `menuAnchor` modifier must be passed to the text field for correctness.
                     modifier = Modifier.menuAnchor(),
@@ -507,7 +556,11 @@ class SampleActivity : ComponentActivity() {
                     value = selectedPropertyValueType,
                     onValueChange = {},
                     label = { Text("Params Type") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propertyValueTypeSelectionExpanded) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = propertyValueTypeSelectionExpanded,
+                        )
+                    },
                     colors = ExposedDropdownMenuDefaults.textFieldColors(),
                 )
                 ExposedDropdownMenu(
@@ -538,18 +591,21 @@ class SampleActivity : ComponentActivity() {
                         val dialog = builder.create()
                         dialog.show()
                     } else {
-                        val value: Any? = when (selectedPropertyValueType) {
-                            "TEXT" -> propertyValue
-                            "INT" -> propertyValue.toIntOrNull()
-                            "BOOL" -> propertyValue.toBoolean()
-                            "LIST" -> propertyValue.split(",").map { it.trim() }
-                            else -> null
-                        }
+                        val value: Any? =
+                            when (selectedPropertyValueType) {
+                                "TEXT" -> propertyValue
+                                "INT" -> propertyValue.toIntOrNull()
+                                "BOOL" -> propertyValue.toBoolean()
+                                "LIST" -> propertyValue.split(",").map { it.trim() }
+                                else -> null
+                            }
                         Notifly.setUserProperties(
-                            context, mapOf(propertyName to value)
+                            context,
+                            mapOf(propertyName to value),
                         )
                     }
-                }, modifier = Modifier.padding(top = 8.dp)
+                },
+                modifier = Modifier.padding(top = 8.dp),
             ) {
                 Text(text = "Set User Property")
             }
@@ -571,13 +627,13 @@ class SampleActivity : ComponentActivity() {
                 value = eventName,
                 onValueChange = { eventName = it },
                 label = { Text("Event Name") },
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             )
             OutlinedTextField(
                 value = eventParamsStringified,
                 onValueChange = { eventParamsStringified = it },
                 label = { Text("Event Params (Stringified JSON)") },
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             )
             Button(onClick = {
                 try {
@@ -595,23 +651,28 @@ class SampleActivity : ComponentActivity() {
                     val eventParamsJSONObject = JSONObject(eventParamsStringified)
                     val eventParams = mutableMapOf<String, Any?>()
                     eventParamsJSONObject.keys().forEach { key ->
-                        eventParams[key] = eventParamsJSONObject.get(key).let { it ->
-                            when (it) {
-                                is String -> it
-                                is Int -> it
-                                is Boolean -> it
-                                is JSONArray -> {
-                                    val list = mutableListOf<Any>()
-                                    for (i in 0 until it.length()) {
-                                        list.add(it.get(i))
-                                    }
-                                    list.toList()
-                                }
+                        eventParams[key] =
+                            eventParamsJSONObject.get(key).let {
+                                when (it) {
+                                    is String -> it
 
-                                JSONObject.NULL -> null
-                                else -> throw IllegalArgumentException("Invalid value type")
+                                    is Int -> it
+
+                                    is Boolean -> it
+
+                                    is JSONArray -> {
+                                        val list = mutableListOf<Any>()
+                                        for (i in 0 until it.length()) {
+                                            list.add(it.get(i))
+                                        }
+                                        list.toList()
+                                    }
+
+                                    JSONObject.NULL -> null
+
+                                    else -> throw IllegalArgumentException("Invalid value type")
+                                }
                             }
-                        }
                     }
 
                     Log.v("SampleApplication", eventParams.toString())
@@ -619,11 +680,13 @@ class SampleActivity : ComponentActivity() {
                         Log.v("SampleApplication", "$it: ${eventParams[it]}")
                         Log.v(
                             "SampleApplication",
-                            "type of ${eventParams[it]} is ${eventParams[it]?.javaClass?.name ?: "null"}"
+                            "type of ${eventParams[it]} is ${eventParams[it]?.javaClass?.name ?: "null"}",
                         )
                     }
                     Notifly.trackEvent(
-                        context, eventName, eventParams
+                        context,
+                        eventName,
+                        eventParams,
                     )
                 } catch (e: JSONException) {
                     Log.w(TAG, "Error: $e")
@@ -647,27 +710,32 @@ class SampleActivity : ComponentActivity() {
         return Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Button(
                 onClick = { startActivity(Intent(context, PlaygroundActivity::class.java)) },
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             ) {
                 Text(text = "Go to Playground page")
             }
 
             Button(
                 onClick = { startActivity(Intent(context, WebViewActivity::class.java)) },
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             ) {
                 Text(text = "Go to WebView Page")
             }
 
             Button(
-                onClick = { /* Handle button click */ }, modifier = Modifier.padding(top = 8.dp)
+                onClick = { /* Handle button click */ },
+                modifier = Modifier.padding(top = 8.dp),
             ) {
                 Text(text = "Dummy Button")
             }
         }
     }
 
-    private fun copyTextToClipboard(context: Context, label: String, text: String) {
+    private fun copyTextToClipboard(
+        context: Context,
+        label: String,
+        text: String,
+    ) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText(label, text)
         clipboard.setPrimaryClip(clip)
@@ -675,11 +743,13 @@ class SampleActivity : ComponentActivity() {
     }
 
     private fun reflectObjectFunction(
-        className: String, functionName: String
+        className: String,
+        functionName: String,
     ): Pair<Any, KFunction<*>> {
         val objectClass: KClass<out Any> = Class.forName(className).kotlin
-        val objectInstance: Any = objectClass.objectInstance
-            ?: throw NullPointerException("Instance Not Found for $className")
+        val objectInstance: Any =
+            objectClass.objectInstance
+                ?: throw NullPointerException("Instance Not Found for $className")
         val objectFunction: KFunction<*> =
             objectClass.memberFunctions.find { it.name == functionName }
                 ?: throw NullPointerException("Function Not Found for $functionName")

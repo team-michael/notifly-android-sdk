@@ -6,7 +6,5 @@ import java.net.URL
 
 internal class HttpConnectionFactory : IHttpConnectionFactory {
     @Throws(IOException::class)
-    override fun newHttpURLConnection(url: String): HttpURLConnection {
-        return URL(url).openConnection() as HttpURLConnection
-    }
+    override fun newHttpURLConnection(url: String): HttpURLConnection = URL(url).openConnection() as HttpURLConnection
 }

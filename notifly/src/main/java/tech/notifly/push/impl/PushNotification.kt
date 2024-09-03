@@ -9,7 +9,9 @@ import tech.notifly.utils.NotiflyTimerUtil
 import java.security.SecureRandom
 
 enum class Importance {
-    HIGH, NORMAL, LOW
+    HIGH,
+    NORMAL,
+    LOW,
 }
 
 data class PushNotification(
@@ -31,14 +33,6 @@ data class PushNotification(
     override val url: String? = null,
     /** The URL of the image to display in the notification */
     override val imageUrl: String? = null,
-//    /** The ID of the notification channel to use */
-//    val channelId: String? = null,
-//    /** The notification's icon. Sets the notification icon to myicon for drawable resource myicon. If you don't send this key in the request, Notifly uses a default icon. */
-//    val icon: String? = null,
-//    /** The notification's icon color, expressed in #rrggbb format */
-//    val color: String? = null,
-//    /** The sound to play when the notification is shown. This is usually the name of a sound resource. */
-//    val sound: String? = null,
     /** Sent time of the notification in milliseconds */
     override val sentTime: Long,
     /** TTL of the notification in seconds */
@@ -47,6 +41,16 @@ data class PushNotification(
     override val customData: HashMap<String, String>,
     /** Raw data from the push notification */
     override val rawPayload: String,
+//    /** The ID of the notification channel to use */
+//    val channelId: String? = null,
+//    /** The notification's icon. */
+//    /** Sets the notification icon to myicon for drawable resource myicon. */
+//    /** If you don't send this key in the request, Notifly uses a default icon. */
+//    val icon: String? = null,
+//    /** The notification's icon color, expressed in #rrggbb format */
+//    val color: String? = null,
+//    /** The sound to play when the notification is shown. This is usually the name of a sound resource. */
+//    val sound: String? = null,
 ) : IPushNotification {
     companion object {
         private const val DEFAULT_TTL_IF_NOT_IN_PAYLOAD = 259_200
@@ -56,9 +60,7 @@ data class PushNotification(
 
         private val RESERVED_KEYS = listOf("from", "notification", "message_type")
 
-        private fun isReservedKey(key: String): Boolean {
-            return key.startsWith("google") || key.startsWith("gcm") || RESERVED_KEYS.contains(key) || key == NOTIFLY_INTERNAL_DATA_KEY
-        }
+        private fun isReservedKey(key: String): Boolean = key.startsWith("google") || key.startsWith("gcm") || RESERVED_KEYS.contains(key) || key == NOTIFLY_INTERNAL_DATA_KEY
 
         private fun bundleAsJSONObject(bundle: Bundle): JSONObject {
             val json = JSONObject()
@@ -93,17 +95,18 @@ data class PushNotification(
             val internalDataString = from.getString(NOTIFLY_INTERNAL_DATA_KEY)
             if (internalDataString == null) {
                 Logger.d(
-                    "FCM message does not have keys for push notification"
+                    "FCM message does not have keys for push notification",
                 )
                 return null
             }
 
-            val notiflyJSONObject = try {
-                JSONObject(internalDataString)
-            } catch (e: JSONException) {
-                Logger.e("Failed to parse internal data", e)
-                return null
-            }
+            val notiflyJSONObject =
+                try {
+                    JSONObject(internalDataString)
+                } catch (e: JSONException) {
+                    Logger.e("Failed to parse internal data", e)
+                    return null
+                }
 
             return PushNotification(
                 body = if (notiflyJSONObject.has("bd")) notiflyJSONObject.getString("bd") else null,
@@ -113,26 +116,34 @@ data class PushNotification(
                 notiflyMessageId = if (notiflyJSONObject.has("mid")) notiflyJSONObject.getString("mid") else null,
                 url = if (notiflyJSONObject.has("u")) notiflyJSONObject.getString("u") else null,
                 imageUrl = if (notiflyJSONObject.has("iu")) notiflyJSONObject.getString("iu") else null,
-                importance = if (notiflyJSONObject.has("imp")) {
-                    when (notiflyJSONObject.getString("imp")) {
-                        "high" -> Importance.HIGH
-                        "normal" -> Importance.NORMAL
-                        "low" -> Importance.LOW
-                        else -> null
-                    }
-                } else null,
+                importance =
+                    if (notiflyJSONObject.has("imp")) {
+                        when (notiflyJSONObject.getString("imp")) {
+                            "high" -> Importance.HIGH
+                            "normal" -> Importance.NORMAL
+                            "low" -> Importance.LOW
+                            else -> null
+                        }
+                    } else {
+                        null
+                    },
                 disableBadge = if (notiflyJSONObject.has("db")) notiflyJSONObject.getBoolean("db") else null,
                 // The below fields are not yet supported by the Notifly SDK
 //                channelId = if (notiflyJSONObject.has("chid")) notiflyJSONObject.getString("chid") else null,
 //                icon = if (notiflyJSONObject.has("ic")) notiflyJSONObject.getString("ic") else null,
 //                color = if (notiflyJSONObject.has("col")) notiflyJSONObject.getString("col") else null,
 //                sound = if (notiflyJSONObject.has("sd")) notiflyJSONObject.getString("sd") else null,
-                sentTime = if (from.containsKey(GOOGLE_SENT_TIME_KEY)) from.getLong(
-                    GOOGLE_SENT_TIME_KEY
-                ) else NotiflyTimerUtil.getTimestampMillis(),
+                sentTime =
+                    if (from.containsKey(GOOGLE_SENT_TIME_KEY)) {
+                        from.getLong(
+                            GOOGLE_SENT_TIME_KEY,
+                        )
+                    } else {
+                        NotiflyTimerUtil.getTimestampMillis()
+                    },
                 ttl = if (from.containsKey(GOOGLE_TTL_KEY)) from.getInt(GOOGLE_TTL_KEY) else DEFAULT_TTL_IF_NOT_IN_PAYLOAD,
                 customData = extractCustomDataFromJSONObject(from),
-                rawPayload = bundleAsJSONObject(from).toString()
+                rawPayload = bundleAsJSONObject(from).toString(),
             )
         }
     }

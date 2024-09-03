@@ -28,13 +28,12 @@ internal class HttpClient(
         url: String,
         body: JSONObject,
         headers: Map<String, String>?,
-    ): HttpResponse {
-        return makeRequest(url, "POST", body, headers, _options.httpTimeout)
-    }
+    ): HttpResponse = makeRequest(url, "POST", body, headers, _options.httpTimeout)
 
-    override suspend fun get(url: String, headers: Map<String, String>?): HttpResponse {
-        return makeRequest(url, "GET", null, headers, _options.httpGetTimeout)
-    }
+    override suspend fun get(
+        url: String,
+        headers: Map<String, String>?,
+    ): HttpResponse = makeRequest(url, "GET", null, headers, _options.httpGetTimeout)
 
     private suspend fun makeRequest(
         url: String,
@@ -65,120 +64,120 @@ internal class HttpClient(
     ): HttpResponse {
         var retVal: HttpResponse? = null
 
-        val job = GlobalScope.launch(Dispatchers.IO) {
-            var httpResponse = -1
-            var con: HttpURLConnection? = null
+        val job =
+            GlobalScope.launch(Dispatchers.IO) {
+                var httpResponse = -1
+                var con: HttpURLConnection? = null
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                TrafficStats.setThreadStatsTag(THREAD_ID)
-            }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    TrafficStats.setThreadStatsTag(THREAD_ID)
+                }
 
-            try {
-                con = _connectionFactory.newHttpURLConnection(url)
+                try {
+                    con = _connectionFactory.newHttpURLConnection(url)
 
-                con.useCaches = false
-                con.connectTimeout = timeout
-                con.readTimeout = timeout
+                    con.useCaches = false
+                    con.connectTimeout = timeout
+                    con.readTimeout = timeout
 
-                val sdkVersion = NotiflySdkWrapperInfo.getSdkVersion()
-                val sdkType = NotiflySdkWrapperInfo.getSdkType()
-                con.setRequestProperty(
-                    "X-Notifly-SDK-Version", "notifly/android/${NotiflySdkInfo.getSdkVersion()}"
-                )
-                if (sdkVersion !== null && sdkType !== null) {
+                    val sdkVersion = NotiflySdkWrapperInfo.getSdkVersion()
+                    val sdkType = NotiflySdkWrapperInfo.getSdkType()
                     con.setRequestProperty(
-                        "X-Notifly-SDK-Wrapper",
-                        "notifly/${sdkType.toLowerCaseName()}/${sdkVersion}"
+                        "X-Notifly-SDK-Version",
+                        "notifly/android/${NotiflySdkInfo.getSdkVersion()}",
                     )
-                }
-
-                if (jsonBody != null) {
-                    con.doInput = true
-                }
-
-                if (method != "GET") {
-                    con.setRequestProperty("Content-Type", "application/json;charset=UTF-8")
-                    con.requestMethod = method
-                    con.doOutput = true
-                }
-
-                if (headers != null) {
-                    for ((key, value) in headers) {
-                        con.setRequestProperty(key, value)
-                    }
-                }
-
-                Logger.d("HttpClient: $url/$method - Request Headers: ${con.requestProperties}")
-
-                if (jsonBody != null) {
-                    val strJsonBody = jsonBody.toString()
-                    Logger.d("HttpClient: $url/$method - $strJsonBody")
-
-                    val sendBytes = strJsonBody.toByteArray(charset("UTF-8"))
-                    con.setFixedLengthStreamingMode(sendBytes.size)
-                    val outputStream = con.outputStream
-                    outputStream.write(sendBytes)
-                } else {
-                    Logger.d("HttpClient: $url/$method")
-                }
-
-                // Network request is made from getResponseCode()
-                httpResponse = con.responseCode
-
-                when (httpResponse) {
-                    HttpURLConnection.HTTP_ACCEPTED, HttpURLConnection.HTTP_CREATED, HttpURLConnection.HTTP_OK -> {
-                        val inputStream = con.inputStream
-                        val scanner = Scanner(inputStream, "UTF-8")
-                        val json = if (scanner.useDelimiter("\\A").hasNext()) scanner.next() else ""
-                        scanner.close()
-
-                        Logger.d("HttpClient: $url/$method - Status:$httpResponse, Response: $json")
-
-                        retVal = HttpResponse(httpResponse, json)
+                    if (sdkVersion !== null && sdkType !== null) {
+                        con.setRequestProperty(
+                            "X-Notifly-SDK-Wrapper",
+                            "notifly/${sdkType.toLowerCaseName()}/$sdkVersion",
+                        )
                     }
 
-                    else -> {
-                        Logger.e("HttpClient: $url/$method - Failed Status:$httpResponse")
+                    if (jsonBody != null) {
+                        con.doInput = true
+                    }
 
-                        var inputStream = con.errorStream
-                        if (inputStream == null) {
-                            inputStream = con.inputStream
+                    if (method != "GET") {
+                        con.setRequestProperty("Content-Type", "application/json;charset=UTF-8")
+                        con.requestMethod = method
+                        con.doOutput = true
+                    }
+
+                    if (headers != null) {
+                        for ((key, value) in headers) {
+                            con.setRequestProperty(key, value)
                         }
+                    }
 
-                        var jsonResponse: String? = null
-                        if (inputStream != null) {
+                    Logger.d("HttpClient: $url/$method - Request Headers: ${con.requestProperties}")
+
+                    if (jsonBody != null) {
+                        val strJsonBody = jsonBody.toString()
+                        Logger.d("HttpClient: $url/$method - $strJsonBody")
+
+                        val sendBytes = strJsonBody.toByteArray(charset("UTF-8"))
+                        con.setFixedLengthStreamingMode(sendBytes.size)
+                        val outputStream = con.outputStream
+                        outputStream.write(sendBytes)
+                    } else {
+                        Logger.d("HttpClient: $url/$method")
+                    }
+
+                    // Network request is made from getResponseCode()
+                    httpResponse = con.responseCode
+
+                    when (httpResponse) {
+                        HttpURLConnection.HTTP_ACCEPTED, HttpURLConnection.HTTP_CREATED, HttpURLConnection.HTTP_OK -> {
+                            val inputStream = con.inputStream
                             val scanner = Scanner(inputStream, "UTF-8")
-                            jsonResponse =
-                                if (scanner.useDelimiter("\\A").hasNext()) scanner.next() else ""
+                            val json = if (scanner.useDelimiter("\\A").hasNext()) scanner.next() else ""
                             scanner.close()
-                            Logger.d("HttpClient: $url/$method - Status:$httpResponse, Response: $jsonResponse")
-                        } else {
-                            Logger.d("HttpClient: $url/$method - Status:$httpResponse, No Response Body")
+
+                            Logger.d("HttpClient: $url/$method - Status:$httpResponse, Response: $json")
+
+                            retVal = HttpResponse(httpResponse, json)
                         }
 
-                        retVal = HttpResponse(httpResponse, jsonResponse)
-                    }
-                }
-            } catch (e: Throwable) {
-                if (e is ConnectException || e is UnknownHostException) {
-                    Logger.i("HttpClient: Could not send last request, device is offline. Throwable: ${e.javaClass.name}")
-                } else {
-                    Logger.d("HttpClient: $method Error thrown from network stack. ", e)
-                }
+                        else -> {
+                            Logger.e("HttpClient: $url/$method - Failed Status:$httpResponse")
 
-                retVal = HttpResponse(httpResponse, null, e)
-            } finally {
-                con?.disconnect()
+                            var inputStream = con.errorStream
+                            if (inputStream == null) {
+                                inputStream = con.inputStream
+                            }
+
+                            var jsonResponse: String? = null
+                            if (inputStream != null) {
+                                val scanner = Scanner(inputStream, "UTF-8")
+                                jsonResponse =
+                                    if (scanner.useDelimiter("\\A").hasNext()) scanner.next() else ""
+                                scanner.close()
+                                Logger.d("HttpClient: $url/$method - Status:$httpResponse, Response: $jsonResponse")
+                            } else {
+                                Logger.d("HttpClient: $url/$method - Status:$httpResponse, No Response Body")
+                            }
+
+                            retVal = HttpResponse(httpResponse, jsonResponse)
+                        }
+                    }
+                } catch (e: Throwable) {
+                    if (e is ConnectException || e is UnknownHostException) {
+                        Logger.i("HttpClient: Could not send last request, device is offline. Throwable: ${e.javaClass.name}")
+                    } else {
+                        Logger.d("HttpClient: $method Error thrown from network stack. ", e)
+                    }
+
+                    retVal = HttpResponse(httpResponse, null, e)
+                } finally {
+                    con?.disconnect()
+                }
             }
-        }
 
         job.join()
         return retVal!!
     }
 
-    private fun getThreadTimeout(timeout: Int): Int {
-        return timeout + 5000
-    }
+    private fun getThreadTimeout(timeout: Int): Int = timeout + 5000
 
     companion object {
         private const val THREAD_ID = 10000

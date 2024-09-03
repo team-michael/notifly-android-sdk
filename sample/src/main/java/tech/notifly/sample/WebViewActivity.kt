@@ -38,32 +38,35 @@ class WebViewActivity : ComponentActivity() {
         setContent {
             NotiflyAndroidSDKTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     Column(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     ) {
                         MyWebView(url = "https://csjunha.com") {
                             webView = it
                         }
 
                         Column(
-                            modifier = Modifier
-                                .fillMaxHeight(0.25f)
-                                .fillMaxWidth(1.0f)
-                                .weight(0.2f)
-                                .background(Color.Gray),
+                            modifier =
+                                Modifier
+                                    .fillMaxHeight(0.25f)
+                                    .fillMaxWidth(1.0f)
+                                    .weight(0.2f)
+                                    .background(Color.Gray),
                             verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Button(onClick = { launchSampleActivity() }) {
                                 Text(text = "Go to SampleActivity")
                             }
                             Button(onClick = {
                                 Notifly.trackEvent(
-                                    this@WebViewActivity, "webview-test-event"
+                                    this@WebViewActivity,
+                                    "webview-test-event",
                                 )
                             }, modifier = Modifier.padding(top = 8.dp)) {
                                 Text(text = "WebView Test Event")
@@ -71,11 +74,13 @@ class WebViewActivity : ComponentActivity() {
                             Button(
                                 onClick = {
                                     Notifly.setUserProperties(
-                                        this@WebViewActivity, mapOf(
-                                            "testKey1" to "testValue1"
-                                        )
+                                        this@WebViewActivity,
+                                        mapOf(
+                                            "testKey1" to "testValue1",
+                                        ),
                                     )
-                                }, modifier = Modifier.padding(top = 8.dp)
+                                },
+                                modifier = Modifier.padding(top = 8.dp),
                             ) {
                                 Text(text = "Sample setUserProperties")
                             }
@@ -87,15 +92,19 @@ class WebViewActivity : ComponentActivity() {
     }
 
     @Composable
-    fun MyWebView(url: String, onWebViewCreated: (WebView) -> Unit) {
+    fun MyWebView(
+        url: String,
+        onWebViewCreated: (WebView) -> Unit,
+    ) {
         val context = LocalContext.current
-        val webView = remember {
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                webViewClient = WebViewClient()
-                loadUrl(url)
+        val webView =
+            remember {
+                WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    webViewClient = WebViewClient()
+                    loadUrl(url)
+                }
             }
-        }
 
         LaunchedEffect(Unit) {
             onWebViewCreated(webView)
@@ -104,7 +113,7 @@ class WebViewActivity : ComponentActivity() {
         AndroidView(
             factory = { webView },
             update = { it.loadUrl(url) },
-            modifier = Modifier.fillMaxHeight(0.75f)
+            modifier = Modifier.fillMaxHeight(0.75f),
         )
     }
 
