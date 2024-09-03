@@ -18,10 +18,10 @@ indent_size = 4
 [*.{kt,kts}]
 ktlint_code_style = ktlint_official
 ktlint_standard = enabled
-ktlint_ignore_back_ticked_identifier = true
+ktlint_standard_no-wildcard-imports = disabled
 ktlint_standard_no-consecutive-comments = disabled
+ktlint_ignore_back_ticked_identifier = true
 ktlint_function_naming_ignore_when_annotated_with = Composable
-
 # Experimental rules run by default run on the ktlint code base itself. Experimental rules should not be released if
 # we are not pleased ourselves with the results on the ktlint code base.
 ktlint_experimental = enabled

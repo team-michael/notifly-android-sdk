@@ -30,7 +30,7 @@ import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyNotificationChannelUtil
-import tech.notifly.utils.OSUtils
+import tech.notifly.utils.OSUtil
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.coroutines.resume
@@ -90,7 +90,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
 
         val pushNotification = PushNotification.fromIntentExtras(bundle)
         if (pushNotification != null) {
-            val isAppInForeground = OSUtils.isAppInForeground(context)
+            val isAppInForeground = OSUtil.isAppInForeground(context)
             showPushNotification(context, pushNotification, isAppInForeground)
         } else {
             Logger.d("FCM message is not valid or not a message from Notifly. Ignoring...")
