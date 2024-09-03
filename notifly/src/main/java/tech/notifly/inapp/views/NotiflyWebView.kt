@@ -30,7 +30,7 @@ import tech.notifly.inapp.models.EventLogData
 import tech.notifly.sdk.NotiflySdkPrefs
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyTimerUtil
-import tech.notifly.utils.OSUtils
+import tech.notifly.utils.OSUtil
 import kotlin.math.roundToInt
 
 class NotiflyWebView
@@ -380,12 +380,12 @@ class NotiflyWebView
                 }
 
             return if (uri != null) {
-                if (OSUtils.isInAppLink(uri)) {
+                if (OSUtil.isInAppLink(uri)) {
                     val intentFlags = NotiflySdkPrefs.inAppMessage.getIntentFlagsForInAppLinkOpening()
                     Logger.v("Opening in-app link with flags: $intentFlags")
-                    OSUtils.openURLInBrowserIntent(uri, intentFlags)
+                    OSUtil.openURLInBrowserIntent(uri, intentFlags)
                 } else {
-                    OSUtils.openURLInBrowserIntent(uri)
+                    OSUtil.openURLInBrowserIntent(uri)
                 }
             } else {
                 null

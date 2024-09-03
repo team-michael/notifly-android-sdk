@@ -13,7 +13,7 @@ import tech.notifly.push.interfaces.IPushNotification
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
-import tech.notifly.utils.OSUtils
+import tech.notifly.utils.OSUtil
 
 class NotificationOpenedActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,7 +96,7 @@ class NotificationOpenedActivity : AppCompatActivity() {
             }
 
         return if (uri != null) {
-            OSUtils.openURLInBrowserIntent(uri)
+            OSUtil.openURLInBrowserIntent(uri)
         } else {
             packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

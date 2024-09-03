@@ -11,7 +11,7 @@ import android.os.Bundle
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import tech.notifly.utils.EventProducer
 import tech.notifly.utils.Logger
-import tech.notifly.utils.OSUtils
+import tech.notifly.utils.OSUtil
 
 class ApplicationService :
     IApplicationService,
@@ -71,7 +71,7 @@ class ApplicationService :
                 override fun onConfigurationChanged(newConfig: Configuration) {
                     // If Activity contains the configChanges orientation flag, re-create the view this way
                     if (current != null &&
-                        OSUtils.hasConfigChangeFlag(
+                        OSUtil.hasConfigChangeFlag(
                             current!!,
                             ActivityInfo.CONFIG_ORIENTATION,
                         )
