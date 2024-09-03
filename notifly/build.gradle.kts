@@ -2,7 +2,6 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("maven-publish")
-    id("de.mannodermaus.android-junit5")
     id("org.jlleitschuh.gradle.ktlint")
     id("io.gitlab.arturbosch.detekt")
 }
@@ -18,7 +17,6 @@ android {
         targetSdk = extra["moduleCompileSdkVersion"] as Int
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArguments["runnerBuilder"] = "de.mannodermaus.junit5.AndroidJUnit5Builder"
 
         consumerProguardFiles("consumer-rules.pro")
         val version = project.property("version") as String
@@ -39,6 +37,9 @@ android {
         jvmTarget = "1.8"
     }
     testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
         unitTests.all {
             it.testLogging {
                 events("passed", "skipped", "failed")
@@ -58,14 +59,15 @@ dependencies {
     implementation("androidx.browser:browser:1.5.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.3")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
+    testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20210307")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("io.mockk:mockk:1.13.12")
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
 
     androidTestImplementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    androidTestImplementation("de.mannodermaus.junit5:android-test-core:1.2.2")
-    androidTestRuntimeOnly("de.mannodermaus.junit5:android-test-runner:1.2.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
 }
 
 afterEvaluate {

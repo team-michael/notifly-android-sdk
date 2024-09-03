@@ -3,15 +3,15 @@ package tech.notifly.http.impl
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
 import tech.notifly.http.HttpClientOptions
 
 class HttpClientTest {
-    @BeforeEach
+    @Before
     fun setUp() {
         // Do not log anything because JUnit tests do not have a android logger
         tech
