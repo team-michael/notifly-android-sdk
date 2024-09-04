@@ -41,6 +41,7 @@ android {
             isIncludeAndroidResources = true
         }
         unitTests.all {
+            it.jvmArgs("-noverify")
             it.testLogging {
                 events("passed", "skipped", "failed")
             }
@@ -65,6 +66,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.12")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+    testImplementation("org.jetbrains.kotlin:kotlin-reflect:2.0.0")
 
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
