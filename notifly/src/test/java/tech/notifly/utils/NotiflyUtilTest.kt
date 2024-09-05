@@ -1,10 +1,11 @@
 package tech.notifly.utils
 
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class NotiflyUtilTest {
-    @org.junit.jupiter.api.Test
+    @Test
     fun isValidProjectId() {
         assertTrue(NotiflyUtil.isValidProjectId("b80c3f0e2fbd5eb986df4f1d32ea2871"))
         assertFalse(NotiflyUtil.isValidProjectId("notifly"))
