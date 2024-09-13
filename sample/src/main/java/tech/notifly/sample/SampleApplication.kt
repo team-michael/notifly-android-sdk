@@ -2,14 +2,18 @@ package tech.notifly.sample
 
 import android.app.Application
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import tech.notifly.Notifly
 import tech.notifly.push.interfaces.INotificationClickEvent
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.push.interfaces.IPushNotification
+import java.net.URL
 
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -45,6 +49,24 @@ class SampleApplication : Application() {
                     builder.setColor(ContextCompat.getColor(applicationContext, R.color.purple_700))
                     return builder
                 }
+
+                override suspend fun postBuildAsync(
+                    builder: NotificationCompat.Builder,
+                    notification: IPushNotification,
+                ): NotificationCompat.Builder =
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val bitmap =
+                                URL(
+                                    notification.imageUrl,
+                                ).openConnection().getInputStream().use(BitmapFactory::decodeStream)
+                            builder.setLargeIcon(bitmap)
+                            builder
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            builder
+                        }
+                    }
             },
         )
 
