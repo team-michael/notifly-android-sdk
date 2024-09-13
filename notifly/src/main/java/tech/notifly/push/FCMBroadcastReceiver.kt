@@ -17,10 +17,9 @@ import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import tech.notifly.Notifly
 import tech.notifly.R
@@ -31,10 +30,7 @@ import tech.notifly.utils.Logger
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyNotificationChannelUtil
 import tech.notifly.utils.OSUtil
-import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class FCMBroadcastReceiver : BroadcastReceiver() {
     companion object {
@@ -54,6 +50,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+
     override fun onReceive(
         context: Context,
         intent: Intent,
@@ -72,17 +70,22 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             return
         }
 
-        try {
-            processFCMMessage(context, bundle)
-        } catch (e: Exception) {
-            Logger.e("FCMBroadcastReceiver onReceive failed", e)
+        val pendingResult = goAsync()
+        coroutineScope.launch {
+            try {
+                processFCMMessage(context, bundle)
+            } catch (e: Exception) {
+                Logger.e("FCMBroadcastReceiver onReceive failed", e)
+            } finally {
+                pendingResult.finish()
+            }
         }
 
         setSuccessfulResultCode()
     }
 
     @Throws(Exception::class)
-    private fun processFCMMessage(
+    private suspend fun processFCMMessage(
         context: Context,
         bundle: Bundle,
     ) {
@@ -120,7 +123,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         )
     }
 
-    private fun showPushNotification(
+    private suspend fun showPushNotification(
         context: Context,
         pushNotification: IPushNotification,
         wasAppInForeground: Boolean,
@@ -130,7 +133,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         val notificationId = pushNotification.androidNotificationId
         val notiflyMessageId = pushNotification.notiflyMessageId
         val imageUrl = pushNotification.imageUrl
-        val bitmap = runBlocking { loadImage(imageUrl) }
+        val bitmap = loadImage(imageUrl)
 
         val notificationOpenIntent =
             Intent(context, NotificationOpenedActivity::class.java).apply {
@@ -230,31 +233,15 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun getBitmapFromURL(src: String): Bitmap? =
+    private suspend fun loadImage(src: String?): Bitmap? =
         withContext(Dispatchers.IO) {
             try {
-                val url = URL(src)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.doInput = true
-                connection.connect()
-                val input = connection.inputStream
-                BitmapFactory.decodeStream(input)
+                src?.let {
+                    URL(it).openConnection().getInputStream().use(BitmapFactory::decodeStream)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
-            }
-        }
-
-    private suspend fun loadImage(imageUrl: String?): Bitmap? =
-        suspendCoroutine { continuation ->
-            if (imageUrl != null) {
-                GlobalScope.launch {
-                    val bitmap = getBitmapFromURL(imageUrl)
-                    Logger.d("FCMBroadcastReceiver bitmap: $bitmap")
-                    continuation.resume(bitmap)
-                }
-            } else {
-                continuation.resume(null)
             }
         }
 
