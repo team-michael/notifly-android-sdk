@@ -33,8 +33,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Wait for JitPack to recognize the new tag
-      - name: Wait for 10 seconds
-        run: sleep 10
+      - name: Wait for 60 seconds
+        run: sleep 60
 
       - name: Trigger JitPack Build
         run: |
