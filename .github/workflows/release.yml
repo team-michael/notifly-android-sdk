@@ -43,10 +43,10 @@ jobs:
           echo "Triggering JitPack build for ${{ github.event.inputs.version }}"
           MAX_RETRIES=3
           RETRY_COUNT=0
-          
+
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $JITPACK_BUILD_URL)
-            if [ $HTTP_STATUS -eq 200 ]; then
+            if [[ $HTTP_STATUS =~ ^[23][0-9][0-9]$ ]]; then
               echo "JitPack build triggered successfully for version ${{ github.event.inputs.version }}."
               exit 0
             elif [ $HTTP_STATUS -eq 404 ]; then
@@ -58,7 +58,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "Failed to trigger JitPack build after $MAX_RETRIES attempts."
           exit 1
 

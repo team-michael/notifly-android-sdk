@@ -6,5 +6,10 @@ interface INotificationInterceptor {
     fun postBuild(
         builder: NotificationCompat.Builder,
         notification: IPushNotification,
-    ): NotificationCompat.Builder
+    ): NotificationCompat.Builder = builder
+
+    suspend fun postBuildAsync(
+        builder: NotificationCompat.Builder,
+        notification: IPushNotification,
+    ): NotificationCompat.Builder = builder
 }
