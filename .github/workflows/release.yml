@@ -4,12 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to be released'
+        description: "Version to be released"
         required: true
 
 jobs:
   release:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -34,18 +33,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Wait for JitPack to recognize the new tag
-      - name: Wait for 10 seconds
-        run: sleep 10
+      - name: Wait for 60 seconds
+        run: sleep 60
 
       - name: Trigger JitPack Build
         run: |
           JITPACK_BUILD_URL="https://jitpack.io/com/github/team-michael/notifly-android-sdk/${{ github.event.inputs.version }}/build.log"
           echo "Triggering JitPack build for ${{ github.event.inputs.version }}"
-          MAX_RETRIES=3
+          MAX_RETRIES=10
           RETRY_COUNT=0
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $JITPACK_BUILD_URL)
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${JITPACK_BUILD_URL}?ts=$(date +%s)")
             if [[ $HTTP_STATUS =~ ^[23][0-9][0-9]$ ]]; then
               echo "JitPack build triggered successfully for version ${{ github.event.inputs.version }}."
               exit 0
