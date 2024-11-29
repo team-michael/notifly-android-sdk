@@ -19,6 +19,11 @@ object CommandDispatcher : ISdkLifecycleListener {
             }
 
             NotiflySdkState.READY -> {
+                val doesCommandNeedRefresh = command.commandType == CommandType.SET_USER_ID
+                if (doesCommandNeedRefresh) {
+                    NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+                }
+
                 command.execute()
             }
 

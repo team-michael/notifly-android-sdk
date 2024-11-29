@@ -278,35 +278,26 @@ object InAppMessageManager {
         context: Context,
         shouldMergeData: Boolean,
     ) {
-        try {
-            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+        val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
-            val syncStateResult = NotiflySyncStateUtil.fetchState(context)
+        campaigns = syncStateResult.campaigns
+        eventCounts =
+            if (shouldMergeData) {
+                NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
+            } else {
+                syncStateResult.eventCounts
+            }
+        userData =
+            if (shouldMergeData) {
+                userData.merge(syncStateResult.userData)
+            } else {
+                syncStateResult.userData
+            }
 
-            campaigns = syncStateResult.campaigns
-            eventCounts =
-                if (shouldMergeData) {
-                    NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
-                } else {
-                    syncStateResult.eventCounts
-                }
-            userData =
-                if (shouldMergeData) {
-                    userData.merge(syncStateResult.userData)
-                } else {
-                    syncStateResult.userData
-                }
-
-            Logger.d("InAppMessageManager fetched user state successfully.")
-            Logger.d("campaigns: $campaigns")
-            Logger.d("eventCounts: $eventCounts")
-            Logger.d("userData: $userData")
-
-            NotiflySdkStateManager.setState(NotiflySdkState.READY)
-        } catch (e: Exception) {
-            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
-            throw e
-        }
+        Logger.d("InAppMessageManager fetched user state successfully.")
+        Logger.d("campaigns: $campaigns")
+        Logger.d("eventCounts: $eventCounts")
+        Logger.d("userData: $userData")
     }
 
     private suspend fun syncCampaigns(context: Context) {
