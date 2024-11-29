@@ -143,16 +143,12 @@ object Notifly {
     }
 
     private suspend fun initializeInAppMessageManagerAndStartSession(context: Context) {
-        NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
-
         try {
             // Start Session
             // Set Required Properties from User
             InAppMessageManager.initialize(context)
-            NotiflySdkStateManager.setState(NotiflySdkState.READY)
         } catch (e: Exception) {
             Logger.e("Failed to initialize in app message manager:", e)
-            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
         }
 
         try {

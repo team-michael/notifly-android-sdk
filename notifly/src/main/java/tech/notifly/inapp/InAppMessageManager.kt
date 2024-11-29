@@ -82,9 +82,17 @@ object InAppMessageManager {
             return
         }
 
-        userData = UserData.getSkeleton(context)
-        sync(context, false)
-        isInitialized = true
+        try {
+            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+
+            userData = UserData.getSkeleton(context)
+            sync(context, false)
+            isInitialized = true
+
+            NotiflySdkStateManager.setState(NotiflySdkState.READY)
+        } catch (e: Exception) {
+            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+        }
     }
 
     @Throws(NullPointerException::class)
