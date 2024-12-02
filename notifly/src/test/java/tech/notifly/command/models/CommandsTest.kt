@@ -56,41 +56,43 @@ class CommandsTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `execute should call setState READY on success`() = runTest {
-        // Given
-        val payload = SetUserIdPayload(context, "newUserId")
-        val command = SetUserIdCommand(payload)
+    fun `execute should call setState READY on success`() =
+        runTest {
+            // Given
+            val payload = SetUserIdPayload(context, "newUserId")
+            val command = SetUserIdCommand(payload)
 
-        mockkObject(NotiflyUserUtil)
-        coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } returns Unit
+            mockkObject(NotiflyUserUtil)
+            coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } returns Unit
 
-        mockkObject(NotiflySdkStateManager)
-        coEvery { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }
+            mockkObject(NotiflySdkStateManager)
+            coEvery { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }
 
-        // When
-        command.execute()
+            // When
+            command.execute()
 
-        // Then
-        verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
-    }
+            // Then
+            verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
+        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `execute should call setState FAILED on failure`() = runTest {
-        // Given
-        val payload = SetUserIdPayload(context, "newUserId")
-        val command = SetUserIdCommand(payload)
+    fun `execute should call setState FAILED on failure`() =
+        runTest {
+            // Given
+            val payload = SetUserIdPayload(context, "newUserId")
+            val command = SetUserIdCommand(payload)
 
-        mockkObject(NotiflyUserUtil)
-        coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } throws Exception()
+            mockkObject(NotiflyUserUtil)
+            coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } throws Exception()
 
-        mockkObject(NotiflySdkStateManager)
-        coEvery { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }
+            mockkObject(NotiflySdkStateManager)
+            coEvery { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }
 
-        // When
-        command.execute()
+            // When
+            command.execute()
 
-        // Then
-        verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
-    }
+            // Then
+            verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
+        }
 }

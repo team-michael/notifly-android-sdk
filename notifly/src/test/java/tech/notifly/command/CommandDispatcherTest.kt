@@ -7,12 +7,10 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
-import tech.notifly.Notifly
 import tech.notifly.command.CommandDispatcher
 import tech.notifly.command.models.SetUserIdCommand
 import tech.notifly.command.models.SetUserIdPayload
@@ -52,25 +50,26 @@ class CommandDispatcherTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `dispatch SetUserIdCommand should set state to REFRESHING before setUserProperties when SdkState is READY`() = runTest {
-        // Given
-        val payload = SetUserIdPayload(context, "newUserId")
-        val command = SetUserIdCommand(payload)
+    fun `dispatch SetUserIdCommand should set state to REFRESHING before setUserProperties when SdkState is READY`() =
+        runTest {
+            // Given
+            val payload = SetUserIdPayload(context, "newUserId")
+            val command = SetUserIdCommand(payload)
 
-        mockkObject(NotiflySdkStateManager)
-        every { NotiflySdkStateManager.getState() } returns NotiflySdkState.READY
-        coEvery { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }
+            mockkObject(NotiflySdkStateManager)
+            every { NotiflySdkStateManager.getState() } returns NotiflySdkState.READY
+            coEvery { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }
 
-        mockkObject(NotiflyUserUtil)
-        coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } returns Unit
+            mockkObject(NotiflyUserUtil)
+            coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } returns Unit
 
-        // When
-        CommandDispatcher.dispatch(command)
+            // When
+            CommandDispatcher.dispatch(command)
 
-        // Then
-        coVerifyOrder {
-            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
-            NotiflyUserUtil.setUserProperties(context, mapOf(N.KEY_EXTERNAL_USER_ID to "newUserId"))
+            // Then
+            coVerifyOrder {
+                NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+                NotiflyUserUtil.setUserProperties(context, mapOf(N.KEY_EXTERNAL_USER_ID to "newUserId"))
+            }
         }
-    }
 }
