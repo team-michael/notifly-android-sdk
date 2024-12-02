@@ -77,6 +77,8 @@ class SetUserIdCommand(
                 if (shouldClearData) {
                     InAppMessageManager.clearUserState()
                 }
+
+                NotiflySdkStateManager.setState(NotiflySdkState.READY)
             } catch (e: Exception) {
                 Logger.e("[Notifly] setUserId failed", e)
                 NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
