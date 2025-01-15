@@ -292,12 +292,7 @@ class SampleActivity : ComponentActivity() {
         LaunchedEffect(key1 = notiflyUserId) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val (instance, function) =
-                        reflectObjectFunction(
-                            "tech.notifly.utils.NotiflyAuthUtil",
-                            "getNotiflyUserId",
-                        )
-                    val userId = function.callSuspend(instance, context) as String
+                    val userId = Notifly.getNotiflyUserId(context)
 
                     notiflyUserId.value = userId
                     Log.d(TAG, "Notifly User ID: $userId")

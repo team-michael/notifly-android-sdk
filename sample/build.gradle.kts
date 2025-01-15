@@ -69,7 +69,7 @@ android {
 
 dependencies {
     implementation(project(":notifly"))
-//    implementation("com.github.team-michael:notifly-android-sdk:1.12.0")
+//    implementation("com.github.team-michael:notifly-android-sdk:1.13.0")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.10")
