@@ -367,9 +367,7 @@ object Notifly {
      * @return A string representing the Notifly user ID
      */
     @JvmStatic
-    suspend fun getNotiflyUserId(context: Context): String {
-        return NotiflyAuthUtil.getNotiflyUserId(context)
-    }
+    suspend fun getNotiflyUserId(context: Context): String = NotiflyAuthUtil.getNotiflyUserId(context)
 
     /**
      * This is the internal method for setting the SDK version.
