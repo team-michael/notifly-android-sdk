@@ -33,6 +33,7 @@ import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
+import tech.notifly.utils.NotiflyAuthUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.NotiflyUtil
 
@@ -357,6 +358,17 @@ object Notifly {
     @JvmStatic
     fun setLogLevel(level: Int) {
         Logger.setLogLevel(level)
+    }
+
+    /**
+     * Returns the Notifly user ID for the current user.
+     *
+     * @param context The current application context
+     * @return A string representing the Notifly user ID
+     */
+    @JvmStatic
+    suspend fun getNotiflyUserId(context: Context): String {
+        return NotiflyAuthUtil.getNotiflyUserId(context)
     }
 
     /**
