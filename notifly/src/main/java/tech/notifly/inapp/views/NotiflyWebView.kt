@@ -52,8 +52,9 @@ class NotiflyWebView
             onPageFinishedCallback: () -> Unit,
             onReceivedErrorCallback: (errorMessage: String?) -> Unit,
         ) {
-            this.setLayerType(LAYER_TYPE_HARDWARE, null)
+            this.setLayerType(LAYER_TYPE_SOFTWARE, null)
             this.settings.javaScriptEnabled = true
+
             this.webViewClient =
                 object : WebViewClient() {
                     private var pageLoadedSuccessfully = true
