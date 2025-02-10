@@ -42,7 +42,7 @@ jobs:
       run: chmod +x ./gradlew
 
     - name: Gradle Wrapper Validation
-      uses: gradle/wrapper-validation-action@v1
+      uses: gradle/actions/wrapper-validation@v3
 
     - name: Run ktlint
       run: ./gradlew ktlintCheck
