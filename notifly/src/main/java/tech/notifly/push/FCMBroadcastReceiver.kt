@@ -21,7 +21,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import tech.notifly.Notifly
 import tech.notifly.R
 import tech.notifly.push.activities.NotificationOpenedActivity
@@ -34,15 +33,13 @@ import tech.notifly.utils.OSUtil
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.URL
-import kotlin.math.log
-import kotlin.system.measureTimeMillis
 
 class FCMBroadcastReceiver : BroadcastReceiver() {
     companion object {
         private const val FCM_RECEIVE_ACTION = "com.google.android.c2dm.intent.RECEIVE"
         private const val FCM_TYPE = "gcm"
         private const val MESSAGE_TYPE_EXTRA_KEY = "message_type"
-        private const val IMAGE_LOAD_TIMEOUT_MS = 1000L
+        private const val IMAGE_LOAD_TIMEOUT_MS = 5000L
 
         @Volatile
         var requestCodeCounter = 0
@@ -242,28 +239,30 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun loadImage(src: String?): Bitmap? = withContext(Dispatchers.IO) {
-        if (src == null) return@withContext null
-        try {
-            val url = URL(src)
-            val connection = url.openConnection().apply {
-                connectTimeout = IMAGE_LOAD_TIMEOUT_MS.toInt()
-                readTimeout = IMAGE_LOAD_TIMEOUT_MS.toInt()
+    private suspend fun loadImage(src: String?): Bitmap? =
+        withContext(Dispatchers.IO) {
+            if (src == null) return@withContext null
+            try {
+                val url = URL(src)
+                val connection =
+                    url.openConnection().apply {
+                        connectTimeout = IMAGE_LOAD_TIMEOUT_MS.toInt()
+                        readTimeout = IMAGE_LOAD_TIMEOUT_MS.toInt()
+                    }
+                connection.getInputStream().use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
+            } catch (e: ConnectException) {
+                Logger.w("Connection error", e)
+                null
+            } catch (e: SocketTimeoutException) {
+                Logger.w("Read timeout", e)
+                null
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
-            connection.getInputStream().use { inputStream ->
-                BitmapFactory.decodeStream(inputStream)
-            }
-        } catch (e: ConnectException) {
-            Logger.w("Connection error", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Logger.w("Read timeout", e)
-            null
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
-    }
 
     private fun setSuccessfulResultCode() {
         if (isOrderedBroadcast) {
