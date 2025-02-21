@@ -39,7 +39,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         private const val FCM_RECEIVE_ACTION = "com.google.android.c2dm.intent.RECEIVE"
         private const val FCM_TYPE = "gcm"
         private const val MESSAGE_TYPE_EXTRA_KEY = "message_type"
-        private const val IMAGE_LOAD_TIMEOUT_MS = 5000L
+        private const val CONNECT_TIMEOUT_MS = 1000L
+        private const val READ_TIMEOUT_MS = 3000L
 
         @Volatile
         var requestCodeCounter = 0
@@ -246,8 +247,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
                 val url = URL(src)
                 val connection =
                     url.openConnection().apply {
-                        connectTimeout = IMAGE_LOAD_TIMEOUT_MS.toInt()
-                        readTimeout = IMAGE_LOAD_TIMEOUT_MS.toInt()
+                        connectTimeout = CONNECT_TIMEOUT_MS.toInt()
+                        readTimeout = READ_TIMEOUT_MS.toInt()
                     }
                 connection.getInputStream().use { inputStream ->
                     BitmapFactory.decodeStream(inputStream)
