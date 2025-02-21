@@ -49,3 +49,11 @@ jobs:
 
     - name: Run tests
       run: ./gradlew :notifly:testDebugUnitTest --rerun-tasks
+
+    - name: Code Review GPT
+      uses: mattzcarey/code-review-gpt@v0.7.0
+      with:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GITHUB_TOKEN: ${{ github.token }}
+        MODEL: 'gpt-4o'
+        REVIEW_LANGUAGE: 'Korean'
