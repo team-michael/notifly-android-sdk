@@ -137,10 +137,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         val notificationId = pushNotification.androidNotificationId
         val notiflyMessageId = pushNotification.notiflyMessageId
         val imageUrl = pushNotification.imageUrl
-        val startTime = System.currentTimeMillis()
         val bitmap = loadImage(imageUrl)
-        val endTime = System.currentTimeMillis()
-        Logger.d("Bitmap Loaded in ${endTime - startTime}ms")
 
         val notificationOpenIntent =
             Intent(context, NotificationOpenedActivity::class.java).apply {
