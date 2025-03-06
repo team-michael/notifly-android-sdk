@@ -3,6 +3,7 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
+import org.json.JSONObject
 import tech.notifly.application.IApplicationService
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
@@ -15,6 +16,7 @@ import tech.notifly.inapp.models.TriggeringEventFilterUnit
 import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.UserData
 import tech.notifly.inapp.models.ValueType
+import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.services.NotiflyServiceProvider
@@ -537,56 +539,65 @@ object InAppMessageManager {
         }
 
         return when (operator) {
-            Operator.EQUALS ->
+            Operator.EQUALS -> {
                 Comparator.isEqual(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.NOT_EQUALS ->
+            Operator.NOT_EQUALS -> {
                 Comparator.isNotEqual(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.GREATER_THAN ->
+            Operator.GREATER_THAN -> {
                 Comparator.isGreaterThan(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.GREATER_THAN_OR_EQUAL ->
+            Operator.GREATER_THAN_OR_EQUAL -> {
                 Comparator.isGreaterThanOrEqual(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.LESS_THAN ->
+            Operator.LESS_THAN -> {
                 Comparator.isLessThan(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.LESS_THAN_OR_EQUAL ->
+            Operator.LESS_THAN_OR_EQUAL -> {
                 Comparator.isLessThanOrEqual(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.CONTAINS ->
+            Operator.CONTAINS -> {
                 Comparator.contains(
                     userAttributeValue,
                     value,
                     valueType,
                 )
+            }
 
-            else -> false // Should never happen
+            else -> {
+                false
+            } // Should never happen
         }
     }
 
@@ -641,56 +652,65 @@ object InAppMessageManager {
         }
 
         return when (operator) {
-            Operator.EQUALS ->
+            Operator.EQUALS -> {
                 Comparator.isEqual(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.NOT_EQUALS ->
+            Operator.NOT_EQUALS -> {
                 Comparator.isNotEqual(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.GREATER_THAN ->
+            Operator.GREATER_THAN -> {
                 Comparator.isGreaterThan(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.GREATER_THAN_OR_EQUAL ->
+            Operator.GREATER_THAN_OR_EQUAL -> {
                 Comparator.isGreaterThanOrEqual(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.LESS_THAN ->
+            Operator.LESS_THAN -> {
                 Comparator.isLessThan(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.LESS_THAN_OR_EQUAL ->
+            Operator.LESS_THAN_OR_EQUAL -> {
                 Comparator.isLessThanOrEqual(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            Operator.CONTAINS ->
+            Operator.CONTAINS -> {
                 Comparator.contains(
                     eventParamValue,
                     value,
                     valueType,
                 )
+            }
 
-            else -> false // Should never happen
+            else -> {
+                false
+            } // Should never happen
         }
     }
 
@@ -702,7 +722,9 @@ object InAppMessageManager {
                 type: String,
             ): Any =
                 when (type) {
-                    "TEXT" -> value as? String ?: value.toString()
+                    "TEXT" -> {
+                        value as? String ?: value.toString()
+                    }
 
                     "INT" -> {
                         when (value) {
@@ -714,7 +736,9 @@ object InAppMessageManager {
 
                     "BOOL" -> {
                         when (value) {
-                            is Boolean -> value
+                            is Boolean -> {
+                                value
+                            }
 
                             is String -> {
                                 when (value) {
@@ -724,13 +748,19 @@ object InAppMessageManager {
                                 }
                             }
 
-                            else -> throw ClassCastException()
+                            else -> {
+                                throw ClassCastException()
+                            }
                         }
                     }
 
-                    "ARRAY" -> value as? List<*> ?: throw ClassCastException()
+                    "ARRAY" -> {
+                        value as? List<*> ?: throw ClassCastException()
+                    }
 
-                    else -> throw ClassCastException("Unrecoverable type mismatch: invalid type $type")
+                    else -> {
+                        throw ClassCastException("Unrecoverable type mismatch: invalid type $type")
+                    }
                 }
 
             fun isEqual(
@@ -740,24 +770,27 @@ object InAppMessageManager {
             ): Boolean =
                 try {
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as String == cast(b, type.toString()) as String
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             cast(a, type.toString()) as Int ==
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Int
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as Boolean == cast(b, type.toString()) as Boolean
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -771,24 +804,27 @@ object InAppMessageManager {
             ): Boolean =
                 try {
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as String != cast(b, type.toString()) as String
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             cast(a, type.toString()) as Int !=
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Int
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as Boolean != cast(b, type.toString()) as Boolean
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -802,25 +838,28 @@ object InAppMessageManager {
             ): Boolean =
                 try {
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             cast(a, type.toString()) as String >
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as String
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             cast(a, type.toString()) as Int >
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Int
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as Boolean > cast(b, type.toString()) as Boolean
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -834,24 +873,27 @@ object InAppMessageManager {
             ): Boolean =
                 try {
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as String >= cast(b, type.toString()) as String
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             cast(a, type.toString()) as Int >=
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Int
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             cast(
                                 a,
                                 type.toString(),
                             ) as Boolean >= cast(b, type.toString()) as Boolean
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -865,29 +907,32 @@ object InAppMessageManager {
             ): Boolean =
                 try {
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             (
                                 cast(
                                     a,
                                     type.toString(),
                                 ) as String
                             ) < (cast(b, type.toString()) as String)
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             (
                                 cast(
                                     a,
                                     type.toString(),
                                 ) as Int
                             ) < (cast(b, type.toString()) as Int)
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             (
                                 cast(
                                     a,
                                     type.toString(),
                                 ) as Boolean
                             ) < (cast(b, type.toString()) as Boolean)
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -901,29 +946,32 @@ object InAppMessageManager {
             ): Boolean =
                 try {
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             (
                                 cast(
                                     a,
                                     type.toString(),
                                 ) as String
                             ) <= (cast(b, type.toString()) as String)
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             (cast(a, type.toString()) as Int) <= (
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Int
                             )
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             (
                                 cast(
                                     a,
                                     type.toString(),
                                 ) as Boolean
                             ) <= (cast(b, type.toString()) as Boolean)
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -938,29 +986,32 @@ object InAppMessageManager {
                 try {
                     val castedA = cast(a, "ARRAY") as List<*>
                     when (type) {
-                        ValueType.TEXT ->
+                        ValueType.TEXT -> {
                             castedA.contains(
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as String,
                             )
+                        }
 
-                        ValueType.INT ->
+                        ValueType.INT -> {
                             castedA.contains(
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Int,
                             )
+                        }
 
-                        ValueType.BOOL ->
+                        ValueType.BOOL -> {
                             castedA.contains(
                                 cast(
                                     b,
                                     type.toString(),
                                 ) as Boolean,
                             )
+                        }
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
@@ -975,4 +1026,22 @@ object InAppMessageManager {
             is String -> value.isNotEmpty()
             else -> false
         }
+
+    private val eventListeners = mutableListOf<IInAppMessageEventListener>()
+
+    fun addEventListener(listener: IInAppMessageEventListener) {
+        eventListeners.add(listener)
+    }
+
+    fun removeEventListener(listener: IInAppMessageEventListener) = eventListeners.remove(listener)
+
+    internal fun dispatchInAppMessageEvent(
+        eventName: String,
+        elementName: String,
+        extraData: JSONObject?,
+    ) {
+        eventListeners.forEach {
+            it.handleEvent(eventName, elementName, extraData)
+        }
+    }
 }
