@@ -12,7 +12,7 @@ interface IInAppMessageEventListener {
      */
     fun handleEvent(
         eventName: String,
-        elementName: String,
+        elementName: String?,
         extraData: JSONObject?,
     )
 }

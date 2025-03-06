@@ -1037,7 +1037,7 @@ object InAppMessageManager {
 
     internal fun dispatchInAppMessageEvent(
         eventName: String,
-        elementName: String,
+        elementName: String?,
         extraData: JSONObject?,
     ) {
         eventListeners.forEach {

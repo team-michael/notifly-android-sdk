@@ -138,6 +138,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 ),
             ),
         )
+        InAppMessageManager.dispatchInAppMessageEvent("in_app_message_show", null, null)
     }
 
     private fun onWebViewLoadedWithError(errorMessage: String?) {
