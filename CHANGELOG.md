@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.16.0] - 2025-03-10
 
-- Added `IInAppMessageEventListener` to provide a interface to listen events from In App Message WebView. 
+- Added `IInAppMessageEventListener` to provide a interface to listen events from InAppMessage WebView. 
 
 ## [1.15.0] - 2025-02-21
 
