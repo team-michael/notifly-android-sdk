@@ -1033,7 +1033,7 @@ object InAppMessageManager {
         eventListeners.add(listener)
     }
 
-    fun removeEventListener(listener: IInAppMessageEventListener) = eventListeners.remove(listener)
+    fun removeAllEventListeners() = eventListeners.clear()
 
     internal fun dispatchInAppMessageEvent(
         eventName: String,
