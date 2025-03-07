@@ -370,7 +370,7 @@ class NotiflyWebView
                         ),
                     ),
                 )
-                InAppMessageManager.dispatchInAppMessageEvent(eventName, buttonName, extraData)
+                InAppMessageManager.dispatchInAppMessageEvent(eventName, extraData)
             }
         }
 

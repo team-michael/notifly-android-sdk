@@ -1037,11 +1037,10 @@ object InAppMessageManager {
 
     internal fun dispatchInAppMessageEvent(
         eventName: String,
-        elementName: String?,
-        extraData: JSONObject?,
+        eventParams: JSONObject?,
     ) {
         eventListeners.forEach {
-            it.handleEvent(eventName, elementName, extraData)
+            it.handleEvent(eventName, eventParams)
         }
     }
 }

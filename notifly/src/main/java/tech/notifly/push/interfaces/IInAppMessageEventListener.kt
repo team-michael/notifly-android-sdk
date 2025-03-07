@@ -7,12 +7,10 @@ interface IInAppMessageEventListener {
      * Called when a user fires event from in app message.
      *
      * @param eventName,
-     * @param elementName
-     * @param extraData
+     * @param eventParams
      */
     fun handleEvent(
         eventName: String,
-        elementName: String?,
-        extraData: JSONObject?,
+        eventParams: JSONObject?,
     )
 }
