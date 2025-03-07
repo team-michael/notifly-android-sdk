@@ -76,10 +76,9 @@ class SampleApplication : Application() {
             object : IInAppMessageEventListener {
                 override fun handleEvent(
                     eventName: String,
-                    elementName: String?,
-                    extraData: JSONObject?,
+                    eventParams: JSONObject?,
                 ) {
-                    Log.d("SampleApplication", "InAppMessage event dispatched: $eventName, $elementName")
+                    Log.d("SampleApplication", "InAppMessage event dispatched: $eventName, $eventParams")
                 }
             },
         )
