@@ -1,12 +1,6 @@
 name: Android CI
 
 on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'sample/**'
-      - 'README.md'
-
   pull_request:
     branches: [ main ]
     paths-ignore:
@@ -53,7 +47,7 @@ jobs:
       run: ./gradlew :notifly:testDebugUnitTest --rerun-tasks
 
     - name: Code Review GPT
-      uses: mattzcarey/code-review-gpt@v0.7.0
+      uses: mattzcarey/code-review-gpt@v0.8.0
       with:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         GITHUB_TOKEN: ${{ github.token }}
