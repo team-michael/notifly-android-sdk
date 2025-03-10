@@ -8,7 +8,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import tech.notifly.Notifly
+import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.push.interfaces.INotificationClickEvent
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.push.interfaces.INotificationInterceptor
@@ -67,6 +69,17 @@ class SampleApplication : Application() {
                             builder
                         }
                     }
+            },
+        )
+
+        Notifly.addInAppMessageEventListener(
+            object : IInAppMessageEventListener {
+                override fun handleEvent(
+                    eventName: String,
+                    eventParams: JSONObject?,
+                ) {
+                    Log.d("SampleApplication", "InAppMessage event dispatched: $eventName, $eventParams")
+                }
             },
         )
 

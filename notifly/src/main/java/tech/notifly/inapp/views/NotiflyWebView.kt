@@ -25,6 +25,7 @@ import tech.notifly.command.models.SetUserPropertiesCommand
 import tech.notifly.command.models.SetUserPropertiesPayload
 import tech.notifly.command.models.TrackEventCommand
 import tech.notifly.command.models.TrackEventPayload
+import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.sdk.NotiflySdkPrefs
@@ -369,6 +370,7 @@ class NotiflyWebView
                         ),
                     ),
                 )
+                InAppMessageManager.dispatchInAppMessageEvent(eventName, extraData)
             }
         }
 
