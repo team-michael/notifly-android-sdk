@@ -1,12 +1,6 @@
 name: Android CI
 
 on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'sample/**'
-      - 'README.md'
-
   pull_request:
     branches: [ main ]
     paths-ignore:
