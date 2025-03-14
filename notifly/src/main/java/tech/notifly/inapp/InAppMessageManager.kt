@@ -3,7 +3,6 @@ package tech.notifly.inapp
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
-import org.json.JSONObject
 import tech.notifly.application.IApplicationService
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
@@ -1037,7 +1036,7 @@ object InAppMessageManager {
 
     internal fun dispatchInAppMessageEvent(
         eventName: String,
-        eventParams: JSONObject?,
+        eventParams: Map<String, Any?>?,
     ) {
         eventListeners.forEach {
             it.handleEvent(eventName, eventParams)
