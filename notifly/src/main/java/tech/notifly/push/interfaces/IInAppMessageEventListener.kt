@@ -1,7 +1,5 @@
 package tech.notifly.push.interfaces
 
-import org.json.JSONObject
-
 interface IInAppMessageEventListener {
     /**
      * Called when a user fires event from in app message.
@@ -11,6 +9,6 @@ interface IInAppMessageEventListener {
      */
     fun handleEvent(
         eventName: String,
-        eventParams: JSONObject?,
+        eventParams: Map<String, Any?>?,
     )
 }
