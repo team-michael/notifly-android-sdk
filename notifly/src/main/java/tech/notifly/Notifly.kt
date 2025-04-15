@@ -20,6 +20,7 @@ import tech.notifly.http.impl.HttpClient
 import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.push.PushNotificationManager
+import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.sdk.NotiflySdkControlToken
@@ -349,6 +350,15 @@ object Notifly {
     @JvmStatic
     fun addNotificationInterceptor(interceptor: INotificationInterceptor) {
         PushNotificationManager.addInterceptor(interceptor)
+    }
+
+    /**
+     * Adds listener for in app message event.
+     * @param listener The listener to add.
+     */
+    @JvmStatic
+    fun addInAppMessageEventListener(listener: IInAppMessageEventListener) {
+        InAppMessageManager.addEventListener(listener)
     }
 
     /**

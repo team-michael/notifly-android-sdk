@@ -25,6 +25,7 @@ import tech.notifly.command.models.SetUserPropertiesCommand
 import tech.notifly.command.models.SetUserPropertiesPayload
 import tech.notifly.command.models.TrackEventCommand
 import tech.notifly.command.models.TrackEventPayload
+import tech.notifly.inapp.InAppMessageManager
 import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.sdk.NotiflySdkPrefs
@@ -277,7 +278,13 @@ class NotiflyWebView
 
                         "main_button" -> {
                             Logger.d("In-app message main button clicked")
-                            logInAppMessageButtonClick("main_button_click", buttonName)
+                            logInAppMessageButtonClick(
+                                "main_button_click",
+                                buttonName,
+                                JSONObject().apply {
+                                    put("link", link)
+                                },
+                            )
                             if (link != null && link != "null") {
                                 Logger.d("In-app message main button link: link")
                                 val intent = getIntent(link)
@@ -355,6 +362,9 @@ class NotiflyWebView
                         "campaign_id" to eventLogData.campaignId,
                         "notifly_message_id" to eventLogData.notiflyMessageId,
                     )
+                if (extraData?.getString("link") != null) {
+                    eventParams["link"] = extraData.getString("link")
+                }
                 if (eventName == "survey_submit_button_click" && extraData != null) {
                     eventParams["notifly_extra_data"] = extraData
                 }
@@ -369,6 +379,7 @@ class NotiflyWebView
                         ),
                     ),
                 )
+                InAppMessageManager.dispatchInAppMessageEvent(eventName, eventParams)
             }
         }
 
