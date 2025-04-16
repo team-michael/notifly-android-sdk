@@ -26,6 +26,11 @@ class CommandsTest {
         context = mockk<Context>()
         setupSharedPreferences()
         setupLog()
+
+        // call remove user id to initialize user id context for sdkManager
+        val payload = SetUserIdPayload(context, null)
+        val command = SetUserIdCommand(payload)
+        command.execute()
     }
 
     private fun setupSharedPreferences() {
