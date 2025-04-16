@@ -95,16 +95,18 @@ class NotiflyInAppMessageActivity : Activity() {
             modalProperties?.optDouble("backgroundOpacity", DEFAULT_BACKGROUND_OPACITY)
                 ?: DEFAULT_BACKGROUND_OPACITY
         val backgroundColor = modalProperties?.optString("backgroundColor", null)
-                    
+
         if (backgroundColor != null) {
-            val backgroundColorInt = backgroundColor?.let {
-                try {
-                    Color.parseColor(it)
-                } catch (e: IllegalArgumentException) {
-                    Logger.e("Error parsing background color", e)
-                    Color.WHITE
+            val backgroundColorInt =
+                backgroundColor?.let {
+                    try {
+                        Color.parseColor(it)
+                    } catch (e: IllegalArgumentException) {
+                        Logger.e("Error parsing background color", e)
+                        Color.WHITE
+                    }
                 }
-            }
+
             backgroundColorInt?.let {
                 mNotiflyWebView!!.setBackgroundColor(it)
             }
