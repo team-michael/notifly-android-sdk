@@ -98,18 +98,14 @@ class NotiflyInAppMessageActivity : Activity() {
 
         if (backgroundColor != null) {
             val backgroundColorInt =
-                backgroundColor?.let {
-                    try {
-                        Color.parseColor(it)
-                    } catch (e: IllegalArgumentException) {
-                        Logger.e("Error parsing background color", e)
-                        Color.WHITE
-                    }
+                try {
+                    Color.parseColor(backgroundColor)
+                } catch (e: IllegalArgumentException) {
+                    Logger.e("Error parsing background color", e)
+                    Color.WHITE
                 }
 
-            backgroundColorInt?.let {
-                mNotiflyWebView!!.setBackgroundColor(it)
-            }
+            mNotiflyWebView?.setBackgroundColor(backgroundColorInt)
         }
 
         Logger.v("shouldInterceptTouchEvent: $shouldInterceptTouchEvent")

@@ -27,6 +27,10 @@ class CommandsTest {
         setupSharedPreferences()
         setupLog()
 
+        // call remove user id to initialize user id context for sdkManager
+        val payload = SetUserIdPayload(context, null)
+        val command = SetUserIdCommand(payload)
+        command.execute()
     }
 
     private fun setupSharedPreferences() {
@@ -81,7 +85,7 @@ class CommandsTest {
     fun `execute should call setState FAILED on failure`() =
         runTest {
             // Given
-            val payload = SetUserIdPayload(context, "newUserId2")
+            val payload = SetUserIdPayload(context, "newUserId")
             val command = SetUserIdCommand(payload)
 
             mockkObject(NotiflyUserUtil)
