@@ -60,27 +60,38 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
+        Logger.d("FCMBroadcastReceiver onReceive triggered with intent: $intent")
+
         val bundle = intent.extras
+        Logger.d("Intent extras: $bundle")
+
         if (bundle == null || "google.com/iid" == bundle.getString("from") || bundle.getString("notifly") == null) {
+            Logger.d("Bundle is null, from is IID, or notifly key is missing. Skipping.")
             return
         }
 
         if (!Notifly.initializeWithContext(context)) {
+            Logger.d("Notifly.initializeWithContext failed")
             return
         }
 
         if (!isFCMMessage(intent)) {
+            Logger.d("Intent is not FCM message")
             setSuccessfulResultCode()
             return
         }
 
+        Logger.d("Valid FCM message received")
+
         val pendingResult = goAsync()
         coroutineScope.launch {
             try {
+                Logger.d("Processing FCM message in coroutine")
                 processFCMMessage(context, bundle)
             } catch (e: Exception) {
                 Logger.e("FCMBroadcastReceiver onReceive failed", e)
             } finally {
+                Logger.d("Finishing async processing")
                 pendingResult.finish()
             }
         }
@@ -96,8 +107,11 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         Logger.d("FCMBroadcastReceiver intent: $bundle")
 
         val pushNotification = PushNotification.fromIntentExtras(bundle)
+        Logger.d("Parsed pushNotification: $pushNotification")
+
         if (pushNotification != null) {
             val isAppInForeground = OSUtil.isAppInForeground(context)
+            Logger.d("App is in foreground: $isAppInForeground")
             showPushNotification(context, pushNotification, isAppInForeground)
         } else {
             Logger.d("FCM message is not valid or not a message from Notifly. Ignoring...")
@@ -132,6 +146,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         pushNotification: IPushNotification,
         wasAppInForeground: Boolean,
     ) {
+        Logger.d("Preparing to show push notification: $pushNotification")
+
         val body = pushNotification.body
         val title = pushNotification.title
         val notificationId = pushNotification.androidNotificationId
@@ -147,6 +163,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             }
 
         requestCodeCounter++
+        Logger.d("Generated requestCode: $requestCodeCounter")
+
         val uniqueRequestCode =
             notiflyMessageId.hashCode().let {
                 if (it == 0) requestCodeCounter else it
@@ -161,6 +179,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Logger.d("Creating notification channels")
             NotiflyNotificationChannelUtil.createNotificationChannels(context)
         }
 
@@ -171,6 +190,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             )
         val priority = NotiflyNotificationChannelUtil.getSystemPriority(pushNotification.importance)
         val notificationIcon = getNotificationIcon(context)
+
+        Logger.d("Notification channelId: $channelId, priority: $priority, icon: $notificationIcon")
 
         val builder =
             NotificationCompat
@@ -185,6 +206,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         if (bitmap != null) {
+            Logger.d("Applying BigPictureStyle to notification")
             builder.setStyle(
                 NotificationCompat
                     .BigPictureStyle()
@@ -194,6 +216,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         }
 
         PushNotificationManager.applyPostBuild(builder, pushNotification)
+        Logger.d("Post build applied to builder")
 
         val notification = builder.build()
         Logger.d("FCMBroadcastReceiver notification: $notification")
@@ -204,6 +227,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
                 Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED
         ) {
+            Logger.d("POST_NOTIFICATIONS permission granted. Showing notification.")
             NotificationManagerCompat.from(context).notify(notificationId, notification)
             logPushDelivered(context, pushNotification, wasAppInForeground)
         } else {
@@ -239,6 +263,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
 
     private suspend fun loadImage(src: String?): Bitmap? =
         withContext(Dispatchers.IO) {
+            Logger.d("Loading image from URL: $src")
+
             if (src == null) return@withContext null
             try {
                 val url = URL(src)

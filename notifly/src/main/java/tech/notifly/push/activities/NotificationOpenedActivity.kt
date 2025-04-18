@@ -18,23 +18,31 @@ import tech.notifly.utils.OSUtil
 class NotificationOpenedActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Logger.d("NotificationOpenedActivity onCreate called")
         if (!Notifly.initializeWithContext(this)) {
+            Logger.w("Notifly initialization failed in onCreate")
             return
         }
+        Logger.d("Intent received in onCreate: $intent")
         handleIntent(intent)
         finish()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        Logger.d("NotificationOpenedActivity onNewIntent called")
         if (!Notifly.initializeWithContext(this)) {
+            Logger.w("Notifly initialization failed in onNewIntent")
             return
         }
+        Logger.d("Intent received in onNewIntent: $intent")
         intent?.let { handleIntent(it) }
         finish()
     }
 
     private fun handleIntent(intent: Intent) {
+        Logger.d("Handling intent in NotificationOpenedActivity: $intent")
+
         val notification =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 intent.getSerializableExtra("notification", IPushNotification::class.java)
@@ -45,14 +53,19 @@ class NotificationOpenedActivity : AppCompatActivity() {
             }
 
         if (notification == null) {
+            Logger.w("Notification object is null in intent extras")
             finish()
             return
         }
+
+        Logger.d("Extracted notification: $notification")
 
         val url = notification.url
         val campaignId = notification.campaignId
         val notiflyMessageId = notification.notiflyMessageId
         val wasAppInForeground = intent.getBooleanExtra("was_app_in_foreground", false)
+
+        Logger.d("Notification info - campaignId: $campaignId, notiflyMessageId: $notiflyMessageId, url: $url, wasAppInForeground: $wasAppInForeground")
 
         // Log the push click event
         NotiflyLogUtil.logEventNonBlocking(
@@ -68,19 +81,27 @@ class NotificationOpenedActivity : AppCompatActivity() {
             listOf(),
             true,
         )
+        Logger.d("Logged push_click event")
 
         // Fire callbacks for push click event
         PushNotificationManager.notificationOpened(notification)
+        Logger.d("PushNotificationManager.notificationOpened fired")
 
         try {
             val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
+            Logger.d("Application is in foreground: ${applicationService.isInForeground}")
             if (!applicationService.isInForeground) {
                 applicationService.entryState = ApplicationEntryAction.NOTIFICATION_CLICK
+                Logger.d("Set application entryState to NOTIFICATION_CLICK")
             }
             // Open the URL or launch the app
             val destinationIntent = getIntent(url)
+            Logger.d("Resolved destinationIntent: $destinationIntent")
             if (destinationIntent != null) {
+                Logger.d("Starting activity with intent: $destinationIntent")
                 startActivity(destinationIntent)
+            } else {
+                Logger.w("destinationIntent was null, cannot launch")
             }
         } catch (e: Exception) {
             Logger.w("Failed to open URL or launch app", e)
@@ -90,16 +111,22 @@ class NotificationOpenedActivity : AppCompatActivity() {
     private fun getIntent(url: String?): Intent? {
         val uri =
             if (url != null) {
-                Uri.parse(url.trim { it <= ' ' })
+                Uri.parse(url.trim { it <= ' ' }).also {
+                    Logger.d("Parsed URI from URL: $it")
+                }
             } else {
+                Logger.d("No URL provided, will try to open app launcher intent")
                 null
             }
 
         return if (uri != null) {
-            OSUtil.openURLInBrowserIntent(uri)
+            OSUtil.openURLInBrowserIntent(uri).also {
+                Logger.d("Created browser intent: $it")
+            }
         } else {
             packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                Logger.d("Created launch intent for package: $this")
             }
         }
     }
