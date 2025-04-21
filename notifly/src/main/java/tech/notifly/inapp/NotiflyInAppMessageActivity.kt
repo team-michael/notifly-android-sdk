@@ -94,9 +94,24 @@ class NotiflyInAppMessageActivity : Activity() {
         val backgroundOpacity =
             modalProperties?.optDouble("backgroundOpacity", DEFAULT_BACKGROUND_OPACITY)
                 ?: DEFAULT_BACKGROUND_OPACITY
+        val backgroundColor = modalProperties?.optString("backgroundColor", null)
+
+        if (backgroundColor != null) {
+            val backgroundColorInt =
+                try {
+                    Color.parseColor(backgroundColor)
+                } catch (e: IllegalArgumentException) {
+                    Logger.e("Error parsing background color", e)
+                    Color.WHITE
+                }
+
+            mNotiflyWebView?.setBackgroundColor(backgroundColorInt)
+        }
 
         Logger.v("shouldInterceptTouchEvent: $shouldInterceptTouchEvent")
         Logger.v("backgroundOpacity: $backgroundOpacity")
+        Logger.v("backgroundColor: $backgroundColor")
+
         setupTouchInterceptorLayout(
             shouldInterceptTouchEvent,
             backgroundOpacity,
