@@ -127,11 +127,44 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         )
     }
 
+    private fun logPushNotDelivered(
+        context: Context,
+        pushNotification: IPushNotification,
+    ) {
+        val campaignId = pushNotification.campaignId
+        val notiflyMessageId = pushNotification.notiflyMessageId
+
+        NotiflyLogUtil.logEventNonBlocking(
+            context,
+            "push_not_delivered",
+            mapOf(
+                "type" to "message_event",
+                "channel" to "push-notification",
+                "campaign_id" to campaignId,
+                "notifly_message_id" to notiflyMessageId,
+                "reason" to "missing POST_NOTIFICATIONS permission",
+            ),
+            listOf(),
+            true,
+        )
+    }
+
     private suspend fun showPushNotification(
         context: Context,
         pushNotification: IPushNotification,
         wasAppInForeground: Boolean,
     ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Logger.w("POST_NOTIFICATIONS permission is not granted. Notification will not be shown.")
+                logPushNotDelivered(context, pushNotification)
+                return
+            }
+        }
         val body = pushNotification.body
         val title = pushNotification.title
         val notificationId = pushNotification.androidNotificationId
@@ -199,16 +232,8 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         Logger.d("FCMBroadcastReceiver notification: $notification")
 
         // Show the notification
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            NotificationManagerCompat.from(context).notify(notificationId, notification)
-            logPushDelivered(context, pushNotification, wasAppInForeground)
-        } else {
-            Logger.w("POST_NOTIFICATIONS permission is not granted")
-        }
+        NotificationManagerCompat.from(context).notify(notificationId, notification)
+        logPushDelivered(context, pushNotification, wasAppInForeground)
     }
 
     private fun getNotificationIcon(context: Context): Int {

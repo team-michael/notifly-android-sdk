@@ -649,11 +649,17 @@ class SampleActivity : ComponentActivity() {
                         eventParams[key] =
                             eventParamsJSONObject.get(key).let {
                                 when (it) {
-                                    is String -> it
+                                    is String -> {
+                                        it
+                                    }
 
-                                    is Int -> it
+                                    is Int -> {
+                                        it
+                                    }
 
-                                    is Boolean -> it
+                                    is Boolean -> {
+                                        it
+                                    }
 
                                     is JSONArray -> {
                                         val list = mutableListOf<Any>()
@@ -663,9 +669,13 @@ class SampleActivity : ComponentActivity() {
                                         list.toList()
                                     }
 
-                                    JSONObject.NULL -> null
+                                    JSONObject.NULL -> {
+                                        null
+                                    }
 
-                                    else -> throw IllegalArgumentException("Invalid value type")
+                                    else -> {
+                                        throw IllegalArgumentException("Invalid value type")
+                                    }
                                 }
                             }
                     }
