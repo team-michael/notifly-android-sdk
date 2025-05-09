@@ -7,34 +7,31 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal object NotiflyDeviceUtil {
-    suspend fun getOsVersion(): String =
-        withContext(Dispatchers.IO) {
-            android
-                .os
-                .Build
-                .VERSION
-                .RELEASE
-        }
+    suspend fun getOsVersion(): String = withContext(Dispatchers.IO) {
+        android.os.Build.VERSION.RELEASE
+    }
 
     @Suppress("DEPRECATION")
-    suspend fun getAppVersion(context: Context): String =
-        withContext(Dispatchers.IO) {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            packageInfo.versionName
-        }
+    suspend fun getAppVersion(context: Context): String = withContext(Dispatchers.IO) {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        packageInfo.versionName
+    }
 
     @SuppressLint("HardwareIds")
-    suspend fun getExternalDeviceId(context: Context): String =
-        withContext(Dispatchers.IO) {
-            android.provider.Settings.Secure.getString(
-                context.contentResolver,
-                android
-                    .provider
-                    .Settings
-                    .Secure
-                    .ANDROID_ID,
-            )
-        }
+    suspend fun getExternalDeviceId(context: Context): String = withContext(Dispatchers.IO) {
+        android.provider.Settings.Secure.getString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+        )
+    }
+
+
+    fun shouldForceSoftwareRendering(): Boolean {
+        // https://www.gsmarena.com/samsung_galaxy_s25_ultra-13322.php
+        val manufacturer = Build.MANUFACTURER
+        val model = Build.MODEL
+        return manufacturer.equals("Samsung", ignoreCase = true) && model.startsWith("SM-S938", ignoreCase = true)
+    }
 
     fun getPlatform(): String = N.PLATFORM
 

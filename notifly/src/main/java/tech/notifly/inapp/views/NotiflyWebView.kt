@@ -30,6 +30,7 @@ import tech.notifly.inapp.InAppMessageUtils
 import tech.notifly.inapp.models.EventLogData
 import tech.notifly.sdk.NotiflySdkPrefs
 import tech.notifly.utils.Logger
+import tech.notifly.utils.NotiflyDeviceUtil
 import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.OSUtil
 import kotlin.math.roundToInt
@@ -53,8 +54,8 @@ class NotiflyWebView
             onPageFinishedCallback: () -> Unit,
             onReceivedErrorCallback: (errorMessage: String?) -> Unit,
         ) {
-            this.setLayerType(LAYER_TYPE_SOFTWARE, null)
             this.settings.javaScriptEnabled = true
+            initLayerType()
 
             this.webViewClient =
                 object : WebViewClient() {
@@ -130,6 +131,16 @@ class NotiflyWebView
             )
 
             this.setViewDimensions(modalProperties, context.resources.displayMetrics.density)
+        }
+
+        private fun initLayerType() {
+            if (NotiflyDeviceUtil.shouldForceSoftwareRendering()) {
+                // 2025-05-09: Galaxy S25 Ultra has a unknown bug with hardware-accelerated WebView
+                this.setLayerType(LAYER_TYPE_SOFTWARE, null)
+            }
+            else {
+                this.setLayerType(LAYER_TYPE_HARDWARE, null)
+            }
         }
 
         private fun setViewDimensions(
