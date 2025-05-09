@@ -47,7 +47,7 @@ internal object NotiflyDeviceUtil {
         }
 
     fun shouldForceSoftwareRendering(): Boolean {
-        // Currently, Samsung galaxy S25 series suffers from a hardware rendering issue
+        // 2025-05-09: Samsung galaxy S25 device family suffers from a hardware rendering issue
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
         return manufacturer.equals("Samsung", ignoreCase = true) &&

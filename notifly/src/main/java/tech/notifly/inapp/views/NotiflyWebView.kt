@@ -135,7 +135,6 @@ class NotiflyWebView
 
         private fun initLayerType() {
             if (NotiflyDeviceUtil.shouldForceSoftwareRendering()) {
-                // 2025-05-09: Galaxy S25 Ultra has a unknown bug with hardware-accelerated WebView
                 this.setLayerType(LAYER_TYPE_SOFTWARE, null)
             } else {
                 this.setLayerType(LAYER_TYPE_HARDWARE, null)
