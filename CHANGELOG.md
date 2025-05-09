@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.17.1] - 2025-05-09
 
-- Force software rendering for in-app message WebView to avoid hardware acceleration issues on Samsung Galaxy S25 Ultra.
+- Force software rendering for in-app message WebView to avoid hardware acceleration issues on Samsung Galaxy S25 device family.
 
 ## [1.17.0] - 2025-04-16
 

@@ -7,6 +7,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal object NotiflyDeviceUtil {
+    private val MODELS_TO_FORCE_SOFTWARE_RENDERING = listOf(
+        "SM-S938", // Samsung Galaxy S25 Ultra
+        "SM-S936", // Samsung Galaxy S25+,
+        "SM-S931" // Samsung Galaxy S25
+    )
+
     suspend fun getOsVersion(): String = withContext(Dispatchers.IO) {
         android.os.Build.VERSION.RELEASE
     }
@@ -27,10 +33,12 @@ internal object NotiflyDeviceUtil {
 
 
     fun shouldForceSoftwareRendering(): Boolean {
-        // https://www.gsmarena.com/samsung_galaxy_s25_ultra-13322.php
+        // Currently, Samsung galaxy S25 series suffers from a hardware rendering issue
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
-        return manufacturer.equals("Samsung", ignoreCase = true) && model.startsWith("SM-S938", ignoreCase = true)
+        return manufacturer.equals("Samsung", ignoreCase = true) && MODELS_TO_FORCE_SOFTWARE_RENDERING.any {
+            model.startsWith(it, ignoreCase = true)
+        }
     }
 
     fun getPlatform(): String = N.PLATFORM
