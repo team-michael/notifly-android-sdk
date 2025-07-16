@@ -128,6 +128,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 "channel" to "in-app-message",
                 "campaign_id" to eventLogData.campaignId,
                 "notifly_message_id" to eventLogData.notiflyMessageId,
+                "template_name" to modalProperties?.optString("template_name")
             )
 
         val campaignHiddenUntil = eventLogData.campaignHiddenUntil
