@@ -4,9 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.2] - 2025-07-24
+
+- Handle external user ID mismatch between database and SDK
+
 ## [1.18.1] - 2025-07-16
 
-- Pass `templateName` event param to in_app_message_show event. 
+- Pass `templateName` event param to in_app_message_show event.
 
 ## [1.18.0] - 2025-05-13
 
@@ -26,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.16.0] - 2025-03-10
 
-- Added `IInAppMessageEventListener` to provide a interface to listen events from InAppMessage WebView. 
+- Added `IInAppMessageEventListener` to provide a interface to listen events from InAppMessage WebView.
 
 ## [1.15.0] - 2025-02-21
 
