@@ -74,6 +74,7 @@ data class UserData(
     val sdkVersion: String,
     val sdkType: String,
     val randomBucketNumber: Int?,
+    val deviceExternalUserId: String?,
     // Not used
     val updatedAt: String?,
     val userProperties: MutableMap<String, Any?>,
@@ -127,6 +128,7 @@ data class UserData(
                 sdkVersion = other.sdkVersion,
                 sdkType = other.sdkType,
                 randomBucketNumber = other.randomBucketNumber,
+                deviceExternalUserId = other.deviceExternalUserId,
                 updatedAt = other.updatedAt,
                 userProperties =
                     run {
@@ -180,6 +182,7 @@ data class UserData(
                         null
                     }
 
+                val deviceExternalUserId = if (from.has("device_external_user_id")) from.getString("device_external_user_id") else null
                 val updatedAt = if (from.has("updated_at")) from.getString("updated_at") else null
 
                 val userPropertiesJSONObject =
@@ -222,6 +225,7 @@ data class UserData(
                     sdkVersion = sdkVersion,
                     sdkType = sdkType,
                     randomBucketNumber = randomBucketNumber,
+                    deviceExternalUserId = deviceExternalUserId,
                     updatedAt = updatedAt,
                     userProperties = userProperties,
                     campaignHiddenUntil = campaignHiddenUntil,
@@ -235,6 +239,7 @@ data class UserData(
                     sdkVersion = sdkVersion,
                     sdkType = sdkType,
                     randomBucketNumber = null,
+                    deviceExternalUserId = null,
                     updatedAt = null,
                     userProperties = mutableMapOf(),
                     campaignHiddenUntil = mutableMapOf(),
@@ -257,6 +262,7 @@ data class UserData(
                 sdkVersion = sdkVersion,
                 sdkType = sdkType,
                 randomBucketNumber = null,
+                deviceExternalUserId = null,
                 updatedAt = null,
                 userProperties = mutableMapOf(),
                 campaignHiddenUntil = mutableMapOf(),

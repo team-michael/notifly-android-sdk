@@ -24,6 +24,8 @@ import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
+import tech.notifly.storage.NotiflyStorage
+import tech.notifly.storage.NotiflyStorageItem
 
 object InAppMessageManager {
     private const val MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS = 1000 * 60 * 3L // 3 minutes
@@ -87,7 +89,7 @@ object InAppMessageManager {
             NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
             userData = UserData.getSkeleton(context)
-            sync(context, false)
+            sync(context, shouldMergeData = false, shouldHandleExternalUserIdMismatch = true)
             isInitialized = true
 
             NotiflySdkStateManager.setState(NotiflySdkState.READY)
@@ -286,6 +288,7 @@ object InAppMessageManager {
     private suspend fun sync(
         context: Context,
         shouldMergeData: Boolean,
+        shouldHandleExternalUserIdMismatch: Boolean = false,
     ) {
         val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
@@ -302,6 +305,23 @@ object InAppMessageManager {
             } else {
                 syncStateResult.userData
             }
+
+        // DB의 디바이스-유저 매핑 정보와 SDK에 저장된 유저 정보가 다른 경우
+        // DB를 Source of Truth로 하여 SDK의 external_user_id를 DB 값으로 변경
+        if (shouldHandleExternalUserIdMismatch) {
+            val deviceExternalUserId = userData.deviceExternalUserId
+            val sdkExternalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+
+            // 두 값이 모두 존재하고 서로 다른 경우에만 처리
+            // DB가 null인 경우는 다양한 원인(쿼리 에러, 디바이스 미저장 등)으로 인해 실제 값이 null이 아닐 가능성이 있어 핸들링하지 않음
+            // SDK가 null인 경우는 앱 재설치 등으로 허용되는 상황이므로 핸들링하지 않음
+            if (deviceExternalUserId != null && sdkExternalUserId != null && deviceExternalUserId != sdkExternalUserId) {
+                // SDK의 external_user_id를 DB 값으로 변경
+                NotiflyStorage.put(context, NotiflyStorageItem.EXTERNAL_USER_ID, deviceExternalUserId)
+                sync(context, shouldMergeData = false, shouldHandleExternalUserIdMismatch = false)
+                return
+            }
+        }
 
         Logger.d("InAppMessageManager fetched user state successfully.")
         Logger.d("campaigns: $campaigns")
