@@ -19,13 +19,13 @@ import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.services.NotiflyServiceProvider
+import tech.notifly.storage.NotiflyStorage
+import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
-import tech.notifly.storage.NotiflyStorage
-import tech.notifly.storage.NotiflyStorageItem
 
 object InAppMessageManager {
     private const val MINIMUM_CAMPAIGN_REVALIDATION_INTERVAL_MILLIS = 1000 * 60 * 3L // 3 minutes
