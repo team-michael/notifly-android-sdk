@@ -312,10 +312,7 @@ object InAppMessageManager {
             val deviceExternalUserId = userData.deviceExternalUserId
             val sdkExternalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
 
-            // 두 값이 모두 존재하고 서로 다른 경우에만 처리
-            // DB가 null인 경우는 다양한 원인(쿼리 에러, 디바이스 미저장 등)으로 인해 실제 값이 null이 아닐 가능성이 있어 핸들링하지 않음
-            // SDK가 null인 경우는 앱 재설치 등으로 허용되는 상황이므로 핸들링하지 않음
-            if (deviceExternalUserId != null && sdkExternalUserId != null && deviceExternalUserId != sdkExternalUserId) {
+            if (shouldUpdateSdkExternalUserId(deviceExternalUserId, sdkExternalUserId)) {
                 // SDK의 external_user_id를 DB 값으로 변경
                 NotiflyStorage.put(context, NotiflyStorageItem.EXTERNAL_USER_ID, deviceExternalUserId)
                 sync(context, shouldMergeData = false, shouldHandleExternalUserIdMismatch = false)
@@ -327,6 +324,25 @@ object InAppMessageManager {
         Logger.d("campaigns: $campaigns")
         Logger.d("eventCounts: $eventCounts")
         Logger.d("userData: $userData")
+    }
+
+    private fun shouldUpdateSdkExternalUserId(
+        deviceExternalUserId: String?,
+        sdkExternalUserId: String?,
+    ): Boolean {
+        // SDK가 null인 경우는 앱 재설치 등으로 허용되는 상황이므로 핸들링하지 않음
+        if (sdkExternalUserId == null) {
+            return false
+        }
+        // DB가 null인 경우는 다양한 원인(쿼리 에러, 디바이스 미저장 등)으로 인해 실제 값이 null이 아닐 가능성이 있어 핸들링하지 않음
+        if (deviceExternalUserId == null) {
+            return false
+        }
+        // 두 값이 같은 경우는 정상적인 상황
+        if (deviceExternalUserId == sdkExternalUserId) {
+            return false
+        }
+        return true
     }
 
     private suspend fun syncCampaigns(context: Context) {
