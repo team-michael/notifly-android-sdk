@@ -15,6 +15,8 @@ internal object NotiflyDeviceUtil {
             "SM-S936",
             // Samsung Galaxy S25
             "SM-S931",
+            // Samsung Galaxy Z Fold7
+            "SM-F966",
         )
 
     suspend fun getOsVersion(): String =
