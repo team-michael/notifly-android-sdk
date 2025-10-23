@@ -30,17 +30,17 @@ internal object NotiflyNotificationChannelUtil {
             mutableListOf(
                 NotificationChannel(
                     NOTIFLY_HIGH_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
-                    "Notifly High Importance Channel",
+                    "High Importance Channel",
                     NotificationManager.IMPORTANCE_HIGH,
                 ),
                 NotificationChannel(
                     NOTIFLY_NORMAL_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
-                    "Notifly Normal Importance Channel",
+                    "Normal Importance Channel",
                     NotificationManager.IMPORTANCE_DEFAULT,
                 ),
                 NotificationChannel(
                     NOTIFLY_LOW_IMPORTANCE_NOTIFICATION_CHANNEL_ID,
-                    "Notifly Low Importance Channel",
+                    "Low Importance Channel",
                     NotificationManager.IMPORTANCE_LOW,
                 ),
             )
@@ -49,17 +49,17 @@ internal object NotiflyNotificationChannelUtil {
             mutableListOf(
                 NotificationChannel(
                     NOTIFLY_HIGH_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
-                    "Notifly High Importance Channel Without Badge",
+                    "High Importance Channel Without Badge",
                     NotificationManager.IMPORTANCE_HIGH,
                 ),
                 NotificationChannel(
                     NOTIFLY_NORMAL_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
-                    "Notifly Normal Importance Channel Without Badge",
+                    "Normal Importance Channel Without Badge",
                     NotificationManager.IMPORTANCE_DEFAULT,
                 ),
                 NotificationChannel(
                     NOTIFLY_LOW_IMPORTANCE_WITHOUT_BADGE_NOTIFICATION_CHANNEL_ID,
-                    "Notifly Low Importance Channel Without Badge",
+                    "Low Importance Channel Without Badge",
                     NotificationManager.IMPORTANCE_LOW,
                 ),
             )
