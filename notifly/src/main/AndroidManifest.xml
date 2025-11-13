@@ -27,7 +27,7 @@
             android:name=".inapp.NotiflyInAppMessageActivity"
             android:exported="true"
             android:hardwareAccelerated="true"
-            android:theme="@style/Theme.CustomTransparent" />
+            android:theme="@style/Theme.Notifly.InApp" />
 
         <activity
             android:name=".push.activities.NotificationOpenedActivity"

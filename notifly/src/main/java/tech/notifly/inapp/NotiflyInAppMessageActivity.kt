@@ -3,6 +3,7 @@ package tech.notifly.inapp
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
 import org.json.JSONObject
@@ -32,6 +33,10 @@ class NotiflyInAppMessageActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        window.setDimAmount(0f)
+
         if (isActivityRunning) {
             Logger.d("NotiflyInAppMessageActivity is already active")
             rejectCreation()

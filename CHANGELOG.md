@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.5] - 2025-11-13
+
+- Fix in-app message Activity transparency issues with React Native New Architecture (Fabric) to ensure underlying screen remains visible through dimmed overlay.
+
 ## [1.18.4] - 2025-10-23
 
 - Renamed notification channels for importance levels to improve clarity in system settings.
