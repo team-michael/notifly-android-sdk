@@ -101,7 +101,6 @@ object InAppMessageScheduler : IApplicationLifecycleHandler {
                         campaign.reEligibleCondition.duration,
                     )
                 }
-                // Do NOT add FLAG_ACTIVITY_NEW_TASK - we want to launch in the same task
             }
 
         Logger.d("Notifly: Showing in-app message from Activity context (campaign: ${campaign.id})")
