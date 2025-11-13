@@ -46,6 +46,13 @@ class NotiflyWebView
         private val rect = RectF()
         private var radii: FloatArray? = null
 
+        init {
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            isVerticalScrollBarEnabled = false
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = OVER_SCROLL_NEVER
+        }
+
         @SuppressLint("SetJavaScriptEnabled")
         fun initialize(
             modalProperties: JSONObject?,
