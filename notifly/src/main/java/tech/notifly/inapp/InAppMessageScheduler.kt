@@ -127,6 +127,6 @@ object InAppMessageScheduler : IApplicationLifecycleHandler {
     }
 
     override fun onUnfocused() {
-        // Nothing to do when app goes to background
+        // No-op
     }
 }
