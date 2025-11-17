@@ -3,14 +3,14 @@ set -euo pipefail
 
 # Notifly Android LLMS generator (outputs llms.txt)
 # Usage:
-#   ./scripts/generate_llms.ssh --llm-all
-#   ./scripts/generate_llms.ssh --base <old> --head <new> [--llm]
-#   ./scripts/generate_llms.ssh --compare "<old>...<new>" [--llm]
+#   ./scripts/generate_llms.sh --llm-all
+#   ./scripts/generate_llms.sh --base <old> --head <new> [--llm]
+#   ./scripts/generate_llms.sh --compare "<old>...<new>" [--llm]
 # Env:
 #   OPENAI_API_KEY  required for --llm
 #   INCLUDE_DIRS    dirs to scan (default ".")
-#   EXCLUDE_DIRS    pruned dirs (default: node_modules build dist .git .swiftpm .gradle .idea .next)
-#   EXTENSIONS      file extensions (default: kt)
+#   EXCLUDE_DIRS    pruned dirs (default: node_modules build dist .git .gradle .idea .next gradle .cursor .junie)
+#   EXTENSIONS      file extensions (default: kt,kts,java)
 #   DEFAULT_BRANCH  override branch for raw links (auto-detected)
 #   REPO_SLUG       org/repo (auto-detected)
 #   REPO_URL        optional repo to clone/scan
@@ -83,13 +83,13 @@ if [[ "${OUTPUT:-}" == "-" ]]; then
   PRINT_STDOUT="true"
 fi
 
-DEFAULT_EXT="kt"
+DEFAULT_EXT="kt,kts,java"
 
 # Auto-detect INCLUDE_DIRS if not provided
 # Priority:
 #  1) Parse Gradle settings (include(":module")) and include those module dirs if present
-#  2) Fallback to common Android layout: notifly, sample
-#  3) Otherwise scan entire repo "."
+#  2) Fallback to common Android layout by scanning entire repo (.)
+#  3) Always include key root files explicitly when present
 if [[ -z "${INCLUDE_DIRS:-}" ]]; then
   dirs=()
   settings_file=""
@@ -111,11 +111,24 @@ if [[ -z "${INCLUDE_DIRS:-}" ]]; then
         }
       }' "$settings_file")
   fi
-  [[ -d "notifly" ]] && dirs+=("notifly")
-  [[ -d "sample" ]] && dirs+=("sample")
-  if [[ ${#dirs[@]} -gt 0 ]]; then INCLUDE_DIRS="${dirs[*]}"; else INCLUDE_DIRS="."; fi
+  # Fallback to scanning entire repo when no modules were detected
+  if [[ ${#dirs[@]} -eq 0 ]]; then
+    dirs+=(".")
+  fi
+  # Include common project manifests and docs explicitly
+  [[ -f "build.gradle.kts" ]] && dirs+=("build.gradle.kts")
+  [[ -f "settings.gradle.kts" ]] && dirs+=("settings.gradle.kts")
+  [[ -f "gradle.properties" ]] && dirs+=("gradle.properties")
+  [[ -f "README.md" ]] && dirs+=("README.md")
+  [[ -f "CHANGELOG.md" ]] && dirs+=("CHANGELOG.md")
+  [[ -f "LICENSE" ]] && dirs+=("LICENSE")
+  if [[ ${#dirs[@]} -gt 0 ]]; then
+    INCLUDE_DIRS="${dirs[*]}"
+  else
+    INCLUDE_DIRS="."
+  fi
 fi
-EXCLUDE_DIRS="${EXCLUDE_DIRS:-node_modules build dist .git .swiftpm .gradle .idea .next .github .vscode .sourcekit-lsp}"
+EXCLUDE_DIRS="${EXCLUDE_DIRS:-node_modules build dist .git .gradle .idea .next .github .vscode gradle .cursor .junie}"
 EXTENSIONS="${EXTENSIONS:-$DEFAULT_EXT}"
 
 # If REPO_URL is provided, clone into a temp directory
@@ -198,6 +211,11 @@ rel_to_url() { printf "%s/%s" "$RAW_BASE" "$(url_encode_spaces "$1")"; }
 
 path_is_target() {
   local rel="$1"
+  local base="$(basename "$rel")"
+  # Whitelist select top-level docs regardless of EXTENSIONS/INCLUDE_DIRS
+  case "$base" in
+    README.md|CHANGELOG.md|LICENSE|build.gradle.kts|settings.gradle.kts|gradle.properties|AndroidManifest.xml) return 0 ;;
+  esac
   # Check extension
   local ext="${rel##*.}"
   local match_ext=0
@@ -221,7 +239,7 @@ path_is_target() {
 replace_or_append_line() {
   local rel="$1" raw_url="$2" newline="$3" dir_rel="$4"
   if grep -F "](${raw_url}):" "$OUTFILE" >/dev/null 2>&1; then
-    awk -v url="$raw_url" -v nl="$newline" 'index($0, "]("url"):") {print nl; next} {print}' "$OUTFILE" > "$OUTFILE.tmp" && mv "$OUTFILE.tmp" "$OUTFILE"
+    awk -v url="$raw_url" -v nl="$newline" 'index($0, "](" url "):") {print nl; next} {print}' "$OUTFILE" > "$OUTFILE.tmp" && mv "$OUTFILE.tmp" "$OUTFILE"
   else
     # Ensure section header exists
     if ! grep -xq "## ${dir_rel}" "$OUTFILE" >/dev/null 2>&1; then
@@ -233,7 +251,7 @@ replace_or_append_line() {
 
 remove_line_by_url() {
   local raw_url="$1"
-  awk -v url="$raw_url" 'index($0, "]("url"):")==0' "$OUTFILE" > "$OUTFILE.tmp" && mv "$OUTFILE.tmp" "$OUTFILE"
+  awk -v url="$raw_url" 'index($0, "](" url "):")==0' "$OUTFILE" > "$OUTFILE.tmp" && mv "$OUTFILE.tmp" "$OUTFILE"
 }
 
 update_header_in_place() {
@@ -306,6 +324,8 @@ llm_describe_file() {
   case "$ext" in
     swift) lang="swift" ;;
     kt) lang="kotlin" ;;
+    kts) lang="kotlin" ;;
+    java) lang="java" ;;
     dart) lang="dart" ;;
     ts|tsx) lang="typescript" ;;
     js|jsx) lang="javascript" ;;
@@ -313,7 +333,7 @@ llm_describe_file() {
   esac
   local code
   code="$(fetch_code_for_llm "$url" "$file")"
-  local input_prompt="You are a senior SDK engineer. Write 1 concise sentences (<= 30 words) describing this SDK source file for a developer-facing index. Be specific and technical (core responsibilities, key flows/side-effects, dependencies, notable public APIs/entry points).
+  local input_prompt="You are a senior SDK engineer. Write 1 concise sentence (<= 40 words) describing this SDK source file for a developer-facing index. Be specific and technical (core responsibilities, key flows/side-effects, dependencies, notable public APIs/entry points).
 Repository: ${repo}
 Section: ${section}
 Path: ${rel}
@@ -380,8 +400,6 @@ for d in $EXCLUDE_DIRS; do
   exclude_pred="$exclude_pred -path '*/$d' -prune -o"
 done
 
- # Truncate output and write header AFTER reading existing LLMS map
-
 # Temp workspace (no associative arrays in macOS Bash 3.2)
 SECTION_TMP_DIR="$(mktemp -d)"
 trap '[[ -d "$SECTION_TMP_DIR" ]] && rm -rf "$SECTION_TMP_DIR"' EXIT
@@ -396,8 +414,8 @@ if [[ -f "$EXISTING_LLMS_PATH" ]]; then
   while IFS= read -r line; do
     case "$line" in
       -*\[*\]\(*\)*)
-        url="$(printf "%s\n" "$line" | sed -n 's/.*](\([^)]\+\)).*/\1/p')"
-        desc="$(printf "%s\n" "$line" | sed -n 's/^[[:space:]]*-\s*\[[^]]\+\]([^)]\+):[[:space:]]*//p' | sed 's/[[:space:]]*<!--.*$//' | tr -d '\r')"
+        url="$(printf "%s\n" "$line" | sed -nE 's/.*\]\(([^)]*)\).*/\1/p')"
+        desc="$(printf "%s\n" "$line" | sed -nE 's/^[[:space:]]*-[[:space:]]*\[[^]]+\]\([^)]*\):[[:space:]]*//p' | sed 's/[[:space:]]*<!--.*$//' | tr -d '\r')"
         if [[ -n "$url" ]]; then
           printf "%s\t%s\n" "$url" "$desc" >> "$EXISTING_MAP"
         fi
@@ -452,9 +470,10 @@ if [[ -n "${BASE_REF:-}" && -n "${HEAD_REF:-}" ]]; then
     compare_json="$(curl -sS -H "Accept: application/vnd.github+json" "${AUTH_HDR[@]}" \
       "https://api.github.com/repos/${REPO_SLUG}/compare/${BASE_REF}...${HEAD_REF}" || true)"
     printf "%s\n" "$compare_json" | jq -r '
-      .files[]? | select(.status=="modified" or .status=="added" or .status=="renamed") |
-      .filename
-    ' 2>/dev/null | sed 's#^./##' | sort -u >> "$CHANGED_SET"
+      .files[]?
+      | select(.status=="modified" or .status=="added" or .status=="renamed" or .status=="removed" or .status=="deleted")
+      | (.filename, (.previous_filename // empty))
+    ' 2>/dev/null | sed '/^$/d; s#^./##' | sort -u >> "$CHANGED_SET"
   else
     git fetch --no-tags --depth=1 origin "${BASE_REF}" "${HEAD_REF}" >/dev/null 2>&1 || true
     git diff --name-only "${BASE_REF}...${HEAD_REF}" 2>/dev/null | sed 's#^./##' | sort -u >> "$CHANGED_SET" || true
@@ -548,6 +567,42 @@ flush_file() {
 
 # Iterate include dirs and collect lines
 for dir in $INCLUDE_DIRS; do
+  # If an explicit file path is provided (e.g., Package.swift, README.md), handle it directly
+  if [[ -f "$dir" ]]; then
+    file="$dir"
+    abs_file="$(cd "$(dirname "$file")" && pwd -P)/$(basename "$file")"
+    rel="${abs_file#$REPO_ROOT/}"
+    url_path="${rel// /%20}"
+    raw_url="${RAW_BASE}/${url_path}"
+    title="$(titleize "$(basename "$file")")"
+    existing_line="$(awk -F '\t' -v u="$raw_url" '$1==u{print $0; exit}' "$EXISTING_MAP" 2>/dev/null || true)"
+    existing_desc="$(printf "%s" "$existing_line" | cut -f2- || true)"
+    desc="$(first_comment_line "$abs_file" || true)"
+    [[ -z "$desc" ]] && desc="Source file for ${title}"
+    if [[ -n "$existing_desc" ]]; then
+      desc="$existing_desc"
+    fi
+    if [[ "$USE_LLM" == "true" ]]; then
+      need_llm="false"
+      if [[ -z "$existing_line" ]]; then
+        need_llm="true"
+      fi
+      if [[ "$need_llm" == "true" ]]; then
+        dir_label="$(dirname "$rel")"
+        dir_label="${dir_label:-.}"
+        llm_desc="$(llm_describe_file "$rel" "$abs_file" "$raw_url" "$dir_label" "$REPO_SLUG" || true)"
+        if [[ -n "$llm_desc" ]]; then
+          desc="$llm_desc"
+          sleep "$LLM_SLEEP_SEC"
+        fi
+      fi
+    fi
+    line="- [${title}](${raw_url}): ${desc}"
+    dir_rel="$(dirname "$rel")"
+    dir_rel="${dir_rel:-.}"
+    append_to_dir "$dir_rel" "$line"
+    continue
+  fi
   # Build the find command safely using an array (no eval, portable parens)
   find_args=( "$dir" )
   for d in $EXCLUDE_DIRS; do
@@ -647,5 +702,6 @@ if [[ -n "${OUTPUT_PATH}" && -n "${OUTPUT_SINK:-}" ]]; then
   mv "$OUTPUT_SINK" "$OUTPUT_PATH"
   echo "Wrote ${OUTPUT_PATH}" >&2
 fi
+
 
 
