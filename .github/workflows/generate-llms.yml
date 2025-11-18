@@ -95,7 +95,7 @@ jobs:
 
           # Determine compare range (strict surgical mode)
           if [[ "${LLM_MODE}" == "all" ]]; then
-            CMD='./scripts/generate_llms.sh --llm-all --slug "'"${{ github.repository }}"'" --branch "'"${{ github.event.repository.default_branch }}"'"'
+            CMD='./scripts/generate_llms.sh --llm-all --slug ${{ github.repository }} --branch ${{ github.event.repository.default_branch }}'
           else
             # HEAD ref: inputs.head or default to origin/<default_branch>
             if [[ -n "${{ inputs.head }}" ]]; then
@@ -112,7 +112,7 @@ jobs:
               [[ -z "${BASE}" ]] && BASE="${HEAD_REF}"
               COMPARE_RANGE="${BASE}...${HEAD_REF}"
             fi
-            CMD='./scripts/generate_llms.sh --compare "'"${COMPARE_RANGE}"'" --llm --slug "'"${{ github.repository }}"'" --branch "'"${{ github.event.repository.default_branch }}"'"'
+            CMD='./scripts/generate_llms.sh --compare "'"${COMPARE_RANGE}"'" --llm --slug ${{ github.repository }} --branch ${{ github.event.repository.default_branch }}'
           fi
 
           eval "${CMD}"
@@ -164,4 +164,3 @@ jobs:
                 throw e;
               }
             }
-
