@@ -23,7 +23,11 @@ class SampleForegroundService : Service() {
         createNotificationChannel()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         Log.d(TAG, "Service started - process will stay alive even if Activity is closed")
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
@@ -39,25 +43,26 @@ class SampleForegroundService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Foreground Service",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Keeps the app process alive"
-            }
+            val channel =
+                NotificationChannel(
+                    CHANNEL_ID,
+                    "Foreground Service",
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = "Keeps the app process alive"
+                }
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun createNotification(): Notification =
+        NotificationCompat
+            .Builder(this, CHANNEL_ID)
             .setContentTitle("Notifly Sample")
             .setContentText("Foreground service running")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()
-    }
 }

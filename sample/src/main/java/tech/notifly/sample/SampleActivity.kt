@@ -360,7 +360,17 @@ class SampleActivity : ComponentActivity() {
                     onClick = {
                         Log.d(TAG, "Starting foreground service...")
                         val intent = Intent(context, SampleForegroundService::class.java)
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        if (android
+                                .os
+                                .Build
+                                .VERSION
+                                .SDK_INT >=
+                            android
+                                .os
+                                .Build
+                                .VERSION_CODES
+                                .O
+                        ) {
                             context.startForegroundService(intent)
                         } else {
                             context.startService(intent)
