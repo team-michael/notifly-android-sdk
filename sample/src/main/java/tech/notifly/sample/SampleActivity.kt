@@ -358,6 +358,42 @@ class SampleActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
+                        Log.d(TAG, "Starting foreground service...")
+                        val intent = Intent(context, SampleForegroundService::class.java)
+                        if (android
+                                .os
+                                .Build
+                                .VERSION
+                                .SDK_INT >=
+                            android
+                                .os
+                                .Build
+                                .VERSION_CODES
+                                .O
+                        ) {
+                            context.startForegroundService(intent)
+                        } else {
+                            context.startService(intent)
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(text = "Start Foreground Service")
+                }
+
+                Button(
+                    onClick = {
+                        Log.d(TAG, "Stopping foreground service...")
+                        val intent = Intent(context, SampleForegroundService::class.java)
+                        context.stopService(intent)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(text = "Stop Foreground Service")
+                }
+
+                Button(
+                    onClick = {
                         Log.w(TAG, "Empty event name input")
                         // Show alert for empty event name input
                         val builder = AlertDialog.Builder(context)

@@ -124,6 +124,10 @@ class ApplicationService :
         bundle: Bundle?,
     ) {
         Logger.d("ApplicationService.onActivityCreated($activityReferences,$entryState): $activity")
+
+        if (activityReferences == 0 && !isInForeground && !isActivityChangingConfigurations) {
+            firstStarted = true
+        }
     }
 
     override fun onActivityStarted(activity: Activity) {
