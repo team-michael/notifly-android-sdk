@@ -94,7 +94,8 @@ object InAppMessageManager {
 
             NotiflySdkStateManager.setState(NotiflySdkState.READY)
         } catch (e: Exception) {
-            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+            Logger.e("[Notifly] InAppMessage initialization failed, continuing without in-app messages", e)
+            NotiflySdkStateManager.setState(NotiflySdkState.READY)
         }
     }
 
@@ -349,8 +350,7 @@ object InAppMessageManager {
         try {
             campaigns = NotiflySyncStateUtil.fetchCampaigns(context)
         } catch (e: Exception) {
-            Logger.e("Failed to fetch campaigns", e)
-            NotiflySdkStateManager.setState(NotiflySdkState.FAILED)
+            Logger.e("Failed to fetch campaigns, keeping cached data", e)
         }
     }
 

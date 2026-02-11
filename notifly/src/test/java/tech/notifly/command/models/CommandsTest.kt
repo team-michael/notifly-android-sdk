@@ -77,7 +77,8 @@ class CommandsTest {
             command.execute()
 
             // Then
-            verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
+            verify(atLeast = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
+            verify(exactly = 0) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
