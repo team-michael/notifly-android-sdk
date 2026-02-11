@@ -31,6 +31,7 @@ class CommandsTest {
         val payload = SetUserIdPayload(context, null)
         val command = SetUserIdCommand(payload)
         command.execute()
+        Thread.sleep(100) // wait for Dispatchers.IO coroutine to complete
     }
 
     private fun setupSharedPreferences() {

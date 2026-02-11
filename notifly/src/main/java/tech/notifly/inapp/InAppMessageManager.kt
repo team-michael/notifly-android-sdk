@@ -273,6 +273,9 @@ object InAppMessageManager {
     }
 
     fun clearUserState() {
+        if (!isInitialized) {
+            return
+        }
         eventCounts = mutableListOf()
         userData.apply {
             this.userProperties.clear()
