@@ -77,8 +77,8 @@ class CommandsTest {
             // When
             command.execute()
 
-            // Then
-            verify(atLeast = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
+            // Then — use timeout to wait for Dispatchers.IO coroutine to complete
+            verify(timeout = 5000, atLeast = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
             verify(exactly = 0) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
         }
 
@@ -99,7 +99,7 @@ class CommandsTest {
             // When
             command.execute()
 
-            // Then
-            verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
+            // Then — use timeout to wait for Dispatchers.IO coroutine to complete
+            verify(timeout = 5000, exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
         }
 }
