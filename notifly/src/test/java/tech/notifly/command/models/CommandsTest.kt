@@ -31,6 +31,7 @@ class CommandsTest {
         val payload = SetUserIdPayload(context, null)
         val command = SetUserIdCommand(payload)
         command.execute()
+        Thread.sleep(100) // wait for Dispatchers.IO coroutine to complete
     }
 
     private fun setupSharedPreferences() {
@@ -76,8 +77,9 @@ class CommandsTest {
             // When
             command.execute()
 
-            // Then
-            verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
+            // Then — use timeout to wait for Dispatchers.IO coroutine to complete
+            verify(timeout = 5000, atLeast = 1) { NotiflySdkStateManager.setState(NotiflySdkState.READY) }
+            verify(exactly = 0) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -97,7 +99,7 @@ class CommandsTest {
             // When
             command.execute()
 
-            // Then
-            verify(exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
+            // Then — use timeout to wait for Dispatchers.IO coroutine to complete
+            verify(timeout = 5000, exactly = 1) { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) }
         }
 }
