@@ -552,17 +552,8 @@ object InAppMessageManager {
     ): Boolean {
         val unit = condition.unit
         val operator = condition.operator
-        val valueType = condition.valueType ?: return false
-        val useEventParamsAsConditionValue = condition.useEventParamsAsConditionValue ?: false
 
         val userAttributeValue = userData.get(context, unit, condition.attribute)
-        val value =
-            if (useEventParamsAsConditionValue) {
-                val comparisonParameter = condition.comparisonParameter ?: return false
-                eventParams[comparisonParameter] ?: return false
-            } else {
-                condition.value
-            }
 
         if (operator == Operator.IS_NULL || operator == Operator.IS_NOT_NULL) {
             return when (operator) {
@@ -571,6 +562,17 @@ object InAppMessageManager {
                 else -> false // Should never happen
             }
         }
+
+        val valueType = condition.valueType ?: return false
+        val useEventParamsAsConditionValue = condition.useEventParamsAsConditionValue ?: false
+
+        val value =
+            if (useEventParamsAsConditionValue) {
+                val comparisonParameter = condition.comparisonParameter ?: return false
+                eventParams[comparisonParameter] ?: return false
+            } else {
+                condition.value
+            }
 
         if (userAttributeValue == null || value == null) {
             return false
@@ -1062,7 +1064,7 @@ object InAppMessageManager {
         when (value) {
             null -> false
             is String -> value.isNotEmpty()
-            else -> false
+            else -> true
         }
 
     private val eventListeners = mutableListOf<IInAppMessageEventListener>()

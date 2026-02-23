@@ -15,6 +15,8 @@ import io.mockk.runs
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,8 +28,11 @@ import tech.notifly.application.IApplicationService
 import tech.notifly.http.HttpResponse
 import tech.notifly.http.IHttpClient
 import tech.notifly.inapp.models.Campaign
+import tech.notifly.inapp.models.Condition
 import tech.notifly.inapp.models.EventIntermediateCounts
 import tech.notifly.inapp.models.Message
+import tech.notifly.inapp.models.Operator
+import tech.notifly.inapp.models.SegmentConditionUnitType
 import tech.notifly.inapp.models.SegmentInfo
 import tech.notifly.inapp.models.TriggeringConditionOperator
 import tech.notifly.inapp.models.TriggeringConditionType
@@ -235,6 +240,283 @@ class InAppMessageManagerTest {
                 """.trimIndent(),
             throwable = null,
         )
+
+    /**
+     * Helper: sets the private `userData` field on InAppMessageManager via reflection.
+     */
+    private fun setUserData(userData: UserData) {
+        val field = InAppMessageManager::class.java.getDeclaredField("userData")
+        field.isAccessible = true
+        field.set(InAppMessageManager, userData)
+    }
+
+    /**
+     * Helper: calls the private `matchUserPropertyBasedCondition` via reflection.
+     */
+    private fun callMatchUserPropertyBasedCondition(
+        context: Context,
+        condition: Condition,
+        eventParams: Map<String, Any?> = emptyMap(),
+    ): Boolean {
+        val method =
+            InAppMessageManager::class.java.getDeclaredMethod(
+                "matchUserPropertyBasedCondition",
+                Context::class.java,
+                Condition::class.java,
+                Map::class.java,
+            )
+        method.isAccessible = true
+        return method.invoke(InAppMessageManager, context, condition, eventParams) as Boolean
+    }
+
+    // ── IS_NULL / IS_NOT_NULL bug reproduction tests ──
+
+    @Test
+    fun `IS_NULL operator should return true when user property is absent and valueType is null`() {
+        // Given: user has no "membership" property, condition uses IS_NULL without valueType
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf(),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        // IS_NULL conditions don't have valueType from server
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NULL,
+                value = null,
+                attribute = "membership",
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        // When
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        // Then: should be true because "membership" is absent (null)
+        assertTrue(
+            "IS_NULL should return true when the user property is absent",
+            result,
+        )
+    }
+
+    @Test
+    fun `IS_NOT_NULL operator should return true when user property exists and valueType is null`() {
+        // Given: user has "membership" property set
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf("membership" to "gold"),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        // IS_NOT_NULL conditions don't have valueType from server
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NOT_NULL,
+                value = null,
+                attribute = "membership",
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        // When
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        // Then: should be true because "membership" exists with value "gold"
+        assertTrue(
+            "IS_NOT_NULL should return true when the user property exists",
+            result,
+        )
+    }
+
+    @Test
+    fun `IS_NULL operator should return false when user property exists and valueType is null`() {
+        // Given: user has "membership" property
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf("membership" to "gold"),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NULL,
+                value = null,
+                attribute = "membership",
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        // When
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        // Then: should be false because "membership" exists
+        assertFalse(
+            "IS_NULL should return false when the user property exists",
+            result,
+        )
+    }
+
+    // ── isValuePresent non-String type tests ──
+
+    @Test
+    fun `IS_NOT_NULL operator should return true when user property is Int`() {
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf("purchase_count" to 5),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NOT_NULL,
+                value = null,
+                attribute = "purchase_count",
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        assertTrue(
+            "IS_NOT_NULL should return true when user property is Int(5)",
+            result,
+        )
+    }
+
+    @Test
+    fun `IS_NOT_NULL operator should return true when user property is Boolean`() {
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf("is_premium" to true),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NOT_NULL,
+                value = null,
+                attribute = "is_premium",
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        assertTrue(
+            "IS_NOT_NULL should return true when user property is Boolean(true)",
+            result,
+        )
+    }
+
+    @Test
+    fun `IS_NULL operator should return true when user property is absent for Int field`() {
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf(),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NULL,
+                value = null,
+                attribute = "purchase_count",
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        assertTrue(
+            "IS_NULL should return true when user property is absent",
+            result,
+        )
+    }
 
     @Test
     fun `initialize should call setState in order`() =
