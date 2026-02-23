@@ -552,6 +552,7 @@ object InAppMessageManager {
     ): Boolean {
         val unit = condition.unit
         val operator = condition.operator
+        if (condition.attribute == null) return false
 
         val userAttributeValue = userData.get(context, unit, condition.attribute)
 

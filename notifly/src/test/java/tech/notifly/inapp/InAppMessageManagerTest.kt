@@ -399,6 +399,47 @@ class InAppMessageManagerTest {
         )
     }
 
+    // ── malformed condition (attribute is null) tests ──
+
+    @Test
+    fun `IS_NULL operator should return false when attribute is null`() {
+        val userData =
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = mutableMapOf(),
+                campaignHiddenUntil = mutableMapOf(),
+            )
+        setUserData(userData)
+
+        val condition =
+            Condition(
+                unit = SegmentConditionUnitType.USER,
+                operator = Operator.IS_NULL,
+                value = null,
+                attribute = null,
+                event = null,
+                eventConditionType = null,
+                secondaryValue = null,
+                valueType = null,
+                comparisonParameter = null,
+                useEventParamsAsConditionValue = null,
+            )
+
+        val result = callMatchUserPropertyBasedCondition(context, condition)
+
+        assertFalse(
+            "IS_NULL should return false when attribute is null (malformed condition)",
+            result,
+        )
+    }
+
     // ── isValuePresent non-String type tests ──
 
     @Test
