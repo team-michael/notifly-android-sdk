@@ -265,6 +265,7 @@ object InAppMessageManager {
 
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
+        checkCancellationConditions(sanitizedEventName, eventParams)
         if (applicationService.isInForeground) {
             Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
             scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
@@ -296,6 +297,7 @@ object InAppMessageManager {
     ) {
         val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
+        InAppMessageScheduler.descheduleAll()
         campaigns = syncStateResult.campaigns
         eventCounts =
             if (shouldMergeData) {
@@ -351,6 +353,7 @@ object InAppMessageManager {
 
     private suspend fun syncCampaigns(context: Context) {
         try {
+            InAppMessageScheduler.descheduleAll()
             campaigns = NotiflySyncStateUtil.fetchCampaigns(context)
         } catch (e: Exception) {
             Logger.e("Failed to fetch campaigns, keeping cached data", e)
@@ -655,6 +658,24 @@ object InAppMessageManager {
             Operator.LESS_THAN_OR_EQUAL -> count <= value
             else -> false
         }
+
+    private fun checkCancellationConditions(eventName: String, eventParams: Map<String, Any?>) {
+        val scheduledCampaignIds = InAppMessageScheduler.getScheduledCampaignIds()
+        if (scheduledCampaignIds.isEmpty()) return
+
+        val currentCampaigns = campaigns ?: return
+        for (campaignId in scheduledCampaignIds) {
+            val campaign = currentCampaigns.find { it.id == campaignId } ?: continue
+            val cancellationConditions = campaign.cancellationConditions ?: continue
+
+            if (!cancellationConditions.match(eventName)) continue
+            if (campaign.cancellationEventFilters != null &&
+                !matchTriggeringEventFilters(eventParams, campaign.cancellationEventFilters)
+            ) continue
+
+            InAppMessageScheduler.deschedule(campaignId)
+        }
+    }
 
     private fun matchTriggeringEventFilters(
         eventParams: Map<String, Any?>,

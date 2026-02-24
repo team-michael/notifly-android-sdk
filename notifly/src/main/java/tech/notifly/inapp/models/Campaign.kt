@@ -19,6 +19,8 @@ data class Campaign(
     val triggeringEventFilters: TriggeringEventFilters?,
     val delay: Int?,
     val reEligibleCondition: ReEligibleCondition? = null,
+    val cancellationConditions: TriggeringConditions? = null,
+    val cancellationEventFilters: TriggeringEventFilters? = null,
 ) : Comparable<Campaign> {
     override fun compareTo(other: Campaign): Int {
         // Compare based on age
@@ -128,6 +130,24 @@ data class Campaign(
                     null
                 }
 
+            val cancellationConditions =
+                if (from.has("cancellation_conditions")) {
+                    val value = from.get("cancellation_conditions")
+                    if (value == JSONObject.NULL) null
+                    else TriggeringConditions.fromJSONObject(value as JSONArray)
+                } else {
+                    null
+                }
+
+            val cancellationEventFilters =
+                if (from.has("cancellation_event_filters")) {
+                    val value = from.get("cancellation_event_filters")
+                    if (value == JSONObject.NULL) null
+                    else TriggeringEventFilters.fromJSONObject(value as JSONArray)
+                } else {
+                    null
+                }
+
             return Campaign(
                 id = id,
                 channel = channel,
@@ -142,6 +162,8 @@ data class Campaign(
                 triggeringEventFilters = triggeringEventFilters,
                 delay = delay,
                 reEligibleCondition = reEligibleCondition,
+                cancellationConditions = cancellationConditions,
+                cancellationEventFilters = cancellationEventFilters,
             )
         }
     }

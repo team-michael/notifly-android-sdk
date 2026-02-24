@@ -2,24 +2,57 @@ package tech.notifly.inapp
 
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.utils.Logger
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 object InAppMessageScheduler {
+    private val handler = Handler(Looper.getMainLooper())
+    private val scheduledCampaigns = ConcurrentHashMap<String, Runnable>()
+    private val lock = Any()
+
     fun schedule(
         context: Context,
         campaign: Campaign,
     ) {
         val delay = campaign.delay ?: 0
         if (delay > 0) {
-            Thread {
-                Thread.sleep(delay * 1000L)
-                show(context, campaign)
-            }.start()
+            synchronized(lock) {
+                // Cancel existing timer for same campaign to prevent ghost messages
+                scheduledCampaigns.remove(campaign.id)?.let { handler.removeCallbacks(it) }
+
+                val runnable = Runnable {
+                    synchronized(lock) { scheduledCampaigns.remove(campaign.id) }
+                    show(context, campaign)
+                }
+                scheduledCampaigns[campaign.id] = runnable
+                handler.postDelayed(runnable, delay * 1000L)
+            }
+            Logger.d("[Notifly] Scheduled campaign: ${campaign.id} with delay: ${delay}s")
         } else {
             show(context, campaign)
         }
+    }
+
+    fun getScheduledCampaignIds(): List<String> =
+        scheduledCampaigns.keys().toList()
+
+    fun deschedule(campaignId: String) {
+        synchronized(lock) {
+            scheduledCampaigns.remove(campaignId)?.let { handler.removeCallbacks(it) }
+        }
+        Logger.d("[Notifly] Descheduled campaign: $campaignId")
+    }
+
+    fun descheduleAll() {
+        synchronized(lock) {
+            scheduledCampaigns.forEach { (_, runnable) -> handler.removeCallbacks(runnable) }
+            scheduledCampaigns.clear()
+        }
+        Logger.d("[Notifly] Descheduled all campaigns")
     }
 
     private fun show(
