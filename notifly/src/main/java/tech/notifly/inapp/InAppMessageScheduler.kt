@@ -18,6 +18,7 @@ object InAppMessageScheduler {
         context: Context,
         campaign: Campaign,
     ) {
+        val appContext = context.applicationContext
         val delay = campaign.delay ?: 0
         if (delay > 0) {
             synchronized(lock) {
@@ -27,14 +28,14 @@ object InAppMessageScheduler {
                 val runnable =
                     Runnable {
                         synchronized(lock) { scheduledCampaigns.remove(campaign.id) }
-                        show(context, campaign)
+                        show(appContext, campaign)
                     }
                 scheduledCampaigns[campaign.id] = runnable
                 handler.postDelayed(runnable, delay * 1000L)
             }
             Logger.d("[Notifly] Scheduled campaign: ${campaign.id} with delay: ${delay}s")
         } else {
-            show(context, campaign)
+            show(appContext, campaign)
         }
     }
 
