@@ -18,7 +18,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
-import org.robolectric.shadows.ShadowSettings
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Message
 import tech.notifly.inapp.models.Operator
@@ -33,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
-@Config(shadows = [ShadowSettings::class])
+@Config
 class InAppMessageCancellationTest {
     private lateinit var context: Context
 

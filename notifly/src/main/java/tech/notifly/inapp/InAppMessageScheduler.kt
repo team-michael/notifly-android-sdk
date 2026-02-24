@@ -24,10 +24,11 @@ object InAppMessageScheduler {
                 // Cancel existing timer for same campaign to prevent ghost messages
                 scheduledCampaigns.remove(campaign.id)?.let { handler.removeCallbacks(it) }
 
-                val runnable = Runnable {
-                    synchronized(lock) { scheduledCampaigns.remove(campaign.id) }
-                    show(context, campaign)
-                }
+                val runnable =
+                    Runnable {
+                        synchronized(lock) { scheduledCampaigns.remove(campaign.id) }
+                        show(context, campaign)
+                    }
                 scheduledCampaigns[campaign.id] = runnable
                 handler.postDelayed(runnable, delay * 1000L)
             }
@@ -37,8 +38,7 @@ object InAppMessageScheduler {
         }
     }
 
-    fun getScheduledCampaignIds(): List<String> =
-        scheduledCampaigns.keys().toList()
+    fun getScheduledCampaignIds(): List<String> = scheduledCampaigns.keys().toList()
 
     fun deschedule(campaignId: String) {
         synchronized(lock) {

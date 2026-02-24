@@ -353,8 +353,9 @@ object InAppMessageManager {
 
     private suspend fun syncCampaigns(context: Context) {
         try {
+            val fetched = NotiflySyncStateUtil.fetchCampaigns(context)
             InAppMessageScheduler.descheduleAll()
-            campaigns = NotiflySyncStateUtil.fetchCampaigns(context)
+            campaigns = fetched
         } catch (e: Exception) {
             Logger.e("Failed to fetch campaigns, keeping cached data", e)
         }
@@ -659,7 +660,10 @@ object InAppMessageManager {
             else -> false
         }
 
-    private fun checkCancellationConditions(eventName: String, eventParams: Map<String, Any?>) {
+    private fun checkCancellationConditions(
+        eventName: String,
+        eventParams: Map<String, Any?>,
+    ) {
         val scheduledCampaignIds = InAppMessageScheduler.getScheduledCampaignIds()
         if (scheduledCampaignIds.isEmpty()) return
 
@@ -671,7 +675,9 @@ object InAppMessageManager {
             if (!cancellationConditions.match(eventName)) continue
             if (campaign.cancellationEventFilters != null &&
                 !matchTriggeringEventFilters(eventParams, campaign.cancellationEventFilters)
-            ) continue
+            ) {
+                continue
+            }
 
             InAppMessageScheduler.deschedule(campaignId)
         }

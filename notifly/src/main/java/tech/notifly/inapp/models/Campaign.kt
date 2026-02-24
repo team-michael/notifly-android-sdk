@@ -133,8 +133,11 @@ data class Campaign(
             val cancellationConditions =
                 if (from.has("cancellation_conditions")) {
                     val value = from.get("cancellation_conditions")
-                    if (value == JSONObject.NULL) null
-                    else TriggeringConditions.fromJSONObject(value as JSONArray)
+                    if (value == JSONObject.NULL) {
+                        null
+                    } else {
+                        TriggeringConditions.fromJSONObject(value as JSONArray)
+                    }
                 } else {
                     null
                 }
@@ -142,8 +145,11 @@ data class Campaign(
             val cancellationEventFilters =
                 if (from.has("cancellation_event_filters")) {
                     val value = from.get("cancellation_event_filters")
-                    if (value == JSONObject.NULL) null
-                    else TriggeringEventFilters.fromJSONObject(value as JSONArray)
+                    if (value == JSONObject.NULL) {
+                        null
+                    } else {
+                        TriggeringEventFilters.fromJSONObject(value as JSONArray)
+                    }
                 } else {
                     null
                 }
