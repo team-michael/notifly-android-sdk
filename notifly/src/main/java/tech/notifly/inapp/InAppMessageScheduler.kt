@@ -26,9 +26,14 @@ object InAppMessageScheduler {
                 scheduledCampaigns.remove(campaign.id)?.let { handler.removeCallbacks(it) }
 
                 val runnable =
-                    Runnable {
-                        synchronized(lock) { scheduledCampaigns.remove(campaign.id) }
-                        show(appContext, campaign)
+                    object : Runnable {
+                        override fun run() {
+                            synchronized(lock) {
+                                if (scheduledCampaigns[campaign.id] !== this) return
+                                scheduledCampaigns.remove(campaign.id)
+                            }
+                            show(appContext, campaign)
+                        }
                     }
                 scheduledCampaigns[campaign.id] = runnable
                 handler.postDelayed(runnable, delay * 1000L)
