@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-02-25
+
+- Support cancellation conditions for in-app message campaigns: scheduled popups can now be cancelled by subsequent events during the delay period.
+
 ## [1.18.9] - 2026-02-23
 
 - Fix IS_NULL/IS_NOT_NULL segment condition operators always returning false due to early valueType null check.
