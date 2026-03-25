@@ -50,13 +50,15 @@ class NotiflyInAppMessageActivity : Activity() {
         Logger.d("NotiflyInAppMessageActivity.onCreate")
         setContentView(R.layout.activity_notifly_in_app_message)
 
-        // Handle edge-to-edge: apply navigation bar padding for host apps targeting SDK 35+,
-        // where the system enforces edge-to-edge and the layout extends behind the navigation bar.
+        // Handle edge-to-edge: apply system bar padding for host apps targeting SDK 35+,
+        // where the system enforces edge-to-edge and the layout extends behind system bars.
+        // Both top and bottom padding are needed to match the WebView dimensions computed in
+        // InAppMessageUtils.getScreenWidthAndHeight(), which subtracts both insets from the height.
         if (applicationInfo.targetSdkVersion >= 35 && Build.VERSION.SDK_INT >= 35) {
             findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout).let { layout ->
                 ViewCompat.setOnApplyWindowInsetsListener(layout) { view, windowInsets ->
                     val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-                    view.setPadding(0, 0, 0, insets.bottom)
+                    view.setPadding(0, insets.top, 0, insets.bottom)
                     windowInsets
                 }
             }
