@@ -59,7 +59,7 @@ class NotiflyInAppMessageActivity : Activity() {
                 ViewCompat.setOnApplyWindowInsetsListener(layout) { view, windowInsets ->
                     val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
                     view.setPadding(0, insets.top, 0, insets.bottom)
-                    windowInsets
+                    WindowInsetsCompat.CONSUMED
                 }
             }
         }
