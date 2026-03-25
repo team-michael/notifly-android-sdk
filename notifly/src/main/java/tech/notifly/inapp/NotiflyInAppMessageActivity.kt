@@ -4,8 +4,11 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import org.json.JSONObject
 import tech.notifly.R
 import tech.notifly.command.CommandDispatcher
@@ -46,6 +49,18 @@ class NotiflyInAppMessageActivity : Activity() {
         isActivityRunning = true
         Logger.d("NotiflyInAppMessageActivity.onCreate")
         setContentView(R.layout.activity_notifly_in_app_message)
+
+        // Handle edge-to-edge: apply navigation bar padding for host apps targeting SDK 35+,
+        // where the system enforces edge-to-edge and the layout extends behind the navigation bar.
+        if (applicationInfo.targetSdkVersion >= 35 && Build.VERSION.SDK_INT >= 35) {
+            findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout).let { layout ->
+                ViewCompat.setOnApplyWindowInsetsListener(layout) { view, windowInsets ->
+                    val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+                    view.setPadding(0, 0, 0, insets.bottom)
+                    windowInsets
+                }
+            }
+        }
 
         val (url, modalProperties) = handleIntent(intent)
         if (url == null) {
