@@ -18,7 +18,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.net.toUri
 import org.json.JSONObject
 import tech.notifly.command.CommandDispatcher
 import tech.notifly.command.models.SetUserPropertiesCommand
@@ -294,19 +296,32 @@ class NotiflyWebView
 
                         "main_button" -> {
                             Logger.d("In-app message main button clicked")
-                            logInAppMessageButtonClick(
-                                "main_button_click",
-                                buttonName,
-                                JSONObject().apply {
-                                    put("link", link)
-                                },
-                            )
                             if (link != null && link != "null") {
-                                Logger.d("In-app message main button link: link")
-                                val intent = getIntent(link)
-                                if (intent != null) {
-                                    context.startActivity(intent)
+                                val rawUri = link.trim { it <= ' ' }.toUri()
+                                val cleanUri = OSUtil.stripNotiflyParams(rawUri)
+
+                                logInAppMessageButtonClick(
+                                    "main_button_click",
+                                    buttonName,
+                                    JSONObject().apply {
+                                        put("link", cleanUri.toString())
+                                    },
+                                )
+
+                                val openMode = OSUtil.parseOpenMode(rawUri)
+                                val scheme = cleanUri.scheme?.lowercase()
+                                if (openMode == OSUtil.OPEN_MODE_IN_APP_BROWSER &&
+                                    (scheme == "http" || scheme == "https")
+                                ) {
+                                    openInAppBrowser(cleanUri)
+                                } else {
+                                    val intent = getIntent(cleanUri)
+                                    if (intent != null) {
+                                        context.startActivity(intent)
+                                    }
                                 }
+                            } else {
+                                logInAppMessageButtonClick("main_button_click", buttonName)
                             }
                         }
 
@@ -399,24 +414,24 @@ class NotiflyWebView
             }
         }
 
-        private fun getIntent(url: String?): Intent? {
-            val uri =
-                if (url != null) {
-                    Uri.parse(url.trim { it <= ' ' })
-                } else {
-                    null
-                }
-
-            return if (uri != null) {
-                if (OSUtil.isInAppLink(uri)) {
-                    val intentFlags = NotiflySdkPrefs.inAppMessage.getIntentFlagsForInAppLinkOpening()
-                    Logger.v("Opening in-app link with flags: $intentFlags")
-                    OSUtil.openURLInBrowserIntent(uri, intentFlags)
-                } else {
-                    OSUtil.openURLInBrowserIntent(uri)
-                }
+        private fun getIntent(uri: Uri): Intent? =
+            if (OSUtil.isInAppLink(uri)) {
+                val intentFlags = NotiflySdkPrefs.inAppMessage.getIntentFlagsForInAppLinkOpening()
+                Logger.v("Opening in-app link with flags: $intentFlags")
+                OSUtil.openURLInBrowserIntent(uri, intentFlags)
             } else {
-                null
+                OSUtil.openURLInBrowserIntent(uri)
+            }
+
+        private fun openInAppBrowser(uri: Uri) {
+            try {
+                CustomTabsIntent.Builder().build().launchUrl(context, uri)
+            } catch (e: Exception) {
+                Logger.w("CustomTabs failed, falling back to default intent", e)
+                val intent = getIntent(uri)
+                if (intent != null) {
+                    context.startActivity(intent)
+                }
             }
         }
 
