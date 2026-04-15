@@ -9,6 +9,29 @@ import android.net.Uri
 import android.os.Build
 
 object OSUtil {
+    private const val NF_OPEN_MODE_PARAM = "nf_open_mode"
+    const val OPEN_MODE_IN_APP_BROWSER = "in_app_browser"
+
+    fun parseOpenMode(uri: Uri): String? = uri.getQueryParameter(NF_OPEN_MODE_PARAM)
+
+    fun stripNotiflyParams(uri: Uri): Uri {
+        if (uri.isOpaque) return uri
+        val builder = uri.buildUpon().clearQuery()
+        uri.queryParameterNames.forEach { name ->
+            if (name != NF_OPEN_MODE_PARAM) {
+                uri.getQueryParameters(name).forEach { value ->
+                    builder.appendQueryParameter(name, value)
+                }
+            }
+        }
+        val result = builder.build()
+        return if (result.query?.isEmpty() == true) {
+            result.buildUpon().query(null).build()
+        } else {
+            result
+        }
+    }
+
     fun isAppInForeground(context: Context): Boolean {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appProcesses = activityManager.runningAppProcesses
