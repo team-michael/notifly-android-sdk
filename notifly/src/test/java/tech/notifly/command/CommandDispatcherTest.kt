@@ -2,11 +2,13 @@ import android.content.Context
 import android.content.SharedPreferences
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -14,6 +16,8 @@ import org.junit.Test
 import tech.notifly.command.CommandDispatcher
 import tech.notifly.command.models.SetUserIdCommand
 import tech.notifly.command.models.SetUserIdPayload
+import tech.notifly.command.models.SetUserPropertiesCommand
+import tech.notifly.command.models.SetUserPropertiesPayload
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.utils.N
@@ -24,6 +28,7 @@ class CommandDispatcherTest {
 
     @Before
     fun setup() {
+        unmockkAll()
         context = mockk<Context>()
         setupSharedPreferences()
     }
@@ -71,5 +76,38 @@ class CommandDispatcherTest {
                 NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
                 NotiflyUserUtil.setUserProperties(context, mapOf(N.KEY_EXTERNAL_USER_ID to "newUserId"))
             }
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `queued commands after queued SetUserIdCommand should execute after user id refresh completes`() =
+        runTest {
+            // Given: SDK is refreshing, so both commands are queued in call order.
+            val setUserIdCommand = SetUserIdCommand(SetUserIdPayload(context, "newUserId"))
+            val userProperties = mapOf<String, Any?>("name" to "tester")
+            val setUserPropertiesCommand = SetUserPropertiesCommand(SetUserPropertiesPayload(context, userProperties))
+
+            mockkObject(NotiflyUserUtil)
+            coEvery { NotiflyUserUtil.setUserProperties(any(), any()) } returns Unit
+
+            NotiflySdkStateManager.removeSdkLifecycleListener(CommandDispatcher)
+            NotiflySdkStateManager.addSdkLifecycleListener(CommandDispatcher)
+            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+
+            // When
+            CommandDispatcher.dispatch(setUserIdCommand)
+            CommandDispatcher.dispatch(setUserPropertiesCommand)
+            NotiflySdkStateManager.setState(NotiflySdkState.READY)
+
+            // Then: SetUserIdCommand executes first, transitions REFRESHING -> READY,
+            // and the remaining queued setUserProperties command is drained afterwards.
+            coVerify(timeout = 5000) {
+                NotiflyUserUtil.setUserProperties(context, mapOf(N.KEY_EXTERNAL_USER_ID to "newUserId"))
+            }
+            coVerify(timeout = 5000) {
+                NotiflyUserUtil.setUserProperties(context, userProperties)
+            }
+
+            NotiflySdkStateManager.removeSdkLifecycleListener(CommandDispatcher)
         }
 }
