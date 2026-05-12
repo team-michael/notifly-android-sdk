@@ -92,22 +92,26 @@ class CommandDispatcherTest {
 
             NotiflySdkStateManager.removeSdkLifecycleListener(CommandDispatcher)
             NotiflySdkStateManager.addSdkLifecycleListener(CommandDispatcher)
-            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
-            // When
-            CommandDispatcher.dispatch(setUserIdCommand)
-            CommandDispatcher.dispatch(setUserPropertiesCommand)
-            NotiflySdkStateManager.setState(NotiflySdkState.READY)
+            try {
+                NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
-            // Then: SetUserIdCommand executes first, transitions REFRESHING -> READY,
-            // and the remaining queued setUserProperties command is drained afterwards.
-            coVerify(timeout = 5000) {
-                NotiflyUserUtil.setUserProperties(context, mapOf(N.KEY_EXTERNAL_USER_ID to "newUserId"))
+                // When
+                CommandDispatcher.dispatch(setUserIdCommand)
+                CommandDispatcher.dispatch(setUserPropertiesCommand)
+                NotiflySdkStateManager.setState(NotiflySdkState.READY)
+
+                // Then: wait until the queued setUserProperties command is drained, then
+                // assert the identity update happens before app-supplied properties.
+                coVerify(timeout = 5000) {
+                    NotiflyUserUtil.setUserProperties(context, userProperties)
+                }
+                coVerifyOrder {
+                    NotiflyUserUtil.setUserProperties(context, mapOf(N.KEY_EXTERNAL_USER_ID to "newUserId"))
+                    NotiflyUserUtil.setUserProperties(context, userProperties)
+                }
+            } finally {
+                NotiflySdkStateManager.removeSdkLifecycleListener(CommandDispatcher)
             }
-            coVerify(timeout = 5000) {
-                NotiflyUserUtil.setUserProperties(context, userProperties)
-            }
-
-            NotiflySdkStateManager.removeSdkLifecycleListener(CommandDispatcher)
         }
 }
