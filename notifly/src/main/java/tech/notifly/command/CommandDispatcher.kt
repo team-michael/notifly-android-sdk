@@ -19,12 +19,7 @@ object CommandDispatcher : ISdkLifecycleListener {
             }
 
             NotiflySdkState.READY -> {
-                val doesCommandNeedRefresh = command.commandType == CommandType.SET_USER_ID
-                if (doesCommandNeedRefresh) {
-                    NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
-                }
-
-                command.execute()
+                executeReadyCommand(command)
             }
 
             else -> {
@@ -44,7 +39,7 @@ object CommandDispatcher : ISdkLifecycleListener {
             while (pendingCommandsQueue.isNotEmpty()) {
                 val command = pendingCommandsQueue.poll()
                 if (command != null) {
-                    command.execute()
+                    executeReadyCommand(command)
                     if (command.commandType == CommandType.SET_USER_ID) {
                         Logger.v("==== Stop executing pending commands due to the recurring set user ID. ====")
                         break
@@ -52,5 +47,17 @@ object CommandDispatcher : ISdkLifecycleListener {
                 }
             }
         }
+    }
+
+    private fun executeReadyCommand(command: CommandBase) {
+        // SET_USER_ID refreshes user state asynchronously. Mark it as REFRESHING even when
+        // it came from the pending queue, otherwise commands queued after it can remain stuck
+        // because SetUserIdCommand's final READY transition would be READY -> READY no-op.
+        val doesCommandNeedRefresh = command.commandType == CommandType.SET_USER_ID
+        if (doesCommandNeedRefresh) {
+            NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
+        }
+
+        command.execute()
     }
 }
