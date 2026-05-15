@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import tech.notifly.utils.Logger
+import java.net.URLEncoder
 import kotlin.math.max
 import kotlin.math.min
 
@@ -139,10 +140,12 @@ internal class SSEClient(
         val response = provider.open(url, headers)
 
         if (response.statusCode != HTTP_OK) {
+            runCatching { response.close() }
             throw ConnectionError.HttpStatus(response.statusCode)
         }
         val ct = (response.contentType ?: "").lowercase()
         if (!ct.startsWith("text/event-stream")) {
+            runCatching { response.close() }
             throw ConnectionError.InvalidResponse
         }
 
@@ -243,10 +246,17 @@ internal class SSEClient(
 
     private fun buildUrl(): String {
         val base = baseUrl.trimEnd('/')
-        val path = "/projects/$projectId/users/$notiflyUserId/streams"
-        val query = deviceId?.takeIf { it.isNotEmpty() }?.let { "?deviceId=$it" } ?: ""
+        val path = "/projects/${urlSegment(projectId)}/users/${urlSegment(notiflyUserId)}/streams"
+        val query =
+            deviceId?.takeIf { it.isNotEmpty() }?.let { "?deviceId=${URLEncoder.encode(it, "UTF-8")}" } ?: ""
         return "$base$path$query"
     }
+
+    private fun urlSegment(s: String): String =
+        URLEncoder
+            .encode(s, "UTF-8")
+            .replace("+", "%20")
+            .replace("%2F", "%2F")
 
     private fun buildHeaders(
         token: String,

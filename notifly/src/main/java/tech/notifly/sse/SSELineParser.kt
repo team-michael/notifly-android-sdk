@@ -32,7 +32,7 @@ internal class SSELineParser {
     }
 
     private fun dispatch(): SSEEvent? {
-        val type = eventType ?: DEFAULT_TYPE
+        val type = eventType?.takeIf { it.isNotEmpty() } ?: DEFAULT_TYPE
         val data = if (dataLines.isEmpty()) null else dataLines.joinToString("\n")
         eventType = null
         dataLines.clear()

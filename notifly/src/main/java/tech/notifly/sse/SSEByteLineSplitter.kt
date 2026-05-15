@@ -14,6 +14,8 @@ import java.io.InputStream
  * stream 을 close 하면 read() 가 IOException 으로 종료된다.
  */
 internal object SSEByteLineSplitter {
+    const val MAX_LINE_BYTES: Int = 1 * 1024 * 1024
+
     @Throws(IOException::class)
     fun split(
         source: InputStream,
@@ -23,7 +25,7 @@ internal object SSEByteLineSplitter {
         var prevWasCR = false
         while (true) {
             val byte = source.read()
-            if (byte < 0) return // EOF: pending data discard.
+            if (byte < 0) return
             when (byte) {
                 LF -> {
                     if (prevWasCR) {
@@ -40,6 +42,9 @@ internal object SSEByteLineSplitter {
                 }
                 else -> {
                     prevWasCR = false
+                    if (buffer.size() >= MAX_LINE_BYTES) {
+                        throw IOException("SSE line exceeded $MAX_LINE_BYTES bytes without terminator")
+                    }
                     buffer.write(byte)
                 }
             }

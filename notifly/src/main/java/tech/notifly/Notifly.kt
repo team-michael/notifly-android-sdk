@@ -169,19 +169,11 @@ object Notifly {
 
     private val sseLock = Any()
     private var sseController: SSEController? = null
+    private var sseControllerProjectId: String? = null
+    private var sseControllerUserId: String? = null
 
-    /**
-     * SSE controller 는 user/project 가 확보된 시점에만 만들 수 있으므로 onFocus 안에서 lazy 하게 init.
-     * 이미 만들어졌다면 start() 만 호출 (멱등).
-     */
     private suspend fun ensureSseControllerStarted(context: Context) {
         try {
-            val existing: SSEController? = synchronized(sseLock) { sseController }
-            if (existing != null) {
-                existing.start()
-                return
-            }
-
             val projectId = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
             if (projectId.isNullOrEmpty()) return
 
@@ -192,6 +184,23 @@ object Notifly {
                     Logger.d("[sse] user id not resolvable yet: ${e.message}")
                     return
                 }
+
+            val existing: SSEController? =
+                synchronized(sseLock) {
+                    if (sseController != null &&
+                        sseControllerProjectId == projectId &&
+                        sseControllerUserId == userId
+                    ) {
+                        sseController
+                    } else {
+                        null
+                    }
+                }
+            if (existing != null) {
+                existing.start()
+                return
+            }
+            stopSseController()
 
             val externalDeviceId = NotiflyDeviceUtil.getExternalDeviceId(context)
             val deviceId =
@@ -230,13 +239,14 @@ object Notifly {
                     },
                     onServerEventTriggered = { name, params ->
                         Logger.d("[sse] server-event received: $name params=$params")
-                        // Server-driven event hook 은 향후 host integration 에서 처리.
                     },
                 )
             val installed =
                 synchronized(sseLock) {
                     if (sseController == null) {
                         sseController = controller
+                        sseControllerProjectId = projectId
+                        sseControllerUserId = userId
                         true
                     } else {
                         false
@@ -250,7 +260,15 @@ object Notifly {
 
     private fun stopSseController() {
         try {
-            synchronized(sseLock) { sseController }?.stop()
+            val previous: SSEController? =
+                synchronized(sseLock) {
+                    val c = sseController
+                    sseController = null
+                    sseControllerProjectId = null
+                    sseControllerUserId = null
+                    c
+                }
+            previous?.stop()
         } catch (e: Throwable) {
             Logger.e("[sse] stopSseController failed", e)
         }

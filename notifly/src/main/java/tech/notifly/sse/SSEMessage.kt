@@ -50,7 +50,7 @@ internal sealed class SSEMessage {
             type: String,
         ): SSEMessage {
             val json = parseJson(data) ?: return Malformed(type)
-            val name = json.optString("name", "")
+            val name = json.optString("name", "").trim()
             if (name.isEmpty()) return Malformed(type)
             val params = json.optJSONObject("eventParams")
             return Event(name, params)
