@@ -15,7 +15,10 @@ import java.io.InputStream
  */
 internal object SSEByteLineSplitter {
     @Throws(IOException::class)
-    fun split(source: InputStream, emit: (String) -> Unit) {
+    fun split(
+        source: InputStream,
+        emit: (String) -> Unit,
+    ) {
         val buffer = ByteArrayOutputStream(INITIAL_BUFFER_CAPACITY)
         var prevWasCR = false
         while (true) {

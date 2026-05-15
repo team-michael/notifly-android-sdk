@@ -12,15 +12,24 @@ internal sealed class SSEMessage {
 
     object Sync : SSEMessage()
 
-    data class Event(val name: String, val eventParams: JSONObject?) : SSEMessage()
+    data class Event(
+        val name: String,
+        val eventParams: JSONObject?,
+    ) : SSEMessage()
 
-    data class Shutdown(val reconnectInMs: Int) : SSEMessage()
+    data class Shutdown(
+        val reconnectInMs: Int,
+    ) : SSEMessage()
 
     object TtlExpired : SSEMessage()
 
-    data class Unknown(val rawType: String) : SSEMessage()
+    data class Unknown(
+        val rawType: String,
+    ) : SSEMessage()
 
-    data class Malformed(val rawType: String) : SSEMessage()
+    data class Malformed(
+        val rawType: String,
+    ) : SSEMessage()
 
     companion object {
         fun decode(

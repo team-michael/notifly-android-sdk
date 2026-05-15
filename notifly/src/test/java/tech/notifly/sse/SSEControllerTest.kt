@@ -35,7 +35,11 @@ class SSEControllerTest {
     @Test
     fun syncMessage_triggersOnSyncRequested() {
         var called = 0
-        val c = controller(onSyncRequested = { completion -> called++; completion() })
+        val c =
+            controller(onSyncRequested = { completion ->
+                called++
+                completion()
+            })
         c.handleMessage("sync", "{}")
         assertEquals(1, called)
     }
@@ -74,7 +78,6 @@ class SSEControllerTest {
         c.handleMessage("shutdown", "{\"reconnectInMs\":1500}")
         verify { client.disconnect() }
         assertEquals(1500L, capturedDelay)
-        // scheduled work 실행 시 reconnect 가 호출돼야 함 (gen 변경 없음).
         capturedWork?.invoke()
         verify { client.connect() }
     }
@@ -86,7 +89,9 @@ class SSEControllerTest {
         var called = 0
         val c =
             controller(
-                onSyncRequested = { _ -> called++ /* completion 호출 안 함 → in-flight 유지 */ },
+                onSyncRequested = { _ ->
+                    called++
+                },
             )
         c.handleMessage("sync", "{}")
         c.handleMessage("sync", "{}")
@@ -97,14 +102,16 @@ class SSEControllerTest {
     @Test
     fun syncMessage_doesNotDispatch_whilePendingDebounce() {
         var called = 0
-        // scheduler 가 work 를 즉시 실행 안 함 → pendingDispatch 가 풀리지 않음.
         val c =
             controller(
-                onSyncRequested = { completion -> called++; completion() },
-                scheduler = { _, _ -> /* never invoke */ },
+                onSyncRequested = { completion ->
+                    called++
+                    completion()
+                },
+                scheduler = { _, _ -> },
             )
         c.handleMessage("sync", "{}")
-        c.handleMessage("sync", "{}") // pendingDispatch 가드로 skip
+        c.handleMessage("sync", "{}")
         assertEquals(1, called)
     }
 
@@ -114,7 +121,10 @@ class SSEControllerTest {
         var pendingWork: (() -> Unit)? = null
         val c =
             controller(
-                onSyncRequested = { completion -> called++; completion() },
+                onSyncRequested = { completion ->
+                    called++
+                    completion()
+                },
                 scheduler = { _, w -> pendingWork = w },
             )
         c.handleMessage("sync", "{}")

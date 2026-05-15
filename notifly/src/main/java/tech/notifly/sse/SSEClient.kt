@@ -43,15 +43,21 @@ internal class SSEClient(
 
         object Open : State()
 
-        data class Reconnecting(val attempt: Int) : State()
+        data class Reconnecting(
+            val attempt: Int,
+        ) : State()
 
         object Stopped : State()
     }
 
-    sealed class ConnectionError(message: String) : RuntimeException(message) {
+    sealed class ConnectionError(
+        message: String,
+    ) : RuntimeException(message) {
         object InvalidResponse : ConnectionError("invalid response")
 
-        data class HttpStatus(val code: Int) : ConnectionError("http status $code")
+        data class HttpStatus(
+            val code: Int,
+        ) : ConnectionError("http status $code")
 
         object HeartbeatTimeout : ConnectionError("heartbeat timeout")
     }
