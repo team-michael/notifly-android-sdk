@@ -24,17 +24,23 @@ import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.push.interfaces.INotificationInterceptor
 import tech.notifly.sdk.NotiflySdkControlToken
+import tech.notifly.sdk.NotiflySdkInfo
 import tech.notifly.sdk.NotiflySdkPrefs
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.sdk.NotiflySdkWrapperInfo
 import tech.notifly.sdk.NotiflySdkWrapperType
 import tech.notifly.services.NotiflyServiceProvider
+import tech.notifly.sse.SSEClient
+import tech.notifly.sse.SSEController
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.Logger
 import tech.notifly.utils.N
 import tech.notifly.utils.NotiflyAuthUtil
+import tech.notifly.utils.NotiflyDeviceUtil
+import tech.notifly.utils.NotiflyIdUtil
+import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.NotiflyUtil
 
@@ -102,17 +108,18 @@ object Notifly {
                     object :
                         BaseApplicationLifecycleHandler() {
                         override fun onFocus(first: Boolean) {
-                            if (first) {
-                                // Application is brought into the foreground for the first time
-                                CoroutineScope(Dispatchers.IO).launch {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                if (first) {
                                     initializeInAppMessageManagerAndStartSession(context)
-                                }
-                            } else {
-                                // Application is brought into the foreground
-                                CoroutineScope(Dispatchers.IO).launch {
+                                } else {
                                     InAppMessageManager.maybeRevalidateCampaigns(context)
                                 }
+                                ensureSseControllerStarted(context)
                             }
+                        }
+
+                        override fun onUnfocused() {
+                            stopSseController()
                         }
                     },
                 )
@@ -159,6 +166,97 @@ object Notifly {
             Logger.e("Failed to start session:", e)
         }
     }
+
+    private val sseLock = Any()
+    private var sseController: SSEController? = null
+
+    /**
+     * SSE controller 는 user/project 가 확보된 시점에만 만들 수 있으므로 onFocus 안에서 lazy 하게 init.
+     * 이미 만들어졌다면 start() 만 호출 (멱등).
+     */
+    private suspend fun ensureSseControllerStarted(context: Context) {
+        try {
+            val existing: SSEController? = synchronized(sseLock) { sseController }
+            if (existing != null) {
+                existing.start()
+                return
+            }
+
+            val projectId = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
+            if (projectId.isNullOrEmpty()) return
+
+            val userId =
+                try {
+                    NotiflyAuthUtil.getNotiflyUserId(context)
+                } catch (e: Exception) {
+                    Logger.d("[sse] user id not resolvable yet: ${e.message}")
+                    return
+                }
+
+            val externalDeviceId = NotiflyDeviceUtil.getExternalDeviceId(context)
+            val deviceId =
+                NotiflyIdUtil.generate(
+                    NotiflyIdUtil.Namespace.NAMESPACE_DEVICE_ID,
+                    externalDeviceId,
+                )
+
+            val sdkVersionHeader = "notifly/android/${NotiflySdkInfo.getSdkVersion()}"
+
+            val client =
+                SSEClient(
+                    projectId = projectId,
+                    notiflyUserId = userId,
+                    deviceId = deviceId,
+                    baseUrl = SSE_BASE_URL,
+                    sdkVersionHeader = sdkVersionHeader,
+                    tokenProvider = {
+                        NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
+                            ?: NotiflyAuthUtil.invalidateCognitoIdToken(context)
+                    },
+                )
+            val controller =
+                SSEController(
+                    sseClient = client,
+                    onSyncRequested = { completion ->
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                NotiflySyncStateUtil.fetchState(context)
+                            } catch (e: Exception) {
+                                Logger.e("[sse] sync fetch failed", e)
+                            } finally {
+                                completion()
+                            }
+                        }
+                    },
+                    onServerEventTriggered = { name, params ->
+                        Logger.d("[sse] server-event received: $name params=$params")
+                        // Server-driven event hook 은 향후 host integration 에서 처리.
+                    },
+                )
+            val installed =
+                synchronized(sseLock) {
+                    if (sseController == null) {
+                        sseController = controller
+                        true
+                    } else {
+                        false
+                    }
+                }
+            if (installed) controller.start()
+        } catch (e: Throwable) {
+            Logger.e("[sse] ensureSseControllerStarted failed", e)
+        }
+    }
+
+    private fun stopSseController() {
+        try {
+            synchronized(sseLock) { sseController }?.stop()
+        } catch (e: Throwable) {
+            Logger.e("[sse] stopSseController failed", e)
+        }
+    }
+
+    private const val SSE_BASE_URL = "https://api.notifly.tech"
 
     /**
      * Sets the user ID for the current user.
