@@ -229,7 +229,7 @@ object Notifly {
                     onSyncRequested = { completion ->
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
-                                NotiflySyncStateUtil.fetchState(context)
+                                InAppMessageManager.refresh(context, shouldMergeData = true)
                             } catch (e: Exception) {
                                 Logger.e("[sse] sync fetch failed", e)
                             } finally {
