@@ -23,6 +23,7 @@ import tech.notifly.push.PushNotificationManager
 import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.push.interfaces.INotificationClickListener
 import tech.notifly.push.interfaces.INotificationInterceptor
+import tech.notifly.sdk.ISdkLifecycleListener
 import tech.notifly.sdk.NotiflySdkControlToken
 import tech.notifly.sdk.NotiflySdkInfo
 import tech.notifly.sdk.NotiflySdkPrefs
@@ -124,6 +125,20 @@ object Notifly {
                 )
                 applicationService.start(context)
 
+                NotiflySdkStateManager.addSdkLifecycleListener(
+                    object : ISdkLifecycleListener {
+                        override fun onStateChanged(
+                            prevState: NotiflySdkState,
+                            newState: NotiflySdkState,
+                        ) {
+                            if (prevState == NotiflySdkState.REFRESHING && newState == NotiflySdkState.READY) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    ensureSseControllerStarted(context)
+                                }
+                            }
+                        }
+                    },
+                )
                 NotiflySdkStateManager.addSdkLifecycleListener(CommandDispatcher)
                 NotiflySdkStateManager.setState(NotiflySdkState.READY)
 
