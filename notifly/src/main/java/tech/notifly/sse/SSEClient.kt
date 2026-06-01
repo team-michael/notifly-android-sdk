@@ -90,11 +90,13 @@ internal class SSEClient(
             connectJob = scope.launch { runConnectionLoop() }
             didStart = true
         }
-        if (didStart) emitState(State.Connecting)
+        if (didStart) {
+            Logger.i("[sse] connect requested: projectId=$projectId userId=$notiflyUserId deviceId=${deviceId ?: "-"}")
+            emitState(State.Connecting)
+        }
     }
 
     fun disconnect() {
-        Logger.d("[sse] SSEClient.disconnect called")
         var alreadyStopped = false
         var jobToCancel: Job? = null
         synchronized(stateLock) {
@@ -105,7 +107,10 @@ internal class SSEClient(
             lastOpenAt = null
         }
         jobToCancel?.cancel()
-        if (!alreadyStopped) emitState(State.Stopped)
+        if (!alreadyStopped) {
+            Logger.i("[sse] disconnect requested: projectId=$projectId userId=$notiflyUserId")
+            emitState(State.Stopped)
+        }
     }
 
     private suspend fun runConnectionLoop() {
@@ -136,20 +141,25 @@ internal class SSEClient(
 
         val token = tokenProvider()
         val url = buildUrl()
+        Logger.i("[sse] opening: $url")
         val headers = buildHeaders(token, lastEventId)
         val response = provider.open(url, headers)
+        Logger.i("[sse] response: status=${response.statusCode} contentType=${response.contentType}")
 
         if (response.statusCode != HTTP_OK) {
+            Logger.e("[sse] handshake failed: status=${response.statusCode} projectId=$projectId")
             runCatching { response.close() }
             throw ConnectionError.HttpStatus(response.statusCode)
         }
         val ct = (response.contentType ?: "").lowercase()
         if (!ct.startsWith("text/event-stream")) {
+            Logger.e("[sse] invalid content-type: $ct projectId=$projectId")
             runCatching { response.close() }
             throw ConnectionError.InvalidResponse
         }
 
         transition(State.Open)
+        Logger.i("[sse] connected: projectId=$projectId userId=$notiflyUserId deviceId=${deviceId ?: "-"}")
         setLastDataAt(nowProvider())
 
         // 두 자식 (consume / watchdog) 중 먼저 끝난 쪽을 기다린 뒤 나머지 cancel.
@@ -241,7 +251,9 @@ internal class SSEClient(
     private fun backoffDelayMs(attempt: Int): Long {
         val idx = min(max(attempt - 1, 0), backoffScheduleMs.size - 1)
         val base = backoffScheduleMs[idx]
-        return (base.toDouble() * jitterProvider()).toLong().coerceAtLeast(0)
+        val delay = (base.toDouble() * jitterProvider()).toLong().coerceAtLeast(100)
+        Logger.i("[sse] backoff attempt=$attempt delay=${delay}ms")
+        return delay
     }
 
     private fun buildUrl(): String {
@@ -271,12 +283,15 @@ internal class SSEClient(
         map["Cache-Control"] = "no-cache"
         if (!lastEventId.isNullOrEmpty()) {
             map["Last-Event-ID"] = lastEventId
+            Logger.i("[sse] sending Last-Event-ID: $lastEventId")
+        } else {
+            Logger.i("[sse] sending Last-Event-ID: (none)")
         }
         return map
     }
 
     companion object {
-        val DEFAULT_BACKOFF_SCHEDULE_MS = listOf(1_000L, 2_000L, 4_000L, 8_000L, 30_000L)
+        val DEFAULT_BACKOFF_SCHEDULE_MS = listOf(10_000L)
         const val DEFAULT_HEARTBEAT_TIMEOUT_MS: Long = 60_000L
         const val DEFAULT_OPEN_STABLE_THRESHOLD_MS: Long = 30_000L
         private const val HTTP_OK = 200
@@ -285,6 +300,6 @@ internal class SSEClient(
         private const val WATCHDOG_MAX_INTERVAL_MS = 5_000L
         private const val WATCHDOG_MIN_INTERVAL_MS = 50L
 
-        private fun defaultJitter(): Double = 0.8 + Math.random() * 0.4
+        private fun defaultJitter(): Double = Math.random()
     }
 }
