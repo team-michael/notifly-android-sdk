@@ -40,7 +40,6 @@ import tech.notifly.utils.N
 import tech.notifly.utils.NotiflyAuthUtil
 import tech.notifly.utils.NotiflyDeviceUtil
 import tech.notifly.utils.NotiflyIdUtil
-import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.NotiflyUtil
 
@@ -274,7 +273,7 @@ object Notifly {
         }
     }
 
-    private const val SSE_BASE_URL = "https://api.notifly.tech"
+    private const val SSE_BASE_URL = "https://api-stage.notifly.tech"
 
     /**
      * Sets the user ID for the current user.
