@@ -36,18 +36,15 @@ internal class SSEController(
     val mode: Mode get() = synchronized(stateLock) { modeInternal }
 
     fun start() {
-        Logger.d("[sse] SSEController.start")
         sseClient.connect()
     }
 
     fun stop() {
-        Logger.d("[sse] SSEController.stop")
         synchronized(stateLock) { generation += 1 }
         sseClient.disconnect()
     }
 
     fun reconnect(reason: String) {
-        Logger.i("[sse] reconnect requested: $reason")
         sseClient.disconnect()
         sseClient.connect()
     }
@@ -56,18 +53,22 @@ internal class SSEController(
         type: String,
         data: String,
     ) {
-        Logger.d("[sse] message type=$type bytes=${data.length}")
         when (val message = SSEMessage.decode(type, data)) {
             is SSEMessage.Connected ->
                 synchronized(stateLock) {
                     hasReachedOpen = true
                     modeInternal = Mode.SSE
                 }
-            is SSEMessage.Sync -> triggerSyncDebounced()
-            is SSEMessage.Event -> onServerEventTriggered(message.name, message.eventParams)
+            is SSEMessage.Sync -> {
+                Logger.i("[sse] sync received")
+                triggerSyncDebounced()
+            }
+            is SSEMessage.Event -> {
+                onServerEventTriggered(message.name, message.eventParams)
+            }
             is SSEMessage.Shutdown -> handleShutdown(message.reconnectInMs)
             is SSEMessage.TtlExpired -> reconnect("ttl-expired")
-            is SSEMessage.Unknown -> Logger.i("[sse] unknown type: ${message.rawType}")
+            is SSEMessage.Unknown -> Unit
             is SSEMessage.Malformed -> Logger.e("[sse] malformed type: ${message.rawType}")
         }
     }
@@ -93,7 +94,6 @@ internal class SSEController(
                         }
                     }
                 if (shouldFallback) {
-                    Logger.i("[sse] entering fallback mode (attempt=${state.attempt})")
                     sseClient.disconnect()
                 }
             }
@@ -122,7 +122,6 @@ internal class SSEController(
     }
 
     private fun handleShutdown(reconnectInMs: Int) {
-        Logger.i("[sse] shutdown, reconnect in ${reconnectInMs}ms")
         sseClient.disconnect()
         val scheduledGen = synchronized(stateLock) { generation }
         val delay = maxOf(reconnectInMs.toLong(), 0L)

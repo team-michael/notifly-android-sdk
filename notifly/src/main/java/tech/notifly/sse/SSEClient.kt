@@ -91,7 +91,6 @@ internal class SSEClient(
             didStart = true
         }
         if (didStart) {
-            Logger.i("[sse] connect requested: projectId=$projectId userId=$notiflyUserId deviceId=${deviceId ?: "-"}")
             emitState(State.Connecting)
         }
     }
@@ -108,7 +107,7 @@ internal class SSEClient(
         }
         jobToCancel?.cancel()
         if (!alreadyStopped) {
-            Logger.i("[sse] disconnect requested: projectId=$projectId userId=$notiflyUserId")
+            Logger.i("[sse] disconnected")
             emitState(State.Stopped)
         }
     }
@@ -121,7 +120,7 @@ internal class SSEClient(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                Logger.i("[sse] connection error: ${e.message}")
+                Logger.w("[sse] connection error: ${e.message}")
             }
             if (isStopped()) break
 
@@ -141,10 +140,8 @@ internal class SSEClient(
 
         val token = tokenProvider()
         val url = buildUrl()
-        Logger.i("[sse] opening: $url")
         val headers = buildHeaders(token, lastEventId)
         val response = provider.open(url, headers)
-        Logger.i("[sse] response: status=${response.statusCode} contentType=${response.contentType}")
 
         if (response.statusCode != HTTP_OK) {
             Logger.e("[sse] handshake failed: status=${response.statusCode} projectId=$projectId")
@@ -159,7 +156,7 @@ internal class SSEClient(
         }
 
         transition(State.Open)
-        Logger.i("[sse] connected: projectId=$projectId userId=$notiflyUserId deviceId=${deviceId ?: "-"}")
+        Logger.i("[sse] connected")
         setLastDataAt(nowProvider())
 
         // 두 자식 (consume / watchdog) 중 먼저 끝난 쪽을 기다린 뒤 나머지 cancel.
@@ -180,11 +177,6 @@ internal class SSEClient(
         val parser = SSELineParser()
         lines.collect { line ->
             setLastDataAt(nowProvider())
-            when {
-                line.startsWith(":") -> Logger.d("[sse] keepalive: $line")
-                line.isEmpty() -> Logger.d("[sse] line: <empty>")
-                else -> Logger.d("[sse] line: ${line.take(LINE_LOG_LIMIT)}")
-            }
             val event = parser.feed(line) ?: return@collect
             event.id?.let { setLastEventId(it) }
             emitMessage(event.type, event.data)
@@ -201,7 +193,6 @@ internal class SSEClient(
             delay(checkInterval)
             val elapsed = nowProvider() - getLastDataAt()
             if (elapsed > heartbeatTimeoutMs) {
-                Logger.i("[sse] heartbeat timeout: ${elapsed}ms")
                 throw ConnectionError.HeartbeatTimeout
             }
         }
@@ -220,7 +211,6 @@ internal class SSEClient(
             lastOpenAt = if (new is State.Open) nowProvider() else null
         }
         if (changed) {
-            Logger.d("[sse] state=$new")
             emitState(new)
         }
     }
@@ -251,9 +241,7 @@ internal class SSEClient(
     private fun backoffDelayMs(attempt: Int): Long {
         val idx = min(max(attempt - 1, 0), backoffScheduleMs.size - 1)
         val base = backoffScheduleMs[idx]
-        val delay = (base.toDouble() * jitterProvider()).toLong().coerceAtLeast(100)
-        Logger.i("[sse] backoff attempt=$attempt delay=${delay}ms")
-        return delay
+        return (base.toDouble() * jitterProvider()).toLong().coerceAtLeast(100)
     }
 
     private fun buildUrl(): String {
@@ -283,9 +271,6 @@ internal class SSEClient(
         map["Cache-Control"] = "no-cache"
         if (!lastEventId.isNullOrEmpty()) {
             map["Last-Event-ID"] = lastEventId
-            Logger.i("[sse] sending Last-Event-ID: $lastEventId")
-        } else {
-            Logger.i("[sse] sending Last-Event-ID: (none)")
         }
         return map
     }
