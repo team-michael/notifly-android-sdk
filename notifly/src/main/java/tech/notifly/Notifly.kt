@@ -288,7 +288,7 @@ object Notifly {
         }
     }
 
-    private const val SSE_BASE_URL = "https://api-stage.notifly.tech"
+    private const val SSE_BASE_URL = "https://api.notifly.tech"
 
     /**
      * Sets the user ID for the current user.
