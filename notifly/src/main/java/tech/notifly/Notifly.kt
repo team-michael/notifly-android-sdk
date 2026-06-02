@@ -119,7 +119,7 @@ object Notifly {
                         }
 
                         override fun onUnfocused() {
-                            stopSseController()
+                            pauseSseController()
                         }
                     },
                 )
@@ -285,6 +285,19 @@ object Notifly {
             previous?.stop()
         } catch (e: Throwable) {
             Logger.e("[sse] stopSseController failed", e)
+        }
+    }
+
+    /**
+     * Transport 만 끊는다. controller / client 인스턴스는 유지되어 lastEventId 가 보존된다.
+     * BG 진입처럼 같은 user 로 곧 재개될 때 사용한다.
+     */
+    private fun pauseSseController() {
+        try {
+            val current: SSEController? = synchronized(sseLock) { sseController }
+            current?.pause()
+        } catch (e: Throwable) {
+            Logger.e("[sse] pauseSseController failed", e)
         }
     }
 

@@ -44,6 +44,15 @@ internal class SSEController(
         sseClient.disconnect()
     }
 
+    /**
+     * Transport 만 disconnect 한다. controller / sseClient 인스턴스는 유지되어
+     * lastEventId 가 보존되고, start() 호출로 같은 클라이언트가 다시 connect 한다.
+     * BG 진입 같이 일시 중단 후 곧 같은 user 로 재개되는 경우에 사용.
+     */
+    fun pause() {
+        sseClient.disconnect()
+    }
+
     fun reconnect(reason: String) {
         sseClient.disconnect()
         sseClient.connect()
