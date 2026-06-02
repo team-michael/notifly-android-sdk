@@ -120,7 +120,7 @@ internal class SSEClient(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                Logger.w("[sse] connection error: ${e.message}")
+                Logger.i("[sse] connection error: ${e.message}")
             }
             if (isStopped()) break
 
