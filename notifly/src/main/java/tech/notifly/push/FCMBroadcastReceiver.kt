@@ -14,6 +14,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.widget.RemoteViews
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -41,6 +43,9 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         private const val MESSAGE_TYPE_EXTRA_KEY = "message_type"
         private const val CONNECT_TIMEOUT_MS = 1000L
         private const val READ_TIMEOUT_MS = 3000L
+
+        // 광고 푸시: 커스텀 데이터에 unsubscribe_url 이 있으면 "수신거부" 커스텀 행을 단다.
+        private const val UNSUBSCRIBE_URL_DATA_KEY = "unsubscribe_url"
 
         @Volatile
         var requestCodeCounter = 0
@@ -211,22 +216,65 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
                 .setSmallIcon(notificationIcon)
                 .setContentTitle(title)
                 .setContentText(body)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(priority)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        if (bitmap != null) {
-            builder.setStyle(
-                NotificationCompat
-                    .BigPictureStyle()
-                    .bigPicture(bitmap)
-                    .bigLargeIcon(null as Bitmap?),
-            )
+        // 광고 푸시 여부 = unsubscribe_url 커스텀 데이터 보유.
+        val unsubscribeUrl = pushNotification.customData[UNSUBSCRIBE_URL_DATA_KEY]
+        val isAdPush = !unsubscribeUrl.isNullOrBlank()
+
+        // 일반 푸시 스타일은 고객 인터셉터(applyPostBuild)가 덮어쓸 수 있도록 그 전에 적용한다.
+        if (!isAdPush) {
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            if (bitmap != null) {
+                builder.setStyle(
+                    NotificationCompat
+                        .BigPictureStyle()
+                        .bigPicture(bitmap)
+                        .bigLargeIcon(null as Bitmap?),
+                )
+            }
         }
 
         PushNotificationManager.applyPostBuild(builder, pushNotification)
+
+        // 광고 푸시: 수신거부 노출은 규정상 필수이므로, 고객 인터셉터(applyPostBuild) 이후에
+        // 커스텀 스타일을 적용해 덮어쓰기되지 않게 한다.
+        // (setColor/setLargeIcon 등 비-스타일 커스터마이즈는 그대로 보존됨)
+        if (isAdPush) {
+            val unsubscribeIntent =
+                Intent(context, NotificationOpenedActivity::class.java).apply {
+                    // 본문 클릭 PendingIntent 와 구분되도록 고유 action 을 지정한다.
+                    action = "tech.notifly.push.UNSUBSCRIBE.$notificationId"
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra("notification", pushNotification)
+                    putExtra("was_app_in_foreground", wasAppInForeground)
+                    putExtra(NotificationOpenedActivity.EXTRA_UNSUBSCRIBE_URL, unsubscribeUrl)
+                }
+            val unsubscribePendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    uniqueRequestCode + 1,
+                    unsubscribeIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+
+            val bigView = RemoteViews(context.packageName, R.layout.notifly_notification_ad_expanded)
+            bigView.setTextViewText(R.id.notifly_title, title)
+            bigView.setTextViewText(R.id.notifly_body, body)
+            if (bitmap != null) {
+                bigView.setImageViewBitmap(R.id.notifly_image, bitmap)
+                bigView.setViewVisibility(R.id.notifly_image, View.VISIBLE)
+            } else {
+                bigView.setViewVisibility(R.id.notifly_image, View.GONE)
+            }
+            bigView.setOnClickPendingIntent(R.id.notifly_unsubscribe_row, unsubscribePendingIntent)
+
+            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            builder.setCustomBigContentView(bigView)
+        }
 
         val notification = builder.build()
         Logger.d("FCMBroadcastReceiver notification: $notification")
