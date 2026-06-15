@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-06-15
+
+### Added
+
+- **Ad push opt-out ("수신거부") area.** Push notifications carrying an `unsubscribe_url` custom-data field are treated as ad pushes and now render a "수신거부" row (icon + chevron) in the expanded notification via a custom `DecoratedCustomViewStyle` layout. Tapping the row opens the `unsubscribe_url` (custom scheme deep link or web page) and dismisses the notification. The opt-out tap is handled separately from a normal content click — it does not emit `push_click` or fire the notification-open callback — and the custom layout is applied after the notification interceptor so a host app's interceptor cannot override it.
+
 ## [1.20.0] - 2026-06-01
 
 ### Added

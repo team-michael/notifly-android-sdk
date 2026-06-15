@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
 import tech.notifly.Notifly
 import tech.notifly.application.ApplicationEntryAction
 import tech.notifly.application.IApplicationService
@@ -16,6 +17,11 @@ import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.OSUtil
 
 class NotificationOpenedActivity : AppCompatActivity() {
+    companion object {
+        /** 광고 푸시 "수신거부" 액션에서 이동할 URL을 전달하는 인텐트 extra 키 */
+        const val EXTRA_UNSUBSCRIBE_URL = "notifly_unsubscribe_url"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!Notifly.initializeWithContext(this)) {
@@ -49,6 +55,17 @@ class NotificationOpenedActivity : AppCompatActivity() {
             return
         }
 
+        // 광고 푸시 "수신거부" 액션: 본문 클릭과 분리한다.
+        // 일반 클릭 트래킹(push_click)·notificationOpened 콜백을 발화하지 않고
+        // (앱이 본문 클릭으로 오인해 중복 처리하는 것을 방지), 알림 제거 + unsubscribe_url 이동만 수행.
+        val unsubscribeUrl = intent.getStringExtra(EXTRA_UNSUBSCRIBE_URL)
+        if (unsubscribeUrl != null) {
+            // 액션 버튼 탭은 setAutoCancel 대상이 아니므로 알림을 직접 제거한다.
+            NotificationManagerCompat.from(this).cancel(notification.androidNotificationId)
+            navigateTo(unsubscribeUrl)
+            return
+        }
+
         val url = notification.url
         val campaignId = notification.campaignId
         val notiflyMessageId = notification.notiflyMessageId
@@ -72,6 +89,10 @@ class NotificationOpenedActivity : AppCompatActivity() {
         // Fire callbacks for push click event
         PushNotificationManager.notificationOpened(notification)
 
+        navigateTo(url)
+    }
+
+    private fun navigateTo(url: String?) {
         try {
             val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
             if (!applicationService.isInForeground) {
