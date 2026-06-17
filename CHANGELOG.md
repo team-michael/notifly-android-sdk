@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.1] - 2026-06-17
+
+### Fixed
+
+- Fix in-app popup briefly revealing the host app's privacy/secure overlay (e.g. splash screen) on apps that add it in `onUserLeaveHint`, by launching the popup with `FLAG_ACTIVITY_NO_USER_ACTION` so the host's `onUserLeaveHint` is not triggered.
+
 ## [1.21.0] - 2026-06-15
 
 ### Added
