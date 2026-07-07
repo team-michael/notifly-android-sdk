@@ -10,6 +10,7 @@ import android.os.Build
 
 object OSUtil {
     private const val NF_OPEN_MODE_PARAM = "nf_open_mode"
+    private val URI_SCHEME_REGEX = Regex("^[A-Za-z][A-Za-z0-9+.-]*$")
     const val OPEN_MODE_IN_APP_BROWSER = "in_app_browser"
 
     fun parseOpenMode(uri: Uri): String? = uri.getQueryParameter(NF_OPEN_MODE_PARAM)
@@ -84,30 +85,30 @@ object OSUtil {
     fun openURLInBrowserIntent(
         uri: Uri,
         flags: Int? = null,
-    ): Intent {
-        var uri = uri
-        var type = if (uri.scheme != null) SchemaType.fromString(uri.scheme) else null
+    ): Intent? {
+        val type = if (uri.scheme != null) SchemaType.fromString(uri.scheme) else null
 
-        if (type == null) {
-            type = SchemaType.HTTP
-            if (!uri.toString().contains("://")) {
-                uri = Uri.parse("http://$uri")
-            }
-        }
-        val intent: Intent
-        when (type) {
-            SchemaType.DATA -> {
-                intent =
-                    Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER)
-                intent.data = uri
-            }
+        val intent: Intent =
+            when (type) {
+                SchemaType.DATA ->
+                    Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER).apply {
+                        data = uri
+                    }
 
-            SchemaType.HTTPS, SchemaType.HTTP ->
-                intent =
+                SchemaType.HTTPS, SchemaType.HTTP ->
                     Intent(Intent.ACTION_VIEW, uri).addCategory(
                         Intent.CATEGORY_BROWSABLE,
                     )
-        }
+
+                null -> {
+                    if (!hasValidUriScheme(uri)) {
+                        return null
+                    }
+                    Intent(Intent.ACTION_VIEW, uri).addCategory(
+                        Intent.CATEGORY_BROWSABLE,
+                    )
+                }
+            }
 
         intent.addFlags(
             flags ?: Intent.FLAG_ACTIVITY_NEW_TASK,
@@ -119,6 +120,8 @@ object OSUtil {
         val type = SchemaType.fromString(uri.scheme)
         return type == null
     }
+
+    private fun hasValidUriScheme(uri: Uri): Boolean = uri.scheme?.matches(URI_SCHEME_REGEX) == true
 
     enum class SchemaType(
         private val text: String,
