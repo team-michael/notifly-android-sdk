@@ -3,6 +3,8 @@ package tech.notifly.push
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.widget.ImageView
 import android.widget.RemoteViews
 import android.widget.TextView
 import org.junit.Assert.assertEquals
@@ -30,6 +32,10 @@ class FCMBroadcastReceiverTest {
         assertEquals(
             Color.rgb(224, 224, 224),
             view.findViewById<TextView>(R.id.notifly_unsubscribe_text).currentTextColor,
+        )
+        assertEquals(
+            Color.WHITE,
+            (view.findViewById<ImageView>(R.id.notifly_divider).background as ColorDrawable).color,
         )
     }
 

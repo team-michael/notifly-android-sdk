@@ -322,7 +322,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
                 Configuration.UI_MODE_NIGHT_YES
         val primaryTextColor = if (isNightMode) Color.WHITE else Color.rgb(33, 33, 33)
         val secondaryTextColor = if (isNightMode) Color.rgb(224, 224, 224) else Color.rgb(97, 97, 97)
-        val dividerColor = if (isNightMode) Color.argb(51, 255, 255, 255) else Color.argb(51, 0, 0, 0)
+        val dividerColor = if (isNightMode) Color.WHITE else Color.BLACK
 
         remoteViews.setTextColor(R.id.notifly_title, primaryTextColor)
         remoteViews.setTextColor(R.id.notifly_body, secondaryTextColor)
