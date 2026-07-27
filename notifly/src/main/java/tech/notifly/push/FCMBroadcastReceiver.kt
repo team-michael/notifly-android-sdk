@@ -10,8 +10,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -264,6 +266,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             val bigView = RemoteViews(context.packageName, R.layout.notifly_notification_ad_expanded)
             bigView.setTextViewText(R.id.notifly_title, title)
             bigView.setTextViewText(R.id.notifly_body, body)
+            applyAdPushNotificationColors(context, bigView)
             if (bitmap != null) {
                 bigView.setImageViewBitmap(R.id.notifly_image, bitmap)
                 bigView.setViewVisibility(R.id.notifly_image, View.VISIBLE)
@@ -308,6 +311,25 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
                 R.drawable.baseline_notifications_24 // bell icon
             }
         }
+    }
+
+    private fun applyAdPushNotificationColors(
+        context: Context,
+        remoteViews: RemoteViews,
+    ) {
+        val isNightMode =
+            context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
+        val primaryTextColor = if (isNightMode) Color.WHITE else Color.rgb(33, 33, 33)
+        val secondaryTextColor = if (isNightMode) Color.rgb(224, 224, 224) else Color.rgb(97, 97, 97)
+        val dividerColor = if (isNightMode) Color.argb(51, 255, 255, 255) else Color.argb(51, 0, 0, 0)
+
+        remoteViews.setTextColor(R.id.notifly_title, primaryTextColor)
+        remoteViews.setTextColor(R.id.notifly_body, secondaryTextColor)
+        remoteViews.setTextColor(R.id.notifly_unsubscribe_text, secondaryTextColor)
+        remoteViews.setInt(R.id.notifly_divider, "setBackgroundColor", dividerColor)
+        remoteViews.setInt(R.id.notifly_unsubscribe_icon, "setColorFilter", secondaryTextColor)
+        remoteViews.setInt(R.id.notifly_unsubscribe_arrow, "setColorFilter", secondaryTextColor)
     }
 
     private suspend fun loadImage(src: String?): Bitmap? =
