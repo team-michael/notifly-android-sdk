@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -266,7 +267,7 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
             val bigView = RemoteViews(context.packageName, R.layout.notifly_notification_ad_expanded)
             bigView.setTextViewText(R.id.notifly_title, title)
             bigView.setTextViewText(R.id.notifly_body, body)
-            applyAdPushNotificationColors(context, bigView)
+            applyAdPushNotificationColors(bigView)
             if (bitmap != null) {
                 bigView.setImageViewBitmap(R.id.notifly_image, bitmap)
                 bigView.setViewVisibility(R.id.notifly_image, View.VISIBLE)
@@ -313,12 +314,9 @@ class FCMBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun applyAdPushNotificationColors(
-        context: Context,
-        remoteViews: RemoteViews,
-    ) {
+    private fun applyAdPushNotificationColors(remoteViews: RemoteViews) {
         val isNightMode =
-            context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Resources.getSystem().configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
                 Configuration.UI_MODE_NIGHT_YES
         val primaryTextColor = if (isNightMode) Color.WHITE else Color.rgb(33, 33, 33)
         val secondaryTextColor = if (isNightMode) Color.rgb(224, 224, 224) else Color.rgb(97, 97, 97)
