@@ -2,8 +2,11 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("maven-publish")
-    id("org.jlleitschuh.gradle.ktlint")
-    id("io.gitlab.arturbosch.detekt")
+}
+
+if (System.getenv("JITPACK") == null) {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "io.gitlab.arturbosch.detekt")
 }
 
 apply(from = "$rootDir/constants.gradle.kts")
@@ -87,9 +90,4 @@ afterEvaluate {
             mavenLocal()
         }
     }
-}
-
-detekt {
-    buildUponDefaultConfig = true
-    config.setFrom("$rootDir/detekt.yml")
 }
