@@ -7,6 +7,12 @@ plugins {
 if (System.getenv("JITPACK") == null) {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "io.gitlab.arturbosch.detekt")
+
+    extensions.configure<Any>("detekt") {
+        javaClass.getMethod("setBuildUponDefaultConfig", Boolean::class.javaPrimitiveType).invoke(this, true)
+        (javaClass.getMethod("getConfig").invoke(this) as org.gradle.api.file.ConfigurableFileCollection)
+            .setFrom(files("$rootDir/detekt.yml"))
+    }
 }
 
 apply(from = "$rootDir/constants.gradle.kts")
