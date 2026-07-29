@@ -114,7 +114,7 @@ object Notifly {
                                 } else {
                                     InAppMessageManager.maybeRevalidateCampaigns(context)
                                 }
-                                ensureSseControllerStarted(context)
+                                ensureSseControllerStarted(context) { applicationService.isInForeground }
                             }
                         }
 
@@ -133,7 +133,7 @@ object Notifly {
                         ) {
                             if (prevState == NotiflySdkState.REFRESHING && newState == NotiflySdkState.READY) {
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    ensureSseControllerStarted(context)
+                                    ensureSseControllerStarted(context) { applicationService.isInForeground }
                                 }
                             }
                         }
@@ -186,7 +186,10 @@ object Notifly {
     private var sseControllerProjectId: String? = null
     private var sseControllerUserId: String? = null
 
-    private suspend fun ensureSseControllerStarted(context: Context) {
+    private suspend fun ensureSseControllerStarted(
+        context: Context,
+        canConnect: () -> Boolean,
+    ) {
         try {
             val projectId = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
             if (projectId.isNullOrEmpty()) return
@@ -254,6 +257,7 @@ object Notifly {
                     onServerEventTriggered = { name, params ->
                         Logger.d("[sse] server-event received: $name params=$params")
                     },
+                    canConnect = canConnect,
                 )
             val installed =
                 synchronized(sseLock) {

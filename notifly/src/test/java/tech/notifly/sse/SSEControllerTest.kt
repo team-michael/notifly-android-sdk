@@ -14,6 +14,7 @@ class SSEControllerTest {
         onServerEventTriggered: (String, JSONObject?) -> Unit = { _, _ -> },
         scheduler: (Long, () -> Unit) -> Unit = ImmediateScheduler::invoke,
         fallbackAfterAttempts: Int = 3,
+        canConnect: () -> Boolean = { true },
     ): SSEController =
         SSEController(
             sseClient = client,
@@ -21,7 +22,45 @@ class SSEControllerTest {
             onServerEventTriggered = onServerEventTriggered,
             scheduler = scheduler,
             fallbackAfterAttempts = fallbackAfterAttempts,
+            canConnect = canConnect,
         )
+
+    // foreground 연결 가드
+
+    @Test
+    fun start_doesNotConnect_whenConnectionIsNotAllowed() {
+        val c = controller(canConnect = { false })
+
+        c.start()
+
+        verify(exactly = 0) { client.connect() }
+    }
+
+    @Test
+    fun ttlExpiredMessage_doesNotReconnect_whenConnectionIsNotAllowed() {
+        val c = controller(canConnect = { false })
+
+        c.handleMessage("ttl-expired", "{}")
+
+        verify { client.disconnect() }
+        verify(exactly = 0) { client.connect() }
+    }
+
+    @Test
+    fun shutdownMessage_doesNotReconnect_whenConnectionIsNotAllowed() {
+        var work: (() -> Unit)? = null
+        val c =
+            controller(
+                scheduler = { _, scheduledWork -> work = scheduledWork },
+                canConnect = { false },
+            )
+
+        c.handleMessage("shutdown", "{\"reconnectInMs\":100}")
+        requireNotNull(work) { "shutdown must schedule reconnect" }.invoke()
+
+        verify { client.disconnect() }
+        verify(exactly = 0) { client.connect() }
+    }
 
     // 메시지 디스패치
 

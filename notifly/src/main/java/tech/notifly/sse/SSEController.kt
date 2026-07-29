@@ -18,6 +18,7 @@ internal class SSEController(
     private val syncDebounceMs: Long = DEFAULT_SYNC_DEBOUNCE_MS,
     private val fallbackAfterAttempts: Int = DEFAULT_FALLBACK_AFTER_ATTEMPTS,
     private val scheduler: (delayMs: Long, work: () -> Unit) -> Unit = ::defaultScheduler,
+    private val canConnect: () -> Boolean = { true },
 ) {
     enum class Mode { SSE, FALLBACK }
 
@@ -36,7 +37,7 @@ internal class SSEController(
     val mode: Mode get() = synchronized(stateLock) { modeInternal }
 
     fun start() {
-        sseClient.connect()
+        connectIfForeground()
     }
 
     fun stop() {
@@ -55,7 +56,7 @@ internal class SSEController(
 
     fun reconnect(reason: String) {
         sseClient.disconnect()
-        sseClient.connect()
+        connectIfForeground()
     }
 
     internal fun handleMessage(
@@ -136,8 +137,12 @@ internal class SSEController(
         val delay = maxOf(reconnectInMs.toLong(), 0L)
         scheduler(delay) {
             val currentGen = synchronized(stateLock) { generation }
-            if (currentGen == scheduledGen) sseClient.connect()
+            if (currentGen == scheduledGen) connectIfForeground()
         }
+    }
+
+    private fun connectIfForeground() {
+        if (canConnect()) sseClient.connect()
     }
 
     companion object {
