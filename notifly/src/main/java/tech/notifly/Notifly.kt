@@ -108,13 +108,14 @@ object Notifly {
                     object :
                         BaseApplicationLifecycleHandler() {
                         override fun onFocus(first: Boolean) {
+                            synchronized(sseLock) { sseConnectionAllowed = true }
                             CoroutineScope(Dispatchers.IO).launch {
                                 if (first) {
                                     initializeInAppMessageManagerAndStartSession(context)
                                 } else {
                                     InAppMessageManager.maybeRevalidateCampaigns(context)
                                 }
-                                ensureSseControllerStarted(context, applicationService)
+                                ensureSseControllerStarted(context)
                             }
                         }
 
@@ -133,7 +134,7 @@ object Notifly {
                         ) {
                             if (prevState == NotiflySdkState.REFRESHING && newState == NotiflySdkState.READY) {
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    ensureSseControllerStarted(context, applicationService)
+                                    ensureSseControllerStarted(context)
                                 }
                             }
                         }
@@ -182,14 +183,12 @@ object Notifly {
     }
 
     private val sseLock = Any()
+    private var sseConnectionAllowed = false
     private var sseController: SSEController? = null
     private var sseControllerProjectId: String? = null
     private var sseControllerUserId: String? = null
 
-    private suspend fun ensureSseControllerStarted(
-        context: Context,
-        applicationService: IApplicationService,
-    ) {
+    private suspend fun ensureSseControllerStarted(context: Context) {
         try {
             val projectId = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
             if (projectId.isNullOrEmpty()) return
@@ -259,7 +258,7 @@ object Notifly {
                     },
                     runIfConnectionAllowed = { connect ->
                         synchronized(sseLock) {
-                            if (applicationService.isInForeground && sseController === controller) {
+                            if (sseConnectionAllowed && sseController === controller) {
                                 connect()
                             }
                         }
@@ -304,6 +303,7 @@ object Notifly {
     private fun pauseSseController() {
         try {
             synchronized(sseLock) {
+                sseConnectionAllowed = false
                 sseController?.pause()
             }
         } catch (e: Throwable) {

@@ -37,6 +37,23 @@ class SSEControllerTest {
     }
 
     @Test
+    fun start_connects_afterConnectionBecomesAllowed() {
+        var allowed = false
+        val c =
+            controller(
+                runIfConnectionAllowed = { connect ->
+                    if (allowed) connect()
+                },
+            )
+
+        c.start()
+        allowed = true
+        c.start()
+
+        verify(exactly = 1) { client.connect() }
+    }
+
+    @Test
     fun start_doesNotConnect_whenStoppedInsideConnectionGate() {
         lateinit var c: SSEController
         c =
