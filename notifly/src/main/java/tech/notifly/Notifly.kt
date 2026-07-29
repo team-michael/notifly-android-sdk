@@ -202,21 +202,20 @@ object Notifly {
                     return
                 }
 
-            val existing: SSEController? =
+            val startedExisting =
                 synchronized(sseLock) {
-                    if (sseController != null &&
+                    val current = sseController
+                    if (current != null &&
                         sseControllerProjectId == projectId &&
                         sseControllerUserId == userId
                     ) {
-                        sseController
+                        current.start()
+                        true
                     } else {
-                        null
+                        false
                     }
                 }
-            if (existing != null) {
-                existing.start()
-                return
-            }
+            if (startedExisting) return
             stopSseController()
 
             val externalDeviceId = NotiflyDeviceUtil.getExternalDeviceId(context)
@@ -240,7 +239,8 @@ object Notifly {
                             ?: NotiflyAuthUtil.invalidateCognitoIdToken(context)
                     },
                 )
-            val controller =
+            lateinit var controller: SSEController
+            controller =
                 SSEController(
                     sseClient = client,
                     onSyncRequested = { completion ->
@@ -259,7 +259,9 @@ object Notifly {
                     },
                     runIfConnectionAllowed = { connect ->
                         synchronized(sseLock) {
-                            if (applicationService.isInForeground) connect()
+                            if (applicationService.isInForeground && sseController === controller) {
+                                connect()
+                            }
                         }
                     },
                 )
@@ -269,12 +271,13 @@ object Notifly {
                         sseController = controller
                         sseControllerProjectId = projectId
                         sseControllerUserId = userId
+                        controller.start()
                         true
                     } else {
                         false
                     }
                 }
-            if (installed) controller.start()
+            if (!installed) controller.stop()
         } catch (e: Throwable) {
             Logger.e("[sse] ensureSseControllerStarted failed", e)
         }
@@ -282,15 +285,13 @@ object Notifly {
 
     private fun stopSseController() {
         try {
-            val previous: SSEController? =
-                synchronized(sseLock) {
-                    val c = sseController
-                    sseController = null
-                    sseControllerProjectId = null
-                    sseControllerUserId = null
-                    c
-                }
-            previous?.stop()
+            synchronized(sseLock) {
+                val previous = sseController
+                sseController = null
+                sseControllerProjectId = null
+                sseControllerUserId = null
+                previous?.stop()
+            }
         } catch (e: Throwable) {
             Logger.e("[sse] stopSseController failed", e)
         }

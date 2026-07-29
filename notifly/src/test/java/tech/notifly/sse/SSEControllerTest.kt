@@ -37,6 +37,23 @@ class SSEControllerTest {
     }
 
     @Test
+    fun start_doesNotConnect_whenStoppedInsideConnectionGate() {
+        lateinit var c: SSEController
+        c =
+            controller(
+                runIfConnectionAllowed = { connect ->
+                    c.stop()
+                    connect()
+                },
+            )
+
+        c.start()
+
+        verify { client.disconnect() }
+        verify(exactly = 0) { client.connect() }
+    }
+
+    @Test
     fun ttlExpiredMessage_doesNotReconnect_whenConnectionIsNotAllowed() {
         val c = controller(runIfConnectionAllowed = {})
 

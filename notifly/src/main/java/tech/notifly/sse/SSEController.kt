@@ -37,7 +37,8 @@ internal class SSEController(
     val mode: Mode get() = synchronized(stateLock) { modeInternal }
 
     fun start() {
-        connectIfAllowed()
+        val expectedGeneration = synchronized(stateLock) { generation }
+        connectIfAllowed(expectedGeneration)
     }
 
     fun stop() {
@@ -51,12 +52,14 @@ internal class SSEController(
      * BG 진입 같이 일시 중단 후 곧 같은 user 로 재개되는 경우에 사용.
      */
     fun pause() {
+        synchronized(stateLock) { generation += 1 }
         sseClient.disconnect()
     }
 
     fun reconnect(reason: String) {
+        val expectedGeneration = synchronized(stateLock) { generation }
         sseClient.disconnect()
-        connectIfAllowed()
+        connectIfAllowed(expectedGeneration)
     }
 
     internal fun handleMessage(
@@ -132,19 +135,21 @@ internal class SSEController(
     }
 
     private fun handleShutdown(reconnectInMs: Int) {
-        sseClient.disconnect()
         val scheduledGen = synchronized(stateLock) { generation }
+        sseClient.disconnect()
         val delay = maxOf(reconnectInMs.toLong(), 0L)
         scheduler(delay) {
-            val currentGen = synchronized(stateLock) { generation }
-            if (currentGen != scheduledGen) return@scheduler
-            connectIfAllowed()
+            connectIfAllowed(scheduledGen)
         }
     }
 
-    private fun connectIfAllowed() {
+    private fun connectIfAllowed(expectedGeneration: Long) {
         runIfConnectionAllowed {
-            sseClient.connect()
+            synchronized(stateLock) {
+                if (generation == expectedGeneration) {
+                    sseClient.connect()
+                }
+            }
         }
     }
 
