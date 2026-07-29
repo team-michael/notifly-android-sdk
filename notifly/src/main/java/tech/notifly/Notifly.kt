@@ -114,7 +114,7 @@ object Notifly {
                                 } else {
                                     InAppMessageManager.maybeRevalidateCampaigns(context)
                                 }
-                                ensureSseControllerStarted(context)
+                                ensureSseControllerStarted(context, applicationService)
                             }
                         }
 
@@ -133,7 +133,7 @@ object Notifly {
                         ) {
                             if (prevState == NotiflySdkState.REFRESHING && newState == NotiflySdkState.READY) {
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    ensureSseControllerStarted(context)
+                                    ensureSseControllerStarted(context, applicationService)
                                 }
                             }
                         }
@@ -186,7 +186,10 @@ object Notifly {
     private var sseControllerProjectId: String? = null
     private var sseControllerUserId: String? = null
 
-    private suspend fun ensureSseControllerStarted(context: Context) {
+    private suspend fun ensureSseControllerStarted(
+        context: Context,
+        applicationService: IApplicationService,
+    ) {
         try {
             val projectId = NotiflyStorage.get(context, NotiflyStorageItem.PROJECT_ID)
             if (projectId.isNullOrEmpty()) return
@@ -254,6 +257,11 @@ object Notifly {
                     onServerEventTriggered = { name, params ->
                         Logger.d("[sse] server-event received: $name params=$params")
                     },
+                    runIfConnectionAllowed = { connect ->
+                        synchronized(sseLock) {
+                            if (applicationService.isInForeground) connect()
+                        }
+                    },
                 )
             val installed =
                 synchronized(sseLock) {
@@ -294,8 +302,9 @@ object Notifly {
      */
     private fun pauseSseController() {
         try {
-            val current: SSEController? = synchronized(sseLock) { sseController }
-            current?.pause()
+            synchronized(sseLock) {
+                sseController?.pause()
+            }
         } catch (e: Throwable) {
             Logger.e("[sse] pauseSseController failed", e)
         }
