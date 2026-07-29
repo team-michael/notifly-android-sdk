@@ -1,7 +1,7 @@
 <!-- repo: team-michael/notifly-android-sdk -->
 <!-- ref: main -->
-<!-- commit: 7a91757140d3ec99cb4e260733c9b0f36cce4987 -->
-<!-- generated_at: 2025-11-17T08:51:18Z -->
+<!-- commit: main -->
+<!-- generated_at: 2026-07-29T09:01:40Z -->
 # Platform: Android
 
 ## /
