@@ -56,7 +56,7 @@ class SSEControllerTest {
             )
 
         c.handleMessage("shutdown", "{\"reconnectInMs\":100}")
-        work?.invoke()
+        requireNotNull(work) { "shutdown must schedule reconnect" }.invoke()
 
         verify { client.disconnect() }
         verify(exactly = 0) { client.connect() }
