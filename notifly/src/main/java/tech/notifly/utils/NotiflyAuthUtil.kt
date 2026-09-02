@@ -67,7 +67,7 @@ internal object NotiflyAuthUtil {
             else ->
                 NotiflyIdUtil.generate(
                     NotiflyIdUtil.Namespace.NAMESPACE_UNREGISTERED_USER_ID,
-                    "${projectId}${NotiflyFirebaseUtil.getFcmToken()}",
+                    "${projectId}${NotiflyDeviceUtil.getExternalDeviceId(context)}",
                 )
         }
     }
