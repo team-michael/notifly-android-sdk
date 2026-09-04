@@ -300,20 +300,22 @@ object InAppMessageManager {
     ) {
         val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
-        InAppMessageScheduler.descheduleAll()
-        campaigns = syncStateResult.campaigns
-        eventCounts =
-            if (shouldMergeData) {
-                NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
-            } else {
-                syncStateResult.eventCounts
-            }
-        userData =
-            if (shouldMergeData) {
-                userData.merge(syncStateResult.userData)
-            } else {
-                syncStateResult.userData
-            }
+        synchronized(eventProcessingLock) {
+            InAppMessageScheduler.descheduleAll()
+            campaigns = syncStateResult.campaigns
+            eventCounts =
+                if (shouldMergeData) {
+                    NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
+                } else {
+                    syncStateResult.eventCounts
+                }
+            userData =
+                if (shouldMergeData) {
+                    userData.merge(syncStateResult.userData)
+                } else {
+                    syncStateResult.userData
+                }
+        }
 
         // DB의 디바이스-유저 매핑 정보와 SDK에 저장된 유저 정보가 다른 경우
         // DB를 Source of Truth로 하여 SDK의 external_user_id를 DB 값으로 변경

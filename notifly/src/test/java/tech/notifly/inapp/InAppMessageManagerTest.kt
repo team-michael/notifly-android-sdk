@@ -12,6 +12,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
+import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,6 +52,7 @@ import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflySyncStateUtil
+import tech.notifly.utils.NotiflyUserUtil
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -727,6 +729,89 @@ class InAppMessageManagerTest {
             } finally {
                 executor.shutdownNow()
                 unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
+
+    @Test
+    fun `refresh cannot replace event counts between ingestion and evaluation`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
+                )
+            val initialUserData = spyk(UserData.getSkeleton(context))
+            val refreshedUserData = UserData.getSkeleton(context)
+            val initialState =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = initialUserData,
+                )
+            val refreshedState =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = refreshedUserData,
+                )
+            val refreshMergeStarted = CountDownLatch(1)
+            val eventIngested = CountDownLatch(1)
+            val refreshApplied = CountDownLatch(1)
+            val applicationService = mockk<IApplicationService>()
+            val executor = Executors.newFixedThreadPool(2)
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(NotiflyUserUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returnsMany listOf(initialState, refreshedState)
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                every { NotiflyUserUtil.mergeEventCounts(any(), any()) } answers {
+                    val snapshot = firstArg<MutableList<EventIntermediateCounts>>().toMutableList()
+                    refreshMergeStarted.countDown()
+                    eventIngested.await(500, TimeUnit.MILLISECONDS)
+                    snapshot
+                }
+                every { initialUserData.merge(refreshedUserData) } answers {
+                    refreshApplied.countDown()
+                    initialUserData
+                }
+                every { applicationService.isInForeground } answers {
+                    eventIngested.countDown()
+                    refreshApplied.await(500, TimeUnit.MILLISECONDS)
+                    true
+                }
+                every { NotiflyServiceProvider.getService<IApplicationService>() } returns applicationService
+
+                InAppMessageManager.initialize(context)
+                val refreshCall =
+                    executor.submit {
+                        kotlinx.coroutines.runBlocking {
+                            InAppMessageManager.refresh(context, shouldMergeData = true)
+                        }
+                    }
+                assertTrue(refreshMergeStarted.await(5, TimeUnit.SECONDS))
+                val eventCall =
+                    executor.submit {
+                        InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                            context = context,
+                            eventName = "test_event",
+                            externalUserId = null,
+                            eventParams = emptyMap(),
+                            isInternalEvent = false,
+                        )
+                    }
+
+                refreshCall.get(5, TimeUnit.SECONDS)
+                eventCall.get(5, TimeUnit.SECONDS)
+
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                executor.shutdownNow()
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflyUserUtil)
                 unmockkObject(NotiflySyncStateUtil)
             }
         }
