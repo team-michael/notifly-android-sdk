@@ -146,10 +146,11 @@ object NotiflyLogUtil {
                 eventParams,
             )
 
-        postEventWithRetry(notiflyCognitoIdToken, requestBody)
+        postEventWithRetry(context, notiflyCognitoIdToken, requestBody)
     }
 
     private suspend fun postEventWithRetry(
+        context: Context,
         cognitoIdToken: String,
         requestBody: JSONObject,
         retryCount: Int = 0,
@@ -166,7 +167,10 @@ object NotiflyLogUtil {
 
         if (!response.isSuccess && retryCount < MAX_RETRY_COUNT) {
             Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
-            postEventWithRetry(cognitoIdToken, requestBody, retryCount + 1)
+            val latestCognitoIdToken =
+                NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
+                    ?: NotiflyAuthUtil.invalidateCognitoIdToken(context)
+            postEventWithRetry(context, latestCognitoIdToken, requestBody, retryCount + 1)
         } else if (!response.isSuccess) {
             Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
         } else {

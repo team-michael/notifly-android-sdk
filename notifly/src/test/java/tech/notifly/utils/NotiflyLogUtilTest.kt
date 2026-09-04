@@ -113,6 +113,31 @@ class NotiflyLogUtilTest {
         }
 
     @Test
+    fun `retry uses the latest authorization token`() =
+        runTest {
+            every {
+                NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
+            } returnsMany listOf(COGNITO_ID_TOKEN, REFRESHED_COGNITO_ID_TOKEN)
+            val authorizationTokens = mutableListOf<String?>()
+            coEvery { httpClient.post(any(), any(), any()) } answers {
+                captureRequestBody(secondArg())
+                authorizationTokens += thirdArg<Map<String, String>?>()?.get("Authorization")
+                if (requestBodies.size == 1) {
+                    HttpResponse(statusCode = 500, payload = null)
+                } else {
+                    HttpResponse(statusCode = 200, payload = "{}")
+                }
+            }
+
+            NotiflyLogUtil.logEvent(context, EVENT_NAME)
+
+            assertEquals(
+                listOf(COGNITO_ID_TOKEN, REFRESHED_COGNITO_ID_TOKEN),
+                authorizationTokens,
+            )
+        }
+
+    @Test
     fun `separate events get different IDs at the same timestamp`() =
         runTest {
             coEvery { httpClient.post(any(), any(), any()) } answers {
@@ -165,6 +190,7 @@ class NotiflyLogUtilTest {
 
     companion object {
         private const val COGNITO_ID_TOKEN = "cognito-token"
+        private const val REFRESHED_COGNITO_ID_TOKEN = "refreshed-cognito-token"
         private const val EXTERNAL_USER_ID = "external-user-id"
         private const val PROJECT_ID = "0123456789abcdef0123456789abcdef"
         private const val NOTIFLY_USER_ID = "abcdef0123456789abcdef0123456789"
