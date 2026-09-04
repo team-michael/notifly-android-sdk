@@ -5,7 +5,8 @@ import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * ID Generator for Notifly based on UUID v5 with namespaces, omitting "-" for simplicity
+ * Generates deterministic UUID v5 identifiers for identities and random UUID v4
+ * identifiers for events, omitting "-" from their string representations.
  */
 internal object NotiflyIdUtil {
     enum class Namespace(
@@ -55,4 +56,6 @@ internal object NotiflyIdUtil {
         val uuid = generateUUIDv5(namespace, name)
         return uuid.toString().replace("-", "")
     }
+
+    fun generateEventId(): String = UUID.randomUUID().toString().replace("-", "")
 }
