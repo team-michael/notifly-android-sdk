@@ -86,7 +86,7 @@ object NotiflyLogUtil {
          * - Cognito ID Token: invalidate once when not found
          * - User ID: [NotiflyAuthUtil.getNotiflyUserId] ensures non-null
          * - Project ID: throw if null
-         * - Event ID: [NotiflyIdUtil.generateUUIDv5] ensures non-null
+         * - Event ID: [NotiflyIdUtil.generateEventId] ensures non-null
          * - Unique ID: non-null is ensured by native-level API
          * - Device ID: non-null is ensured by native-level API
          * - FCM Token: nullable if sdk-caller did not integrate nor set FCM and its token.
@@ -106,7 +106,6 @@ object NotiflyLogUtil {
         eventParams: Map<String, Any?> = emptyMap(),
         segmentationEventParamKeys: List<String>? = null,
         isInternalEvent: Boolean = false,
-        retryCount: Int = 0,
     ) {
         val notiflyCognitoIdToken: String =
             NotiflyStorage.get(context, NotiflyStorageItem.COGNITO_ID_TOKEN)
@@ -119,11 +118,7 @@ object NotiflyLogUtil {
                 ?: throw IllegalStateException("[Notifly] Required parameter <Project ID> is missing")
 
         val externalDeviceId: String = NotiflyDeviceUtil.getExternalDeviceId(context)
-        val notiflyEventId =
-            NotiflyIdUtil.generate(
-                Namespace.NAMESPACE_EVENT_ID,
-                "$notiflyUserId$eventName${NotiflyTimerUtil.getTimestampMillis()}",
-            )
+        val notiflyEventId = NotiflyIdUtil.generateEventId()
         val notiflyDeviceId =
             NotiflyIdUtil.generate(Namespace.NAMESPACE_DEVICE_ID, externalDeviceId)
 
@@ -151,26 +146,27 @@ object NotiflyLogUtil {
                 eventParams,
             )
 
+        postEventWithRetry(notiflyCognitoIdToken, requestBody)
+    }
+
+    private suspend fun postEventWithRetry(
+        cognitoIdToken: String,
+        requestBody: JSONObject,
+        retryCount: Int = 0,
+    ) {
         val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
         val response =
             httpClient.post(
                 LOG_EVENT_URI,
                 requestBody,
                 mapOf(
-                    "Authorization" to notiflyCognitoIdToken,
+                    "Authorization" to cognitoIdToken,
                 ),
             )
 
         if (!response.isSuccess && retryCount < MAX_RETRY_COUNT) {
             Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
-            logEventInternal(
-                context,
-                eventName,
-                eventParams,
-                segmentationEventParamKeys,
-                isInternalEvent,
-                retryCount + 1,
-            )
+            postEventWithRetry(cognitoIdToken, requestBody, retryCount + 1)
         } else if (!response.isSuccess) {
             Logger.e("[NotiflyLogUtil] Failed to log event. Response: ${response.statusCode}, ${response.payload}, ${response.throwable}")
         } else {
