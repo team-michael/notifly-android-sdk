@@ -817,6 +817,67 @@ class InAppMessageManagerTest {
         }
 
     @Test
+    fun `clear user state cannot remove event counts between ingestion and evaluation`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
+                )
+            val state =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = UserData.getSkeleton(context),
+                )
+            val eventIngested = CountDownLatch(1)
+            val clearCompleted = CountDownLatch(1)
+            val applicationService = mockk<IApplicationService>()
+            val executor = Executors.newFixedThreadPool(2)
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                every { applicationService.isInForeground } answers {
+                    eventIngested.countDown()
+                    clearCompleted.await(500, TimeUnit.MILLISECONDS)
+                    true
+                }
+                every { NotiflyServiceProvider.getService<IApplicationService>() } returns applicationService
+
+                InAppMessageManager.initialize(context)
+                val eventCall =
+                    executor.submit {
+                        InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                            context = context,
+                            eventName = "test_event",
+                            externalUserId = null,
+                            eventParams = emptyMap(),
+                            isInternalEvent = false,
+                        )
+                    }
+                assertTrue(eventIngested.await(5, TimeUnit.SECONDS))
+                val clearCall =
+                    executor.submit {
+                        InAppMessageManager.clearUserState()
+                        clearCompleted.countDown()
+                    }
+
+                eventCall.get(5, TimeUnit.SECONDS)
+                clearCall.get(5, TimeUnit.SECONDS)
+
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                executor.shutdownNow()
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
+
+    @Test
     fun `initialize should call setState in order`() =
         runTest {
             // Given

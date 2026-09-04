@@ -280,10 +280,12 @@ object InAppMessageManager {
         if (!isInitialized) {
             return
         }
-        eventCounts = mutableListOf()
-        userData.apply {
-            this.userProperties.clear()
-            this.campaignHiddenUntil.clear()
+        synchronized(eventProcessingLock) {
+            eventCounts = mutableListOf()
+            userData.apply {
+                this.userProperties.clear()
+                this.campaignHiddenUntil.clear()
+            }
         }
     }
 
