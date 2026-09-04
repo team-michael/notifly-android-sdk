@@ -31,12 +31,14 @@ class NotiflyLogUtilTest {
     private lateinit var context: Context
     private lateinit var httpClient: IHttpClient
     private lateinit var requestBodies: MutableList<JSONObject>
+    private lateinit var requestBodySnapshots: MutableList<String>
 
     @Before
     fun setUp() {
         context = RuntimeEnvironment.getApplication()
         httpClient = mockk()
         requestBodies = mutableListOf()
+        requestBodySnapshots = mutableListOf()
 
         mockkObject(NotiflyStorage)
         every {
@@ -86,7 +88,7 @@ class NotiflyLogUtilTest {
     fun `retry reuses the original request payload`() =
         runTest {
             coEvery { httpClient.post(any(), any(), any()) } answers {
-                requestBodies += secondArg<JSONObject>()
+                captureRequestBody(secondArg())
                 if (requestBodies.size == 1) {
                     HttpResponse(statusCode = 500, payload = null)
                 } else {
@@ -102,7 +104,7 @@ class NotiflyLogUtilTest {
 
             assertEquals(2, requestBodies.size)
             assertSame(requestBodies[0], requestBodies[1])
-            assertEquals(requestBodies[0].toString(), requestBodies[1].toString())
+            assertEquals(requestBodySnapshots[0], requestBodySnapshots[1])
 
             val firstData = eventData(requestBodies[0])
             val retryData = eventData(requestBodies[1])
@@ -114,7 +116,7 @@ class NotiflyLogUtilTest {
     fun `separate events get different IDs at the same timestamp`() =
         runTest {
             coEvery { httpClient.post(any(), any(), any()) } answers {
-                requestBodies += secondArg<JSONObject>()
+                captureRequestBody(secondArg())
                 HttpResponse(statusCode = 200, payload = "{}")
             }
 
@@ -133,7 +135,7 @@ class NotiflyLogUtilTest {
     fun `retry stops after three attempts and keeps the original payload`() =
         runTest {
             coEvery { httpClient.post(any(), any(), any()) } answers {
-                requestBodies += secondArg<JSONObject>()
+                captureRequestBody(secondArg())
                 HttpResponse(statusCode = 500, payload = null)
             }
 
@@ -142,9 +144,16 @@ class NotiflyLogUtilTest {
             assertEquals(4, requestBodies.size)
             requestBodies.drop(1).forEach { retryBody ->
                 assertSame(requestBodies.first(), retryBody)
-                assertEquals(requestBodies.first().toString(), retryBody.toString())
+            }
+            requestBodySnapshots.drop(1).forEach { retrySnapshot ->
+                assertEquals(requestBodySnapshots.first(), retrySnapshot)
             }
         }
+
+    private fun captureRequestBody(body: JSONObject) {
+        requestBodies += body
+        requestBodySnapshots += body.toString()
+    }
 
     private fun eventData(body: JSONObject): JSONObject =
         JSONObject(
