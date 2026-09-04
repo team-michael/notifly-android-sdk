@@ -47,6 +47,7 @@ object InAppMessageManager {
 
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
+    private val eventProcessingLock = Any()
 
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
         set(value) =
@@ -265,11 +266,13 @@ object InAppMessageManager {
 
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
-        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
-        checkCancellationConditions(sanitizedEventName, eventParams)
-        if (applicationService.isInForeground) {
-            Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
-            scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
+        synchronized(eventProcessingLock) {
+            ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
+            checkCancellationConditions(sanitizedEventName, eventParams)
+            if (applicationService.isInForeground) {
+                Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
+                scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
+            }
         }
     }
 
