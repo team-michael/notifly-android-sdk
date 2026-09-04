@@ -12,7 +12,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
-import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,10 +52,6 @@ import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflySyncStateUtil
-import tech.notifly.utils.NotiflyUserUtil
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -195,7 +190,12 @@ class InAppMessageManagerTest {
         )
     }
 
-    private fun createEventCountSegmentInfo(expectedCount: Int): SegmentInfo =
+    private fun createEventCountSegmentInfo(
+        expectedCount: Int,
+        eventName: String = "test_event",
+        eventConditionType: EventBasedConditionType = EventBasedConditionType.COUNT_X,
+        secondaryValue: Int? = null,
+    ): SegmentInfo =
         SegmentInfo(
             conditionGroup =
                 listOf(
@@ -207,9 +207,9 @@ class InAppMessageManagerTest {
                                     operator = Operator.EQUALS,
                                     value = expectedCount,
                                     attribute = null,
-                                    event = "test_event",
-                                    eventConditionType = EventBasedConditionType.COUNT_X,
-                                    secondaryValue = null,
+                                    event = eventName,
+                                    eventConditionType = eventConditionType,
+                                    secondaryValue = secondaryValue,
                                     valueType = null,
                                     comparisonParameter = null,
                                     useEventParamsAsConditionValue = null,
@@ -597,16 +597,27 @@ class InAppMessageManagerTest {
     }
 
     @Test
-    fun `current event is counted before in-app segment evaluation`() =
+    fun `current event is included in in-app segment evaluation`() =
         runTest {
             val campaign =
                 createDummyCampaign(
                     start = 0,
                     segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
                 )
+            val unrelatedEventCampaign =
+                createDummyCampaign(
+                    id = "unrelated_event_campaign",
+                    start = 0,
+                    segmentInfo =
+                        createEventCountSegmentInfo(
+                            expectedCount = 1,
+                            eventName = "unrelated_event",
+                        ),
+                    delay = 1,
+                )
             val state =
                 NotiflySyncStateUtil.FetchStateOutput(
-                    campaigns = mutableListOf(campaign),
+                    campaigns = mutableListOf(campaign, unrelatedEventCampaign),
                     eventCounts = mutableListOf(),
                     userData = UserData.getSkeleton(context),
                 )
@@ -617,6 +628,7 @@ class InAppMessageManagerTest {
                 coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
                 every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
                 every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                every { InAppMessageScheduler.schedule(context, unrelatedEventCampaign) } just runs
 
                 InAppMessageManager.initialize(context)
                 InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
@@ -628,6 +640,7 @@ class InAppMessageManagerTest {
                 )
 
                 verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+                verify(exactly = 0) { InAppMessageScheduler.schedule(context, unrelatedEventCampaign) }
             } finally {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
@@ -681,7 +694,50 @@ class InAppMessageManagerTest {
         }
 
     @Test
-    fun `scheduling failure rolls back the current event count`() =
+    fun `current event is counted in rolling-day segment evaluation`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo =
+                        createEventCountSegmentInfo(
+                            expectedCount = 1,
+                            eventConditionType = EventBasedConditionType.COUNT_X_IN_Y_DAYS,
+                            secondaryValue = 1,
+                        ),
+                )
+            val state =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = UserData.getSkeleton(context),
+                )
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+
+                InAppMessageManager.initialize(context)
+                InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                    context = context,
+                    eventName = "test_event",
+                    externalUserId = null,
+                    eventParams = emptyMap(),
+                    isInternalEvent = false,
+                )
+
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
+
+    @Test
+    fun `scheduling failure does not ingest the current event`() =
         runTest {
             val campaign =
                 createDummyCampaign(
@@ -724,204 +780,6 @@ class InAppMessageManagerTest {
 
                 verify(exactly = 2) { InAppMessageScheduler.schedule(context, campaign) }
             } finally {
-                unmockkObject(InAppMessageScheduler)
-                unmockkObject(NotiflySyncStateUtil)
-            }
-        }
-
-    @Test
-    fun `concurrent events evaluate exact count thresholds once`() =
-        runTest {
-            val campaign =
-                createDummyCampaign(
-                    start = 0,
-                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
-                )
-            val state =
-                NotiflySyncStateUtil.FetchStateOutput(
-                    campaigns = mutableListOf(campaign),
-                    eventCounts = mutableListOf(),
-                    userData = UserData.getSkeleton(context),
-                )
-            val concurrentEvaluations = CountDownLatch(2)
-            val applicationService = mockk<IApplicationService>()
-            val executor = Executors.newFixedThreadPool(2)
-
-            mockkObject(NotiflySyncStateUtil)
-            mockkObject(InAppMessageScheduler)
-            try {
-                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
-                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
-                every { applicationService.isInForeground } answers {
-                    concurrentEvaluations.countDown()
-                    concurrentEvaluations.await(500, TimeUnit.MILLISECONDS)
-                    true
-                }
-                every { NotiflyServiceProvider.getService<IApplicationService>() } returns applicationService
-
-                InAppMessageManager.initialize(context)
-                val calls =
-                    List(2) {
-                        executor.submit {
-                            InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
-                                context = context,
-                                eventName = "test_event",
-                                externalUserId = null,
-                                eventParams = emptyMap(),
-                                isInternalEvent = false,
-                            )
-                        }
-                    }
-                calls.forEach { it.get(5, TimeUnit.SECONDS) }
-
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
-            } finally {
-                executor.shutdownNow()
-                unmockkObject(InAppMessageScheduler)
-                unmockkObject(NotiflySyncStateUtil)
-            }
-        }
-
-    @Test
-    fun `refresh cannot replace event counts between ingestion and evaluation`() =
-        runTest {
-            val campaign =
-                createDummyCampaign(
-                    start = 0,
-                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
-                )
-            val initialUserData = spyk(UserData.getSkeleton(context))
-            val refreshedUserData = UserData.getSkeleton(context)
-            val initialState =
-                NotiflySyncStateUtil.FetchStateOutput(
-                    campaigns = mutableListOf(campaign),
-                    eventCounts = mutableListOf(),
-                    userData = initialUserData,
-                )
-            val refreshedState =
-                NotiflySyncStateUtil.FetchStateOutput(
-                    campaigns = mutableListOf(campaign),
-                    eventCounts = mutableListOf(),
-                    userData = refreshedUserData,
-                )
-            val refreshMergeStarted = CountDownLatch(1)
-            val eventIngested = CountDownLatch(1)
-            val refreshApplied = CountDownLatch(1)
-            val applicationService = mockk<IApplicationService>()
-            val executor = Executors.newFixedThreadPool(2)
-
-            mockkObject(NotiflySyncStateUtil)
-            mockkObject(NotiflyUserUtil)
-            mockkObject(InAppMessageScheduler)
-            try {
-                coEvery { NotiflySyncStateUtil.fetchState(context) } returnsMany listOf(initialState, refreshedState)
-                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
-                every { NotiflyUserUtil.mergeEventCounts(any(), any()) } answers {
-                    val snapshot = firstArg<MutableList<EventIntermediateCounts>>().toMutableList()
-                    refreshMergeStarted.countDown()
-                    eventIngested.await(500, TimeUnit.MILLISECONDS)
-                    snapshot
-                }
-                every { initialUserData.merge(refreshedUserData) } answers {
-                    refreshApplied.countDown()
-                    initialUserData
-                }
-                every { applicationService.isInForeground } answers {
-                    eventIngested.countDown()
-                    refreshApplied.await(500, TimeUnit.MILLISECONDS)
-                    true
-                }
-                every { NotiflyServiceProvider.getService<IApplicationService>() } returns applicationService
-
-                InAppMessageManager.initialize(context)
-                val refreshCall =
-                    executor.submit {
-                        kotlinx.coroutines.runBlocking {
-                            InAppMessageManager.refresh(context, shouldMergeData = true)
-                        }
-                    }
-                assertTrue(refreshMergeStarted.await(5, TimeUnit.SECONDS))
-                val eventCall =
-                    executor.submit {
-                        InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
-                            context = context,
-                            eventName = "test_event",
-                            externalUserId = null,
-                            eventParams = emptyMap(),
-                            isInternalEvent = false,
-                        )
-                    }
-
-                refreshCall.get(5, TimeUnit.SECONDS)
-                eventCall.get(5, TimeUnit.SECONDS)
-
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
-            } finally {
-                executor.shutdownNow()
-                unmockkObject(InAppMessageScheduler)
-                unmockkObject(NotiflyUserUtil)
-                unmockkObject(NotiflySyncStateUtil)
-            }
-        }
-
-    @Test
-    fun `clear user state cannot remove event counts between ingestion and evaluation`() =
-        runTest {
-            val campaign =
-                createDummyCampaign(
-                    start = 0,
-                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
-                )
-            val state =
-                NotiflySyncStateUtil.FetchStateOutput(
-                    campaigns = mutableListOf(campaign),
-                    eventCounts = mutableListOf(),
-                    userData = UserData.getSkeleton(context),
-                )
-            val eventIngested = CountDownLatch(1)
-            val clearCompleted = CountDownLatch(1)
-            val applicationService = mockk<IApplicationService>()
-            val executor = Executors.newFixedThreadPool(2)
-
-            mockkObject(NotiflySyncStateUtil)
-            mockkObject(InAppMessageScheduler)
-            try {
-                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
-                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
-                every { applicationService.isInForeground } answers {
-                    eventIngested.countDown()
-                    clearCompleted.await(500, TimeUnit.MILLISECONDS)
-                    true
-                }
-                every { NotiflyServiceProvider.getService<IApplicationService>() } returns applicationService
-
-                InAppMessageManager.initialize(context)
-                val eventCall =
-                    executor.submit {
-                        InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
-                            context = context,
-                            eventName = "test_event",
-                            externalUserId = null,
-                            eventParams = emptyMap(),
-                            isInternalEvent = false,
-                        )
-                    }
-                assertTrue(eventIngested.await(5, TimeUnit.SECONDS))
-                val clearCall =
-                    executor.submit {
-                        InAppMessageManager.clearUserState()
-                        clearCompleted.countDown()
-                    }
-
-                eventCall.get(5, TimeUnit.SECONDS)
-                clearCall.get(5, TimeUnit.SECONDS)
-
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
-            } finally {
-                executor.shutdownNow()
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
             }

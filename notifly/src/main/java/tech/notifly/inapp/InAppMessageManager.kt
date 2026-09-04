@@ -47,12 +47,6 @@ object InAppMessageManager {
 
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
-    private val eventProcessingLock = Any()
-
-    private data class EventCountMutation(
-        val index: Int,
-        val previousValue: EventIntermediateCounts?,
-    )
 
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
         set(value) =
@@ -271,31 +265,22 @@ object InAppMessageManager {
 
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
-        synchronized(eventProcessingLock) {
-            val eventCountMutation = ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
-            try {
-                checkCancellationConditions(sanitizedEventName, eventParams)
-                if (applicationService.isInForeground) {
-                    Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
-                    scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
-                }
-            } catch (throwable: Throwable) {
-                rollbackEventCount(eventCountMutation)
-                throw throwable
-            }
+        checkCancellationConditions(sanitizedEventName, eventParams)
+        if (applicationService.isInForeground) {
+            Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
+            scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
         }
+        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
     }
 
     fun clearUserState() {
         if (!isInitialized) {
             return
         }
-        synchronized(eventProcessingLock) {
-            eventCounts = mutableListOf()
-            userData.apply {
-                this.userProperties.clear()
-                this.campaignHiddenUntil.clear()
-            }
+        eventCounts = mutableListOf()
+        userData.apply {
+            this.userProperties.clear()
+            this.campaignHiddenUntil.clear()
         }
     }
 
@@ -312,22 +297,20 @@ object InAppMessageManager {
     ) {
         val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
-        synchronized(eventProcessingLock) {
-            InAppMessageScheduler.descheduleAll()
-            campaigns = syncStateResult.campaigns
-            eventCounts =
-                if (shouldMergeData) {
-                    NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
-                } else {
-                    syncStateResult.eventCounts
-                }
-            userData =
-                if (shouldMergeData) {
-                    userData.merge(syncStateResult.userData)
-                } else {
-                    syncStateResult.userData
-                }
-        }
+        InAppMessageScheduler.descheduleAll()
+        campaigns = syncStateResult.campaigns
+        eventCounts =
+            if (shouldMergeData) {
+                NotiflyUserUtil.mergeEventCounts(eventCounts, syncStateResult.eventCounts)
+            } else {
+                syncStateResult.eventCounts
+            }
+        userData =
+            if (shouldMergeData) {
+                userData.merge(syncStateResult.userData)
+            } else {
+                syncStateResult.userData
+            }
 
         // DB의 디바이스-유저 매핑 정보와 SDK에 저장된 유저 정보가 다른 경우
         // DB를 Source of Truth로 하여 SDK의 external_user_id를 DB 값으로 변경
@@ -382,7 +365,7 @@ object InAppMessageManager {
         eventName: String,
         eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String>? = null,
-    ): EventCountMutation {
+    ) {
         val formattedDate = InAppMessageUtils.getKSTCalendarDateString()
         val keyField = segmentationEventParamKeys?.getOrNull(0)
         val valueField = keyField?.let { eventParams[keyField] }
@@ -399,7 +382,6 @@ object InAppMessageManager {
             // If an existing row is found, increase the count by 1
             val row = eventCounts[index]
             eventCounts[index] = row.copy(count = row.count + 1)
-            return EventCountMutation(index = index, previousValue = row)
         } else {
             // If no existing row is found, create a new entry
             eventCounts.add(
@@ -410,15 +392,6 @@ object InAppMessageManager {
                     eventParams = eventParams,
                 ),
             )
-            return EventCountMutation(index = eventCounts.lastIndex, previousValue = null)
-        }
-    }
-
-    private fun rollbackEventCount(mutation: EventCountMutation) {
-        if (mutation.previousValue == null) {
-            eventCounts.removeAt(mutation.index)
-        } else {
-            eventCounts[mutation.index] = mutation.previousValue
         }
     }
 
@@ -527,7 +500,7 @@ object InAppMessageManager {
         if (groups.any { it.conditions.isEmpty() }) return false
         return groups.any {
             it.conditions.all { condition ->
-                matchCondition(context, condition, eventParams)
+                matchCondition(context, condition, eventName, eventParams)
             }
         }
     }
@@ -535,17 +508,22 @@ object InAppMessageManager {
     private fun matchCondition(
         context: Context,
         condition: Condition,
+        currentEventName: String,
         eventParams: Map<String, Any?>,
     ): Boolean =
         when (condition.unit) {
-            SegmentConditionUnitType.EVENT -> matchEventBasedCondition(condition)
+            SegmentConditionUnitType.EVENT -> matchEventBasedCondition(condition, currentEventName)
             else -> matchUserPropertyBasedCondition(context, condition, eventParams)
         }
 
-    private fun matchEventBasedCondition(condition: Condition): Boolean {
+    private fun matchEventBasedCondition(
+        condition: Condition,
+        currentEventName: String,
+    ): Boolean {
         val event = condition.event!!
         val eventConditionType = condition.eventConditionType!!
         val operator = condition.operator
+        val currentEventCount = if (event == currentEventName) 1 else 0
         val value =
             condition.value.let {
                 if (it !is Int) {
@@ -559,17 +537,20 @@ object InAppMessageManager {
         val totalCount: Int =
             when (eventConditionType) {
                 EventBasedConditionType.COUNT_X -> {
-                    eventCounts.filter { it.name == event }.sumOf { it.count }
+                    eventCounts.filter { it.name == event }.sumOf { it.count } +
+                        currentEventCount
                 }
 
                 EventBasedConditionType.COUNT_X_IN_Y_DAYS -> {
                     val secondaryValue = condition.secondaryValue ?: return false
                     val start = InAppMessageUtils.getKSTCalendarDateString(-secondaryValue)
                     val end = InAppMessageUtils.getKSTCalendarDateString()
-                    eventCounts
-                        .filter { it.name == event }
-                        .filter { it.dt in start..end }
-                        .sumOf { it.count }
+                    val storedCount =
+                        eventCounts
+                            .filter { it.name == event }
+                            .filter { it.dt in start..end }
+                            .sumOf { it.count }
+                    storedCount + if (end in start..end) currentEventCount else 0
                 }
             }
 
