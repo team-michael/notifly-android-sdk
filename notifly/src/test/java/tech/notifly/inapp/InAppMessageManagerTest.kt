@@ -18,6 +18,7 @@ import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -673,6 +674,55 @@ class InAppMessageManagerTest {
                     isInternalEvent = false,
                 )
                 verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
+
+    @Test
+    fun `scheduling failure rolls back the current event count`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
+                )
+            val state =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = UserData.getSkeleton(context),
+                )
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } throws IllegalStateException("schedule failed")
+
+                InAppMessageManager.initialize(context)
+                assertThrows(IllegalStateException::class.java) {
+                    InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                        context = context,
+                        eventName = "test_event",
+                        externalUserId = null,
+                        eventParams = emptyMap(),
+                        isInternalEvent = false,
+                    )
+                }
+
+                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                    context = context,
+                    eventName = "test_event",
+                    externalUserId = null,
+                    eventParams = emptyMap(),
+                    isInternalEvent = false,
+                )
+
+                verify(exactly = 2) { InAppMessageScheduler.schedule(context, campaign) }
             } finally {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)

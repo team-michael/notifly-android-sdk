@@ -49,6 +49,11 @@ object InAppMessageManager {
     private lateinit var userData: UserData
     private val eventProcessingLock = Any()
 
+    private data class EventCountMutation(
+        val index: Int,
+        val previousValue: EventIntermediateCounts?,
+    )
+
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
         set(value) =
             run {
@@ -267,11 +272,16 @@ object InAppMessageManager {
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
         synchronized(eventProcessingLock) {
-            ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
-            checkCancellationConditions(sanitizedEventName, eventParams)
-            if (applicationService.isInForeground) {
-                Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
-                scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
+            val eventCountMutation = ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
+            try {
+                checkCancellationConditions(sanitizedEventName, eventParams)
+                if (applicationService.isInForeground) {
+                    Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
+                    scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
+                }
+            } catch (throwable: Throwable) {
+                rollbackEventCount(eventCountMutation)
+                throw throwable
             }
         }
     }
@@ -372,7 +382,7 @@ object InAppMessageManager {
         eventName: String,
         eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String>? = null,
-    ) {
+    ): EventCountMutation {
         val formattedDate = InAppMessageUtils.getKSTCalendarDateString()
         val keyField = segmentationEventParamKeys?.getOrNull(0)
         val valueField = keyField?.let { eventParams[keyField] }
@@ -389,6 +399,7 @@ object InAppMessageManager {
             // If an existing row is found, increase the count by 1
             val row = eventCounts[index]
             eventCounts[index] = row.copy(count = row.count + 1)
+            return EventCountMutation(index = index, previousValue = row)
         } else {
             // If no existing row is found, create a new entry
             eventCounts.add(
@@ -399,6 +410,15 @@ object InAppMessageManager {
                     eventParams = eventParams,
                 ),
             )
+            return EventCountMutation(index = eventCounts.lastIndex, previousValue = null)
+        }
+    }
+
+    private fun rollbackEventCount(mutation: EventCountMutation) {
+        if (mutation.previousValue == null) {
+            eventCounts.removeAt(mutation.index)
+        } else {
+            eventCounts[mutation.index] = mutation.previousValue
         }
     }
 
