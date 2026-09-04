@@ -12,6 +12,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -29,7 +30,11 @@ import tech.notifly.http.HttpResponse
 import tech.notifly.http.IHttpClient
 import tech.notifly.inapp.models.Campaign
 import tech.notifly.inapp.models.Condition
+import tech.notifly.inapp.models.ConditionGroup
+import tech.notifly.inapp.models.ConditionOperator
+import tech.notifly.inapp.models.EventBasedConditionType
 import tech.notifly.inapp.models.EventIntermediateCounts
+import tech.notifly.inapp.models.GroupOperator
 import tech.notifly.inapp.models.Message
 import tech.notifly.inapp.models.Operator
 import tech.notifly.inapp.models.SegmentConditionUnitType
@@ -183,6 +188,32 @@ class InAppMessageManagerTest {
             delay = delay,
         )
     }
+
+    private fun createEventCountSegmentInfo(expectedCount: Int): SegmentInfo =
+        SegmentInfo(
+            conditionGroup =
+                listOf(
+                    ConditionGroup(
+                        conditions =
+                            listOf(
+                                Condition(
+                                    unit = SegmentConditionUnitType.EVENT,
+                                    operator = Operator.EQUALS,
+                                    value = expectedCount,
+                                    attribute = null,
+                                    event = "test_event",
+                                    eventConditionType = EventBasedConditionType.COUNT_X,
+                                    secondaryValue = null,
+                                    valueType = null,
+                                    comparisonParameter = null,
+                                    useEventParamsAsConditionValue = null,
+                                ),
+                            ),
+                        conditionOperator = ConditionOperator.NULL,
+                    ),
+                ),
+            groupOperator = GroupOperator.NULL,
+        )
 
     private fun setupNotiflyServiceProvider() {
         val applicationService = mockk<IApplicationService>()
@@ -558,6 +589,90 @@ class InAppMessageManagerTest {
             result,
         )
     }
+
+    @Test
+    fun `current event is counted before in-app segment evaluation`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
+                )
+            val state =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = UserData.getSkeleton(context),
+                )
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+
+                InAppMessageManager.initialize(context)
+                InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                    context = context,
+                    eventName = "test_event",
+                    externalUserId = null,
+                    eventParams = emptyMap(),
+                    isInternalEvent = false,
+                )
+
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
+
+    @Test
+    fun `event count advances exactly once per local event`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo = createEventCountSegmentInfo(expectedCount = 2),
+                )
+            val state =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = UserData.getSkeleton(context),
+                )
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+
+                InAppMessageManager.initialize(context)
+                InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                    context = context,
+                    eventName = "test_event",
+                    externalUserId = null,
+                    eventParams = emptyMap(),
+                    isInternalEvent = false,
+                )
+                verify(exactly = 0) { InAppMessageScheduler.schedule(context, campaign) }
+
+                InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                    context = context,
+                    eventName = "test_event",
+                    externalUserId = null,
+                    eventParams = emptyMap(),
+                    isInternalEvent = false,
+                )
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
 
     @Test
     fun `initialize should call setState in order`() =

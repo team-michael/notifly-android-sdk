@@ -265,12 +265,12 @@ object InAppMessageManager {
 
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
+        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
         checkCancellationConditions(sanitizedEventName, eventParams)
         if (applicationService.isInForeground) {
             Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
             scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
         }
-        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
     }
 
     fun clearUserState() {
