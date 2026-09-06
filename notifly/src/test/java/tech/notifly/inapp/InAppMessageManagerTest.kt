@@ -52,6 +52,9 @@ import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflySyncStateUtil
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -688,6 +691,57 @@ class InAppMessageManagerTest {
                 )
                 verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
             } finally {
+                unmockkObject(InAppMessageScheduler)
+                unmockkObject(NotiflySyncStateUtil)
+            }
+        }
+
+    @Test
+    fun `concurrent events schedule exact count campaign once`() =
+        runTest {
+            val campaign =
+                createDummyCampaign(
+                    start = 0,
+                    segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
+                )
+            val state =
+                NotiflySyncStateUtil.FetchStateOutput(
+                    campaigns = mutableListOf(campaign),
+                    eventCounts = mutableListOf(),
+                    userData = UserData.getSkeleton(context),
+                )
+            val concurrentSchedules = CountDownLatch(2)
+            val executor = Executors.newFixedThreadPool(2)
+
+            mockkObject(NotiflySyncStateUtil)
+            mockkObject(InAppMessageScheduler)
+            try {
+                coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+                every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+                every { InAppMessageScheduler.schedule(context, campaign) } answers {
+                    concurrentSchedules.countDown()
+                    concurrentSchedules.await(1, TimeUnit.SECONDS)
+                    Unit
+                }
+
+                InAppMessageManager.initialize(context)
+                val calls =
+                    List(2) {
+                        executor.submit {
+                            InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                                context = context,
+                                eventName = "test_event",
+                                externalUserId = null,
+                                eventParams = emptyMap(),
+                                isInternalEvent = false,
+                            )
+                        }
+                    }
+                calls.forEach { it.get(5, TimeUnit.SECONDS) }
+
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+            } finally {
+                executor.shutdownNow()
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
             }
