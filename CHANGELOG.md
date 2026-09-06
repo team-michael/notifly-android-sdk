@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.1] - 2026-09-06
+
+### Fixed
+
+- Include the current event when evaluating in-app event-count targeting conditions, with serialized processing so concurrent events advance counts exactly once and failed scheduling does not retain the count.
+- Generate unique random event IDs and reuse the original event payload across HTTP retries while refreshing authorization credentials.
+
 ## [1.22.0] - 2026-09-02
 
 ### Fixed
