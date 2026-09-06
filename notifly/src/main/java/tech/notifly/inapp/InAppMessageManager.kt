@@ -47,6 +47,7 @@ object InAppMessageManager {
 
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
+    private val eventProcessingLock = Any()
 
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
         set(value) =
@@ -265,12 +266,14 @@ object InAppMessageManager {
 
         val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
         val sanitizedEventName = sanitizeEventName(eventName, isInternalEvent)
-        checkCancellationConditions(sanitizedEventName, eventParams)
-        if (applicationService.isInForeground) {
-            Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
-            scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
+        synchronized(eventProcessingLock) {
+            checkCancellationConditions(sanitizedEventName, eventParams)
+            if (applicationService.isInForeground) {
+                Logger.v("[Notifly] App is in foreground. Scheduling in app messages.")
+                scheduleCampaigns(context, campaigns!!, externalUserId, sanitizedEventName, eventParams)
+            }
+            ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
         }
-        ingestEventInternal(sanitizedEventName, eventParams, segmentationEventParamKeys)
     }
 
     fun clearUserState() {
@@ -500,7 +503,7 @@ object InAppMessageManager {
         if (groups.any { it.conditions.isEmpty() }) return false
         return groups.any {
             it.conditions.all { condition ->
-                matchCondition(context, condition, eventParams)
+                matchCondition(context, condition, eventName, eventParams)
             }
         }
     }
@@ -508,17 +511,22 @@ object InAppMessageManager {
     private fun matchCondition(
         context: Context,
         condition: Condition,
+        currentEventName: String,
         eventParams: Map<String, Any?>,
     ): Boolean =
         when (condition.unit) {
-            SegmentConditionUnitType.EVENT -> matchEventBasedCondition(condition)
+            SegmentConditionUnitType.EVENT -> matchEventBasedCondition(condition, currentEventName)
             else -> matchUserPropertyBasedCondition(context, condition, eventParams)
         }
 
-    private fun matchEventBasedCondition(condition: Condition): Boolean {
+    private fun matchEventBasedCondition(
+        condition: Condition,
+        currentEventName: String,
+    ): Boolean {
         val event = condition.event!!
         val eventConditionType = condition.eventConditionType!!
         val operator = condition.operator
+        val currentEventCount = if (event == currentEventName) 1 else 0
         val value =
             condition.value.let {
                 if (it !is Int) {
@@ -532,17 +540,20 @@ object InAppMessageManager {
         val totalCount: Int =
             when (eventConditionType) {
                 EventBasedConditionType.COUNT_X -> {
-                    eventCounts.filter { it.name == event }.sumOf { it.count }
+                    eventCounts.filter { it.name == event }.sumOf { it.count } +
+                        currentEventCount
                 }
 
                 EventBasedConditionType.COUNT_X_IN_Y_DAYS -> {
                     val secondaryValue = condition.secondaryValue ?: return false
                     val start = InAppMessageUtils.getKSTCalendarDateString(-secondaryValue)
                     val end = InAppMessageUtils.getKSTCalendarDateString()
-                    eventCounts
-                        .filter { it.name == event }
-                        .filter { it.dt in start..end }
-                        .sumOf { it.count }
+                    val storedCount =
+                        eventCounts
+                            .filter { it.name == event }
+                            .filter { it.dt in start..end }
+                            .sumOf { it.count }
+                    storedCount + if (end in start..end) currentEventCount else 0
                 }
             }
 
