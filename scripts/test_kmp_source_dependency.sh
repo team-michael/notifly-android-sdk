@@ -19,15 +19,20 @@ if [[ ! -f "$SUBMODULE_DIR/gradlew" ]]; then
   exit 1
 fi
 
-if ! git -C "$SUBMODULE_DIR" describe --exact-match --tags HEAD >/dev/null 2>&1; then
+if ! kmp_tag="$(git -C "$SUBMODULE_DIR" describe --exact-match --tags HEAD 2>/dev/null)"; then
   echo "KMP submodule must point to a tagged commit" >&2
   exit 1
 fi
+
+published_coordinate="com.github.notifly-tech.notifly-kmp-sdk:kmp:$kmp_tag"
+grep -F "implementation(\"$published_coordinate\")" "$ROOT_DIR/notifly/build.gradle.kts" >/dev/null
+grep -F 'substitute(module("com.github.notifly-tech.notifly-kmp-sdk:kmp"))' "$ROOT_DIR/settings.gradle.kts" >/dev/null
 
 grep -F "submodules: recursive" "$CI_WORKFLOW" >/dev/null
 grep -F "workflow_dispatch:" "$BUMP_WORKFLOW" >/dev/null
 grep -F "https://github.com/notifly-tech/notifly-kmp-sdk.git" "$BUMP_WORKFLOW" >/dev/null
 grep -F "gh workflow run ci.yml" "$BUMP_WORKFLOW" >/dev/null
+grep -F 'notifly/build.gradle.kts' "$BUMP_WORKFLOW" >/dev/null
 
 if [[ -z "${JAVA_HOME:-}" ]] && command -v brew >/dev/null 2>&1; then
   brew_prefix="$(brew --prefix openjdk@17 2>/dev/null || true)"

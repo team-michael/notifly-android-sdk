@@ -40,7 +40,15 @@ jobs:
           KMP_TAG: ${{ inputs.kmp_version }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- notifly-kmp-sdk; then
+          sed -i -E \
+            "s|(com\.github\.notifly-tech\.notifly-kmp-sdk:kmp:)v[^\"]+|\1$KMP_TAG|" \
+            notifly/build.gradle.kts
+
+          grep -F \
+            "implementation(\"com.github.notifly-tech.notifly-kmp-sdk:kmp:$KMP_TAG\")" \
+            notifly/build.gradle.kts >/dev/null
+
+          if git diff --quiet -- notifly-kmp-sdk notifly/build.gradle.kts; then
             echo "Android already pins $KMP_TAG"
             exit 0
           fi
@@ -49,7 +57,7 @@ jobs:
           git switch -c "$branch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add notifly-kmp-sdk
+          git add notifly-kmp-sdk notifly/build.gradle.kts
           git commit -m "chore: bump notifly-kmp-sdk to $KMP_TAG"
           git push --force-with-lease origin "HEAD:$branch"
 

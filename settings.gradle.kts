@@ -28,7 +28,7 @@ if (!notiflyKmpSdk.resolve("settings.gradle.kts").isFile) {
 
 includeBuild(notiflyKmpSdk) {
     dependencySubstitution {
-        substitute(module("com.github.team-michael.notifly-kmp-sdk:kmp")).using(project(":kmp"))
+        substitute(module("com.github.notifly-tech.notifly-kmp-sdk:kmp")).using(project(":kmp"))
     }
 }
 
