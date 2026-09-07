@@ -15,6 +15,7 @@ import io.mockk.runs
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -52,6 +53,7 @@ import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflySyncStateUtil
+import tech.notifly.utils.NotiflyTimerUtil
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -223,6 +225,71 @@ class InAppMessageManagerTest {
                 ),
             groupOperator = GroupOperator.NULL,
         )
+
+    private suspend fun operationCompletesWhileEventIsProcessing(operation: suspend () -> Unit): Boolean {
+        val campaign =
+            createDummyCampaign(
+                start = 0,
+                segmentInfo = createEventCountSegmentInfo(expectedCount = 1),
+            )
+        val state =
+            NotiflySyncStateUtil.FetchStateOutput(
+                campaigns = mutableListOf(campaign),
+                eventCounts = mutableListOf(),
+                userData = UserData.getSkeleton(context),
+            )
+        val eventEnteredSchedule = CountDownLatch(1)
+        val releaseEvent = CountDownLatch(1)
+        val operationStarted = CountDownLatch(1)
+        val operationCompleted = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+
+        mockkObject(NotiflySyncStateUtil)
+        mockkObject(InAppMessageScheduler)
+        return try {
+            coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
+            every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+            every { InAppMessageScheduler.schedule(context, campaign) } answers {
+                eventEnteredSchedule.countDown()
+                releaseEvent.await(5, TimeUnit.SECONDS)
+                Unit
+            }
+
+            InAppMessageManager.initialize(context)
+            val eventCall =
+                executor.submit {
+                    InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                        context = context,
+                        eventName = "test_event",
+                        externalUserId = null,
+                        eventParams = emptyMap(),
+                        isInternalEvent = false,
+                    )
+                }
+            assertTrue(eventEnteredSchedule.await(5, TimeUnit.SECONDS))
+
+            val operationCall =
+                executor.submit {
+                    runBlocking {
+                        operationStarted.countDown()
+                        operation()
+                        operationCompleted.countDown()
+                    }
+                }
+            assertTrue(operationStarted.await(5, TimeUnit.SECONDS))
+            val completedDuringEvent = operationCompleted.await(500, TimeUnit.MILLISECONDS)
+
+            releaseEvent.countDown()
+            eventCall.get(5, TimeUnit.SECONDS)
+            operationCall.get(5, TimeUnit.SECONDS)
+            completedDuringEvent
+        } finally {
+            releaseEvent.countDown()
+            executor.shutdownNow()
+            unmockkObject(InAppMessageScheduler)
+            unmockkObject(NotiflySyncStateUtil)
+        }
+    }
 
     private fun setupNotiflyServiceProvider() {
         val applicationService = mockk<IApplicationService>()
@@ -745,6 +812,43 @@ class InAppMessageManagerTest {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
             }
+        }
+
+    @Test
+    fun `refresh waits for active event processing before replacing state`() =
+        runTest {
+            assertFalse(
+                operationCompletesWhileEventIsProcessing {
+                    InAppMessageManager.refresh(context, shouldMergeData = false)
+                },
+            )
+        }
+
+    @Test
+    fun `clear user state waits for active event processing`() =
+        runTest {
+            assertFalse(
+                operationCompletesWhileEventIsProcessing {
+                    InAppMessageManager.clearUserState()
+                },
+            )
+        }
+
+    @Test
+    fun `campaign refresh waits for active event processing`() =
+        runTest {
+            assertFalse(
+                operationCompletesWhileEventIsProcessing {
+                    mockkObject(NotiflyTimerUtil)
+                    try {
+                        every { NotiflyTimerUtil.getTimestampMillis() } returns Long.MAX_VALUE
+                        coEvery { NotiflySyncStateUtil.fetchCampaigns(context) } returns mutableListOf()
+                        InAppMessageManager.maybeRevalidateCampaigns(context)
+                    } finally {
+                        unmockkObject(NotiflyTimerUtil)
+                    }
+                },
+            )
         }
 
     @Test
