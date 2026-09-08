@@ -4,3 +4,6 @@ jdk:
 before_install:
    - sdk install java 17.0.1-open
    - sdk use java 17.0.1-open
+install:
+  - GROUP=com.github.team-michael.notifly-android-sdk VERSION=$VERSION MAVEN_ROOT_ARTIFACT_ID=core-metadata MAVEN_JVM_ARTIFACT_ID=core ./core/gradlew -p core publishJvmPublicationToMavenLocal
+  - ./gradlew :notifly:publishReleasePublicationToMavenLocal
