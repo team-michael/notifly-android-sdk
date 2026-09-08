@@ -3,13 +3,13 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-core_dir="$root_dir/core"
+core_dir="$root_dir/notifly-kmp-sdk"
 sdk_version="$(sed -n 's/^version=//p' "$root_dir/gradle.properties")"
 stage_dir="$(mktemp -d)"
 trap 'rm -rf "$stage_dir"' EXIT
 
 if [[ ! -x "$core_dir/gradlew" ]]; then
-  echo "core submodule is not initialized. Run: git submodule update --init --recursive" >&2
+  echo "notifly-kmp-sdk submodule is not initialized. Run: git submodule update --init --recursive" >&2
   exit 1
 fi
 

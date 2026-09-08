@@ -19,14 +19,14 @@ dependencyResolutionManagement {
 rootProject.name = "NotiflyAndroidSDK"
 include(":notifly")
 
-val notiflyCore = file("core")
-if (!notiflyCore.resolve("settings.gradle.kts").isFile) {
+val notiflyKmpSdk = file("notifly-kmp-sdk")
+if (!notiflyKmpSdk.resolve("settings.gradle.kts").isFile) {
     throw GradleException(
-        "core is not initialized. Run: git submodule update --init --recursive",
+        "notifly-kmp-sdk is not initialized. Run: git submodule update --init --recursive",
     )
 }
 
-includeBuild(notiflyCore) {
+includeBuild(notiflyKmpSdk) {
     dependencySubstitution {
         substitute(module("com.github.team-michael.notifly-android-sdk:core"))
             .using(project(":"))
