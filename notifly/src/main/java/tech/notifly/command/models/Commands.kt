@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.kmp.identity.UserIdTransitionPolicy
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.storage.NotiflyStorage
@@ -13,6 +14,8 @@ import tech.notifly.utils.N
 import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflyTimerUtil
 import tech.notifly.utils.NotiflyUserUtil
+
+internal fun normalizeUserId(userId: String?): String? = if (userId.isNullOrEmpty()) null else userId
 
 enum class CommandType {
     SET_USER_ID,
@@ -48,18 +51,17 @@ class SetUserIdCommand(
                 NotiflyStorageItem.EXTERNAL_USER_ID,
             )
         val userId = payload.userId
-
-        val areUserIdsSame =
-            (previousExternalUserId.isNullOrEmpty() && userId.isNullOrEmpty()) || (previousExternalUserId == userId)
-        val shouldMergeData =
-            !areUserIdsSame && previousExternalUserId.isNullOrEmpty() // Should merge data when null -> (new User ID)
-        val shouldClearData = userId.isNullOrEmpty() // Should clear data when (new User ID) -> null
+        val transition =
+            UserIdTransitionPolicy.evaluate(
+                normalizeUserId(previousExternalUserId),
+                normalizeUserId(userId),
+            )
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                if (userId.isNullOrEmpty()) {
+                if (transition.shouldClear) {
                     NotiflyUserUtil.removeUserId(context)
-                } else if (!areUserIdsSame) {
+                } else if (transition.changed) {
                     NotiflyUserUtil.setUserProperties(
                         context,
                         mapOf(
@@ -70,11 +72,11 @@ class SetUserIdCommand(
                     // No-op
                 }
                 // Refresh state only when user ID is changed
-                if (!areUserIdsSame) {
-                    InAppMessageManager.refresh(context, shouldMergeData)
+                if (transition.shouldSync) {
+                    InAppMessageManager.refresh(context, transition.shouldMerge)
                 }
-                // Clear data only when user ID is changed to null
-                if (shouldClearData) {
+                // Preserve the existing behavior of clearing state whenever the requested ID is anonymous.
+                if (transition.shouldClear) {
                     InAppMessageManager.clearUserState()
                 }
 
