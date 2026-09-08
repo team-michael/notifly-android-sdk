@@ -59,6 +59,9 @@ android {
 }
 
 dependencies {
+    implementation(
+        "com.github.team-michael.notifly-android-sdk:core:${project.property("version")}",
+    )
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
 
