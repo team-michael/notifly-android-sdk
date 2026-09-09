@@ -1,5 +1,8 @@
 name: Release
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,12 +11,69 @@ on:
         required: true
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Validate release version
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          sdk_version="$(sed -n 's/^version=//p' gradle.properties)"
+          if [[ "$RELEASE_VERSION" != "$sdk_version" ]]; then
+            echo "Release version $RELEASE_VERSION does not match SDK version $sdk_version." >&2
+            exit 1
+          fi
+
+      - name: Assemble Release
+        run: ./gradlew :notifly:assembleRelease --no-daemon
+
+      - name: Dry Run - Publish to Maven Local
+        env:
+          GROUP: com.github.team-michael.notifly-android-sdk
+          VERSION: ${{ github.event.inputs.version }}
+          MAVEN_ROOT_ARTIFACT_ID: core-metadata
+          MAVEN_JVM_ARTIFACT_ID: core
+        run: |
+          ./notifly-kmp-sdk/gradlew -p notifly-kmp-sdk publishJvmPublicationToMavenLocal --no-daemon
+          ./gradlew :notifly:publishReleasePublicationToMavenLocal --no-daemon
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Determine release type
+        id: release_type
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          # Build metadata does not make a version a prerelease.
+          version_without_build="${VERSION%%+*}"
+          if [[ "$version_without_build" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Read Changelog
         id: read_changelog
@@ -27,8 +87,10 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.event.inputs.version }}
+          commit: ${{ github.sha }}
           name: Release ${{ github.event.inputs.version }}
           body: ${{ steps.read_changelog.outputs.changes }}
+          prerelease: ${{ steps.release_type.outputs.prerelease }}
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 

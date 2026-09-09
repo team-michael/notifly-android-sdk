@@ -2,5 +2,9 @@
 jdk:
   - openjdk17
 before_install:
+   - git submodule update --init --recursive
    - sdk install java 17.0.1-open
    - sdk use java 17.0.1-open
+install:
+  - GROUP=com.github.team-michael.notifly-android-sdk VERSION=$VERSION MAVEN_ROOT_ARTIFACT_ID=core-metadata MAVEN_JVM_ARTIFACT_ID=core ./notifly-kmp-sdk/gradlew -p notifly-kmp-sdk publishJvmPublicationToMavenLocal
+  - ./gradlew :notifly:publishReleasePublicationToMavenLocal
