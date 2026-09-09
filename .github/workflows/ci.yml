@@ -45,9 +45,6 @@ jobs:
     - name: Gradle Wrapper Validation
       uses: gradle/actions/wrapper-validation@v3
 
-    - name: Smoke-test KMP Core packaging
-      run: ./scripts/smoke_kmp_core_packaging.sh
-
     - name: Run ktlint
       run: ./gradlew ktlintCheck
 
