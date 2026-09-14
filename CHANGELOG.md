@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0-alpha.1] - 2026-09-14
+
+### Added
+
+- Expose shared KMP Core as a separate `com.github.team-michael.notifly-android-sdk:core` Maven artifact, versioned together with the Android SDK.
+
+### Changed
+
+- Use the shared Core policy for user ID transitions, including state synchronization, merging, and clearing, while preserving anonymous user ID normalization.
+- Publish Core alongside the full SDK and mark prerelease versions as GitHub prereleases.
+
 ## [1.23.0] - 2026-09-06
 
 ### Fixed
