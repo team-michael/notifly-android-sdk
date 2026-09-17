@@ -35,6 +35,7 @@ object NotiflyUserUtil {
                         N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
                     )
             } else {
+                if (InAppMessageManager.hasSameUserProperties(newParams)) return
                 InAppMessageManager.updateUserProperties(newParams)
             }
             NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
