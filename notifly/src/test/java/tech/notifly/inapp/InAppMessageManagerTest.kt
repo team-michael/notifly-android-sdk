@@ -164,10 +164,7 @@ class InAppMessageManagerTest {
         triggeringEventFilters: TriggeringEventFilters? = null,
         delay: Int = 0,
     ): Campaign {
-        val message = mockk<Message>()
-        every { message.url } returns messageUrl
-        every { message.modalProperties } returns modalProperties
-        every { message.templateName } returns templateName
+        val message = Message(messageUrl, modalProperties, templateName)
 
         val triggeringConditionUnit = mockk<TriggeringConditionUnit>()
         every { triggeringConditionUnit.type } returns triggeringConditionType
@@ -249,7 +246,7 @@ class InAppMessageManagerTest {
         return try {
             coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
             every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-            every { InAppMessageScheduler.schedule(context, campaign) } answers {
+            every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } answers {
                 eventEnteredSchedule.countDown()
                 releaseEvent.await(5, TimeUnit.SECONDS)
                 Unit
@@ -697,8 +694,8 @@ class InAppMessageManagerTest {
             try {
                 coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
                 every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
-                every { InAppMessageScheduler.schedule(context, unrelatedEventCampaign) } just runs
+                every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } just runs
+                every { InAppMessageScheduler.schedule(context, unrelatedEventCampaign, any(), any()) } just runs
 
                 InAppMessageManager.initialize(context)
                 InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
@@ -709,8 +706,8 @@ class InAppMessageManagerTest {
                     isInternalEvent = false,
                 )
 
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
-                verify(exactly = 0) { InAppMessageScheduler.schedule(context, unrelatedEventCampaign) }
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign, "test_event", emptyMap()) }
+                verify(exactly = 0) { InAppMessageScheduler.schedule(context, unrelatedEventCampaign, any(), any()) }
             } finally {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
@@ -737,7 +734,7 @@ class InAppMessageManagerTest {
             try {
                 coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
                 every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } just runs
 
                 InAppMessageManager.initialize(context)
                 InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
@@ -747,7 +744,7 @@ class InAppMessageManagerTest {
                     eventParams = emptyMap(),
                     isInternalEvent = false,
                 )
-                verify(exactly = 0) { InAppMessageScheduler.schedule(context, campaign) }
+                verify(exactly = 0) { InAppMessageScheduler.schedule(context, campaign, any(), any()) }
 
                 InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
                     context = context,
@@ -756,7 +753,7 @@ class InAppMessageManagerTest {
                     eventParams = emptyMap(),
                     isInternalEvent = false,
                 )
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign, any(), any()) }
             } finally {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
@@ -785,7 +782,7 @@ class InAppMessageManagerTest {
             try {
                 coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
                 every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } answers {
+                every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } answers {
                     concurrentSchedules.countDown()
                     concurrentSchedules.await(1, TimeUnit.SECONDS)
                     Unit
@@ -806,7 +803,7 @@ class InAppMessageManagerTest {
                     }
                 calls.forEach { it.get(5, TimeUnit.SECONDS) }
 
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign, any(), any()) }
             } finally {
                 executor.shutdownNow()
                 unmockkObject(InAppMessageScheduler)
@@ -876,7 +873,7 @@ class InAppMessageManagerTest {
             try {
                 coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
                 every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } just runs
 
                 InAppMessageManager.initialize(context)
                 InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
@@ -887,7 +884,7 @@ class InAppMessageManagerTest {
                     isInternalEvent = false,
                 )
 
-                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign) }
+                verify(exactly = 1) { InAppMessageScheduler.schedule(context, campaign, any(), any()) }
             } finally {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
@@ -914,7 +911,7 @@ class InAppMessageManagerTest {
             try {
                 coEvery { NotiflySyncStateUtil.fetchState(context) } returns state
                 every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
-                every { InAppMessageScheduler.schedule(context, campaign) } throws IllegalStateException("schedule failed")
+                every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } throws IllegalStateException("schedule failed")
 
                 InAppMessageManager.initialize(context)
                 assertThrows(IllegalStateException::class.java) {
@@ -927,7 +924,7 @@ class InAppMessageManagerTest {
                     )
                 }
 
-                every { InAppMessageScheduler.schedule(context, campaign) } just runs
+                every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } just runs
                 InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
                     context = context,
                     eventName = "test_event",
@@ -936,7 +933,7 @@ class InAppMessageManagerTest {
                     isInternalEvent = false,
                 )
 
-                verify(exactly = 2) { InAppMessageScheduler.schedule(context, campaign) }
+                verify(exactly = 2) { InAppMessageScheduler.schedule(context, campaign, any(), any()) }
             } finally {
                 unmockkObject(InAppMessageScheduler)
                 unmockkObject(NotiflySyncStateUtil)
@@ -962,7 +959,7 @@ class InAppMessageManagerTest {
             coEvery { NotiflySyncStateUtil.fetchState(context) } returns fetchStateOutput
 
             mockkObject(InAppMessageScheduler)
-            every { InAppMessageScheduler.schedule(context, campaigns[0]) } just runs
+            every { InAppMessageScheduler.schedule(context, campaigns[0], any(), any()) } just runs
 
             mockkObject(NotiflySdkStateManager)
             every { NotiflySdkStateManager.setState(any()) } answers { callOriginal() }

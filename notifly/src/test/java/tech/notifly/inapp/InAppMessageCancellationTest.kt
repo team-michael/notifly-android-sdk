@@ -28,7 +28,6 @@ import tech.notifly.inapp.models.TriggeringConditions
 import tech.notifly.inapp.models.TriggeringEventFilterUnit
 import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.ValueType
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
@@ -39,26 +38,14 @@ class InAppMessageCancellationTest {
     @Before
     fun setup() {
         context = mockk<Context>(relaxed = true)
-        // Clear scheduler state via reflection to ensure isolation between tests
-        clearSchedulerState()
+        every { context.applicationContext } returns context
+        InAppMessageScheduler.descheduleAll()
     }
 
     @After
     fun tearDown() {
         InAppMessageScheduler.descheduleAll()
         unmockkAll()
-    }
-
-    // ──────────────────────────────────────────────────────────
-    // Helper: clear InAppMessageScheduler's scheduledCampaigns via reflection
-    // ──────────────────────────────────────────────────────────
-
-    private fun clearSchedulerState() {
-        val field = InAppMessageScheduler::class.java.getDeclaredField("scheduledCampaigns")
-        field.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        val map = field.get(InAppMessageScheduler) as ConcurrentHashMap<String, Runnable>
-        map.clear()
     }
 
     // ──────────────────────────────────────────────────────────
@@ -71,10 +58,7 @@ class InAppMessageCancellationTest {
         cancellationConditions: TriggeringConditions? = null,
         cancellationEventFilters: TriggeringEventFilters? = null,
     ): Campaign {
-        val message = mockk<Message>()
-        every { message.url } returns "https://example.com/message"
-        every { message.modalProperties } returns """{"key": "value"}"""
-        every { message.templateName } returns "test_template"
+        val message = Message("https://example.com/message", """{"key": "value"}""", "test_template")
 
         val triggeringConditionUnit = mockk<TriggeringConditionUnit>()
         every { triggeringConditionUnit.type } returns TriggeringConditionType.EVENT_NAME
@@ -264,7 +248,7 @@ class InAppMessageCancellationTest {
     }
 
     @Test
-    fun `duplicate scheduling cancels the previous runnable to prevent ghost messages`() {
+    fun `duplicate scheduling replaces the previous deadline`() {
         // Given
         mockkObject(NotiflyInAppMessageActivity)
         every { NotiflyInAppMessageActivity.isActive } returns false
@@ -272,29 +256,20 @@ class InAppMessageCancellationTest {
         val campaign1 = createDummyCampaign(id = "dup_campaign", delay = 10)
         InAppMessageScheduler.schedule(context, campaign1)
 
-        // Access the underlying map to capture the first Runnable reference
-        val field = InAppMessageScheduler::class.java.getDeclaredField("scheduledCampaigns")
-        field.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        val map = field.get(InAppMessageScheduler) as ConcurrentHashMap<String, Runnable>
-        val firstRunnable = map["dup_campaign"]
-
         // When: schedule the same campaign ID again (e.g., with a different delay)
         val campaign2 = createDummyCampaign(id = "dup_campaign", delay = 20)
         InAppMessageScheduler.schedule(context, campaign2)
 
-        // Then: there should still be exactly one entry, and the Runnable should differ
+        ShadowLooper.idleMainLooper(10, TimeUnit.SECONDS)
         val ids = InAppMessageScheduler.getScheduledCampaignIds()
         assertEquals(
             "Only one entry for the same campaign id",
             1,
             ids.filter { it == "dup_campaign" }.size,
         )
-        val secondRunnable = map["dup_campaign"]
-        assertTrue(
-            "The Runnable should have been replaced (old one cancelled)",
-            firstRunnable !== secondRunnable,
-        )
+        verify(exactly = 0) { context.startActivity(any()) }
+        ShadowLooper.idleMainLooper(10, TimeUnit.SECONDS)
+        verify(exactly = 1) { context.startActivity(any()) }
     }
 
     @Test
