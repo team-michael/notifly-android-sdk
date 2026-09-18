@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -39,6 +40,7 @@ import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 import tech.notifly.utils.NotiflyAuthUtil
 import tech.notifly.utils.NotiflyDeviceUtil
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
@@ -65,6 +67,18 @@ class InAppMessageRenderingTest {
 
         val intent = shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity
         assertEquals("https://in-app-message.notifly.tech/original.html", intent.getStringExtra("in_app_message_url"))
+    }
+
+    @Test
+    fun schedule_staticLaunchFailure_preservesSynchronousError() {
+        val failingContext = mockk<Context>()
+        every { failingContext.applicationContext } returns failingContext
+        every { failingContext.packageName } returns context.packageName
+        every { failingContext.startActivity(any()) } throws IllegalStateException("Activity launch failed")
+
+        assertThrows(IllegalStateException::class.java) {
+            InAppMessageScheduler.schedule(failingContext, popupCampaign("static"))
+        }
     }
 
     @Test
@@ -159,6 +173,54 @@ class InAppMessageKmpRenderingTest {
                 .SECONDS,
         )
         assertEquals(1, callbacks.size)
+    }
+
+    @Test
+    fun schedule_cancelledBeforeDeadline_doesNotStartRender() {
+        InAppMessageScheduler.schedule(context, popupCampaign("ssr").copy(delay = 5))
+        assertEquals(listOf("campaign-a"), InAppMessageScheduler.getScheduledCampaignIds())
+
+        InAppMessageScheduler.deschedule("campaign-a")
+        ShadowLooper.idleMainLooper(5, TimeUnit.SECONDS)
+
+        assertTrue(callbacks.isEmpty())
+        assertTrue(InAppMessageScheduler.getScheduledCampaignIds().isEmpty())
+        assertNull(shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity)
+    }
+
+    @Test
+    fun schedule_delayedRender_remainsCancellableAfterTimerFires() {
+        InAppMessageScheduler.schedule(context, popupCampaign("ssr").copy(delay = 5))
+        assertEquals(listOf("campaign-a"), InAppMessageScheduler.getScheduledCampaignIds())
+        ShadowLooper.idleMainLooper(5, TimeUnit.SECONDS)
+        assertEquals(1, callbacks.size)
+        assertEquals(listOf("campaign-a"), InAppMessageScheduler.getScheduledCampaignIds())
+
+        InAppMessageScheduler.deschedule("campaign-a")
+        complete("rendered")
+
+        verify { tasks.single().cancel() }
+        assertTrue(InAppMessageScheduler.getScheduledCampaignIds().isEmpty())
+        assertNull(shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity)
+    }
+
+    @Test
+    fun schedule_renderReplacedByTimer_preservesNewDeadlineAfterLateCompletion() {
+        schedule()
+        InAppMessageScheduler.schedule(context, popupCampaign("ssr").copy(delay = 5))
+        verify { tasks.single().cancel() }
+        complete("rendered")
+        assertNull(shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity)
+        assertEquals(listOf("campaign-a"), InAppMessageScheduler.getScheduledCampaignIds())
+        ShadowLooper.idleMainLooper(4, TimeUnit.SECONDS)
+        assertEquals(1, callbacks.size)
+
+        ShadowLooper.idleMainLooper(1, TimeUnit.SECONDS)
+        assertEquals(2, callbacks.size)
+        complete("rendered", index = 1)
+
+        assertNotNull(shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity)
+        assertTrue(InAppMessageScheduler.getScheduledCampaignIds().isEmpty())
     }
 
     @Test

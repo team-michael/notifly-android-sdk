@@ -2,13 +2,14 @@ package tech.notifly.inapp
 
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import tech.notifly.application.IApplicationService
@@ -25,12 +26,14 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 object InAppMessageScheduler {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val scheduledCampaigns = ConcurrentHashMap<String, Job>()
+    private val handler = Handler(Looper.getMainLooper())
+    private val scheduledCampaigns = ConcurrentHashMap<String, Runnable>()
+    private val renderScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val renderingCampaigns = ConcurrentHashMap<String, Job>()
     private val renderedHtml = ConcurrentHashMap<String, String>()
     private val lock = Any()
 
-    /** Keeps a campaign cancellable from its delay through completion of server rendering. */
+    /** Uses the existing timer for delays and starts an asynchronous request only for SSR popups. */
     @JvmOverloads
     fun schedule(
         context: Context,
@@ -39,33 +42,63 @@ object InAppMessageScheduler {
         eventParams: Map<String, Any?> = emptyMap(),
     ) {
         val appContext = context.applicationContext
-        val requiresRendering = campaign.message.templateRenderingMode == "ssr"
-        val externalUserId =
-            if (requiresRendering) NotiflyStorage.get(appContext, NotiflyStorageItem.EXTERNAL_USER_ID) else null
-        val job =
-            scope.launch(start = CoroutineStart.LAZY) {
-                try {
-                    delay((campaign.delay ?: 0).coerceAtLeast(0) * 1000L)
-                    if (NotiflyInAppMessageActivity.isActive) return@launch
-                    val html =
-                        if (requiresRendering) {
-                            renderPopup(appContext, campaign, externalUserId, eventName, eventParams) ?: return@launch
-                        } else {
-                            null
-                        }
-                    ensureActive()
-                    show(appContext, campaign, html)
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: Exception) {
-                    Logger.w("[Notifly] Failed to prepare in-app message", error)
-                }
+        val renderJob =
+            if (campaign.message.templateRenderingMode == "ssr") {
+                createRenderJob(appContext, campaign, eventName, eventParams)
+            } else {
+                null
             }
-        synchronized(lock) {
-            scheduledCampaigns.put(campaign.id, job)?.cancel()
+        val display: () -> Unit = {
+            if (renderJob != null) renderJob.start() else show(appContext, campaign, null)
         }
-        job.invokeOnCompletion { scheduledCampaigns.remove(campaign.id, job) }
-        job.start()
+        val delay = campaign.delay ?: 0
+        synchronized(lock) {
+            if (delay > 0 || renderJob != null) {
+                scheduledCampaigns.remove(campaign.id)?.let { handler.removeCallbacks(it) }
+                renderingCampaigns.remove(campaign.id)?.cancel()
+            }
+            if (renderJob != null) {
+                renderingCampaigns[campaign.id] = renderJob
+                renderJob.invokeOnCompletion { renderingCampaigns.remove(campaign.id, renderJob) }
+            }
+            if (delay > 0) {
+                val runnable =
+                    object : Runnable {
+                        override fun run() {
+                            synchronized(lock) {
+                                if (scheduledCampaigns[campaign.id] !== this) return
+                                scheduledCampaigns.remove(campaign.id)
+                            }
+                            display()
+                        }
+                    }
+                scheduledCampaigns[campaign.id] = runnable
+                handler.postDelayed(runnable, delay * 1000L)
+                Logger.d("[Notifly] Scheduled campaign: ${campaign.id} with delay: ${delay}s")
+                return
+            }
+        }
+        display()
+    }
+
+    private fun createRenderJob(
+        context: Context,
+        campaign: Campaign,
+        eventName: String?,
+        eventParams: Map<String, Any?>,
+    ): Job {
+        val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+        return renderScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                val html = renderPopup(context, campaign, externalUserId, eventName, eventParams) ?: return@launch
+                ensureActive()
+                show(context, campaign, html)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Logger.w("[Notifly] Failed to prepare in-app message", error)
+            }
+        }
     }
 
     private suspend fun renderPopup(
@@ -106,19 +139,22 @@ object InAppMessageScheduler {
     /** Transfers HTML in-process instead of placing its potentially large body in an Intent. */
     internal fun consumeRenderedHtml(messageId: String?): String? = messageId?.let { renderedHtml.remove(it) }
 
-    fun getScheduledCampaignIds(): List<String> = scheduledCampaigns.keys().toList()
+    fun getScheduledCampaignIds(): List<String> = synchronized(lock) { (scheduledCampaigns.keys + renderingCampaigns.keys).toList() }
 
     fun deschedule(campaignId: String) {
         synchronized(lock) {
-            scheduledCampaigns.remove(campaignId)?.cancel()
+            scheduledCampaigns.remove(campaignId)?.let { handler.removeCallbacks(it) }
+            renderingCampaigns.remove(campaignId)?.cancel()
         }
         Logger.d("[Notifly] Descheduled campaign: $campaignId")
     }
 
     fun descheduleAll() {
         synchronized(lock) {
-            scheduledCampaigns.values.toList().forEach { it.cancel() }
+            scheduledCampaigns.values.forEach { handler.removeCallbacks(it) }
             scheduledCampaigns.clear()
+            renderingCampaigns.values.toList().forEach { it.cancel() }
+            renderingCampaigns.clear()
             renderedHtml.clear()
         }
         Logger.d("[Notifly] Descheduled all campaigns")
