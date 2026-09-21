@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-09-21
+
+### Added
+
+- Support server-rendered popup personalization through the shared KMP Core, including Liquid, catalogs, Connected Content, and aborted renders.
+
+### Changed
+
+- Promote the SDK and shared Core artifacts to the stable 1.24.0 release.
+
 ## [1.24.0-alpha.1] - 2026-09-14
 
 ### Added
