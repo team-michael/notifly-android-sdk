@@ -345,6 +345,14 @@ object Notifly {
      * Sets the user properties for the current user.
      * User properties are key-value pairs that can be used to segment users.
      *
+     * Calls are skipped if every supplied key and value matches the available local user state
+     * and less than 5 seconds have elapsed since the last user-property send attempt.
+     * Skipped calls do not extend the window. First calls, changed values, and calls at or after
+     * 5 seconds follow the normal send path. Changing or removing the user ID resets the window.
+     * The window starts when an event is handed to the send path, regardless of server confirmation.
+     * Comparison requires in-app messaging to be enabled, supported, and initialized.
+     * Local user state may not yet reflect changes made through other APIs.
+     *
      * There are special property keys that are reserved for specific purposes:
      * - `$phone_number`: The phone number of the user. You can also use `setPhoneNumber` method to set this property.
      * - `$email`: The email address of the user. You can also use `setEmail` method to set this property.
