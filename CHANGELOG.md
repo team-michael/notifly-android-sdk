@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-09-21
+
+### Added
+
+- Support KMP-based popup personalization with Liquid, catalogs, Connected Content, and render-abort handling.
+- Expose shared Core as a separate Maven artifact and unify user ID transition handling.
+
+### Changed
+
+- Skip unchanged user-property updates within five seconds.
+- Preserve static popup behavior and handle cancellation and identity changes during rendering.
+- Update Core build and release pipelines for stable distribution.
+
 ## [1.24.0-alpha.1] - 2026-09-14
 
 ### Added
