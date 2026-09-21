@@ -1,6 +1,7 @@
 package tech.notifly.utils
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -11,6 +12,8 @@ import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
 
 object NotiflyUserUtil {
+    private var lastUserPropertiesSentAt: Long? = null
+
     suspend fun setUserProperties(
         context: Context,
         params: Map<String, Any?>,
@@ -18,6 +21,7 @@ object NotiflyUserUtil {
         try {
             val newParams = params.toMutableMap()
             if (params[N.KEY_EXTERNAL_USER_ID] is String) {
+                synchronized(this) { lastUserPropertiesSentAt = null }
                 val externalUserIdToSet = params[N.KEY_EXTERNAL_USER_ID] as String
                 val previousNotiflyUserId = NotiflyAuthUtil.getNotiflyUserId(context)
                 val previousExternalUserId =
@@ -35,7 +39,15 @@ object NotiflyUserUtil {
                         N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
                     )
             } else {
-                InAppMessageManager.updateUserProperties(newParams)
+                synchronized(this) {
+                    if (lastUserPropertiesSentAt?.let { SystemClock.elapsedRealtime() - it < 5000 } == true &&
+                        InAppMessageManager.hasSameUserProperties(newParams)
+                    ) {
+                        return
+                    }
+                    InAppMessageManager.updateUserProperties(newParams)
+                    lastUserPropertiesSentAt = SystemClock.elapsedRealtime()
+                }
             }
             NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
         } catch (e: Exception) {
@@ -44,6 +56,7 @@ object NotiflyUserUtil {
     }
 
     suspend fun removeUserId(context: Context) {
+        synchronized(this) { lastUserPropertiesSentAt = null }
         NotiflyStorage.clear(context, NotiflyStorageItem.EXTERNAL_USER_ID)
         NotiflyLogUtil.logEvent(context, "remove_external_user_id", emptyMap(), listOf(), true)
     }

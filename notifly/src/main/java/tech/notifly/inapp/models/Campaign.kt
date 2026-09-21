@@ -89,7 +89,13 @@ data class Campaign(
                 } else {
                     null
                 }
-            val message = Message(url, modalPropertiesObject.toString(), templateName)
+            val message =
+                Message(
+                    url,
+                    modalPropertiesObject.toString(),
+                    templateName,
+                    messageObject.opt("template_rendering_mode") as? String,
+                )
 
             val segmentInfoObject = from.getJSONObject("segment_info")
             val segmentInfo =
@@ -175,12 +181,15 @@ data class Campaign(
     }
 }
 
-data class Message(
-    val url: String,
-    // JSON-stringified string. InAppMessageActivity will handle this
-    val modalProperties: String,
-    val templateName: String?,
-)
+data class Message
+    @JvmOverloads
+    constructor(
+        val url: String,
+        // JSON-stringified string. InAppMessageActivity will handle this
+        val modalProperties: String,
+        val templateName: String?,
+        val templateRenderingMode: String? = null,
+    )
 
 data class SegmentInfo(
     val conditionGroup: List<ConditionGroup>,

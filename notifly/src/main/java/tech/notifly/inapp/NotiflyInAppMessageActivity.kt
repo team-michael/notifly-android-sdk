@@ -36,6 +36,7 @@ class NotiflyInAppMessageActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val renderedHtml = InAppMessageScheduler.consumeRenderedHtml(intent.getStringExtra("notifly_message_id"))
 
         window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         window.setDimAmount(0f)
@@ -72,6 +73,11 @@ class NotiflyInAppMessageActivity : Activity() {
         }
 
         val eventLogData = getEventLogData(intent)
+        if (intent.getBooleanExtra("in_app_message_rendered", false) && renderedHtml == null) {
+            Logger.w("[Notifly] Rendered popup content is no longer available")
+            finish()
+            return
+        }
         val templateName: String? = modalProperties?.optString("template_name")
 
         mNotiflyWebView =
@@ -87,7 +93,11 @@ class NotiflyInAppMessageActivity : Activity() {
                     )
                 }, this@NotiflyInAppMessageActivity::onWebViewLoadedWithError)
 
-                loadUrl(url)
+                if (renderedHtml != null) {
+                    loadDataWithBaseURL(url, renderedHtml, "text/html", "UTF-8", null)
+                } else {
+                    loadUrl(url)
+                }
             }
     }
 

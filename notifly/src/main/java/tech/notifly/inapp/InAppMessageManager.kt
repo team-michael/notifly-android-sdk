@@ -147,6 +147,10 @@ object InAppMessageManager {
         }
     }
 
+    internal fun hasSameUserProperties(params: Map<String, Any?>): Boolean =
+        !disabled && IS_IN_APP_MESSAGE_SUPPORTED && isInitialized &&
+            params.all { (key, value) -> userData.userProperties.containsKey(key) && userData.userProperties[key] == value }
+
     fun updateUserProperties(params: Map<String, Any?>) {
         if (disabled) {
             Logger.i("[Notifly] InAppMessage feature is disabled.")
@@ -413,7 +417,7 @@ object InAppMessageManager {
     ) {
         getCampaignsToSchedule(context, campaigns, externalUserId, eventName, eventParams).forEach {
             Logger.v("[Notifly] Scheduling campaign: $it")
-            InAppMessageScheduler.schedule(context, it)
+            InAppMessageScheduler.schedule(context, it, eventName, eventParams)
         }
     }
 
