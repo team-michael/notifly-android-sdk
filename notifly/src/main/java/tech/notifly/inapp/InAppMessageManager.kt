@@ -413,7 +413,7 @@ object InAppMessageManager {
     ) {
         getCampaignsToSchedule(context, campaigns, externalUserId, eventName, eventParams).forEach {
             Logger.v("[Notifly] Scheduling campaign: $it")
-            InAppMessageScheduler.schedule(context, it)
+            InAppMessageScheduler.schedule(context, it, eventName, eventParams)
         }
     }
 
