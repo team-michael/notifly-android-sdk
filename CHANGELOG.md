@@ -8,22 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Integrate KMP Core 0.1.0 to display server-rendered in-app popups with Liquid personalization, catalogs, Connected Content, and render-abort handling.
-- Read `message.template_rendering_mode`; request rendered HTML only for `ssr`, and preserve URL loading for static, missing, or unrecognized modes.
-- Pass the triggering event name and nested event parameters together with the campaign, user, and device IDs to the rendering service after the campaign delay.
-- Display rendered HTML with the original template URL as its base URL, preserving relative resources and existing popup interactions. Transfer HTML in-process instead of putting large bodies in Activity Intent extras.
-- Keep pending render requests connected to campaign cancellation and replacement. Recheck user identity, foreground state, and in-app messaging availability before presentation; skip failed or aborted renders and missing HTML without showing the unrendered template.
-- Expose shared Core as the separate `com.github.team-michael.notifly-android-sdk:core` Maven artifact, versioned together with the full SDK.
-- Add Core integration smoke tests and popup regression coverage for static compatibility, delays, event context, cancellation, replacement, identity changes, HTML loading, and render failures.
+- Support KMP-based popup personalization with Liquid, catalogs, Connected Content, and render-abort handling.
+- Expose shared Core as a separate Maven artifact and unify user ID transition handling.
 
 ### Changed
 
-- Use shared Core decisions for user ID changes, state synchronization, merging, and clearing while preserving anonymous ID normalization.
-- Skip `setUserProperties` calls whose supplied keys and values match available local state within five seconds of the last property send attempt. First calls, changed values, and calls at or after five seconds use the normal send path; skipped calls do not extend the window, and identity changes reset it. Comparison requires initialized, enabled in-app messaging and is not a server-acknowledgement cache.
-- Initialize the pinned KMP submodule in local, CI, and JitPack builds and use Gradle composite-build substitution for the Core dependency.
-- Validate release versions and build/publish Core and the full SDK together; dry-run Maven publication before release and mark prereleases separately from stable releases.
-- Separate automated review from build CI, restrict workflow permissions, and pin the review action revision.
-- Promote the SDK and matching Core artifacts to the stable `1.24.0` release.
+- Skip unchanged user-property updates within five seconds.
+- Preserve static popup behavior and handle cancellation and identity changes during rendering.
+- Update Core build and release pipelines for stable distribution.
 
 ## [1.24.0-alpha.1] - 2026-09-14
 
