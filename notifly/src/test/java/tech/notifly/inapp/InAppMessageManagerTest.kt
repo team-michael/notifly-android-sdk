@@ -917,6 +917,60 @@ class InAppMessageManagerTest {
         }
 
     @Test
+    fun `user property logging completes when foreground refresh adds a key`() =
+        runTest {
+            val campaign = createDummyCampaign()
+            val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(campaign, "silver", 2, 100)
+            InAppMessageManager.initialize(context)
+            val enteredLog = CountDownLatch(1)
+            val releaseLog = CountDownLatch(1)
+            val requestStarted = CountDownLatch(1)
+            val refreshCompleted = CountDownLatch(1)
+            val executor = Executors.newFixedThreadPool(2)
+            val localValue =
+                object {
+                    override fun toString(): String {
+                        enteredLog.countDown()
+                        check(releaseLog.await(5, TimeUnit.SECONDS))
+                        return "local"
+                    }
+                }
+            mockkObject(NotiflyTimerUtil)
+            try {
+                every { NotiflyTimerUtil.getTimestampMillis() } returns Long.MAX_VALUE
+                val response = JSONObject(createRevalidationResponse(campaign, "stale", 99, 999).payload!!)
+                response.getJSONObject("userData").getJSONObject("user_properties").put("server_only", true)
+                coEvery { httpClient.get(any(), any()) } answers {
+                    requestStarted.countDown()
+                    HttpResponse(200, response.toString())
+                }
+                val update =
+                    executor.submit {
+                        InAppMessageManager.updateUserProperties(mapOf("membership" to localValue, "following_key" to true))
+                    }
+                assertTrue(enteredLog.await(5, TimeUnit.SECONDS))
+                val refresh =
+                    executor.submit {
+                        runBlocking { InAppMessageManager.maybeRevalidateCampaigns(context) }
+                        refreshCompleted.countDown()
+                    }
+                assertTrue(requestStarted.await(5, TimeUnit.SECONDS))
+                val completedDuringLog = refreshCompleted.await(500, TimeUnit.MILLISECONDS)
+                releaseLog.countDown()
+                update.get(5, TimeUnit.SECONDS)
+                refresh.get(5, TimeUnit.SECONDS)
+                assertFalse(completedDuringLog)
+                assertTrue(InAppMessageManager.hasSameUserProperties(mapOf("membership" to localValue, "server_only" to true)))
+            } finally {
+                releaseLog.countDown()
+                executor.shutdownNow()
+                executor.awaitTermination(5, TimeUnit.SECONDS)
+                unmockkObject(NotiflyTimerUtil)
+            }
+        }
+
+    @Test
     fun `failed revalidation preserves cached state and the retry interval`() =
         runTest {
             val campaign = createDummyCampaign()

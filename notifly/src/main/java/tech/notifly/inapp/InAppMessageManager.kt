@@ -169,8 +169,8 @@ object InAppMessageManager {
 
         synchronized(eventProcessingLock) {
             userData.userProperties += params
+            Logger.v("[Notifly] Updated user data to $userData")
         }
-        Logger.v("[Notifly] Updated user data to $userData")
     }
 
     private fun isReEligibleCampaign(
