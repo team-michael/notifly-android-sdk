@@ -140,7 +140,7 @@ object InAppMessageManager {
         }
 
         if (shouldRevalidateCampaign) {
-            revalidateState(context)
+            syncCampaigns(context)
             campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
         } else {
             Logger.v("[Notifly] Not revalidating campaigns since the interval has not passed.")
@@ -362,11 +362,15 @@ object InAppMessageManager {
         return true
     }
 
-    private suspend fun revalidateState(context: Context) {
+    private suspend fun syncCampaigns(context: Context) {
         try {
-            sync(context, shouldMergeData = false)
+            val fetched = NotiflySyncStateUtil.fetchCampaigns(context)
+            synchronized(eventProcessingLock) {
+                InAppMessageScheduler.descheduleAll()
+                campaigns = fetched
+            }
         } catch (e: Exception) {
-            Logger.e("Failed to fetch user state, keeping cached data", e)
+            Logger.e("Failed to fetch campaigns, keeping cached data", e)
         }
     }
 
