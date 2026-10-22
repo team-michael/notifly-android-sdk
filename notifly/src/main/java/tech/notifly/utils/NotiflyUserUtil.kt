@@ -17,43 +17,44 @@ object NotiflyUserUtil {
     suspend fun setUserProperties(
         context: Context,
         params: Map<String, Any?>,
-    ) {
-        try {
-            val newParams = params.toMutableMap()
-            if (params[N.KEY_EXTERNAL_USER_ID] is String) {
-                synchronized(this) { lastUserPropertiesSentAt = null }
-                val externalUserIdToSet = params[N.KEY_EXTERNAL_USER_ID] as String
-                val previousNotiflyUserId = NotiflyAuthUtil.getNotiflyUserId(context)
-                val previousExternalUserId =
-                    NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+    ): Unit =
+        InAppMessageManager.withPendingStateUpdate {
+            try {
+                val newParams = params.toMutableMap()
+                if (params[N.KEY_EXTERNAL_USER_ID] is String) {
+                    synchronized(this) { lastUserPropertiesSentAt = null }
+                    val externalUserIdToSet = params[N.KEY_EXTERNAL_USER_ID] as String
+                    val previousNotiflyUserId = NotiflyAuthUtil.getNotiflyUserId(context)
+                    val previousExternalUserId =
+                        NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
 
-                NotiflyStorage.put(
-                    context,
-                    NotiflyStorageItem.EXTERNAL_USER_ID,
-                    externalUserIdToSet,
-                )
-
-                newParams +=
-                    mapOf<String, Any?>(
-                        N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
-                        N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
+                    NotiflyStorage.put(
+                        context,
+                        NotiflyStorageItem.EXTERNAL_USER_ID,
+                        externalUserIdToSet,
                     )
-            } else {
-                synchronized(this) {
-                    if (lastUserPropertiesSentAt?.let { SystemClock.elapsedRealtime() - it < 5000 } == true &&
-                        InAppMessageManager.hasSameUserProperties(newParams)
-                    ) {
-                        return
+
+                    newParams +=
+                        mapOf<String, Any?>(
+                            N.KEY_PREVIOUS_NOTIFLY_USER_ID to previousNotiflyUserId,
+                            N.KEY_PREVIOUS_EXTERNAL_USER_ID to previousExternalUserId,
+                        )
+                } else {
+                    synchronized(this) {
+                        if (lastUserPropertiesSentAt?.let { SystemClock.elapsedRealtime() - it < 5000 } == true &&
+                            InAppMessageManager.hasSameUserProperties(newParams)
+                        ) {
+                            return@withPendingStateUpdate
+                        }
+                        InAppMessageManager.updateUserProperties(newParams)
+                        lastUserPropertiesSentAt = SystemClock.elapsedRealtime()
                     }
-                    InAppMessageManager.updateUserProperties(newParams)
-                    lastUserPropertiesSentAt = SystemClock.elapsedRealtime()
                 }
+                NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
+            } catch (e: Exception) {
+                Logger.w("[Notifly] Failed to set user properties", e)
             }
-            NotiflyLogUtil.logEvent(context, "set_user_properties", newParams, listOf(), true)
-        } catch (e: Exception) {
-            Logger.w("[Notifly] Failed to set user properties", e)
         }
-    }
 
     suspend fun removeUserId(context: Context) {
         synchronized(this) { lastUserPropertiesSentAt = null }

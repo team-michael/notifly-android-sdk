@@ -57,6 +57,10 @@ class SetUserIdCommand(
                 normalizeUserId(userId),
             )
 
+        if (transition.changed || transition.shouldClear) {
+            InAppMessageManager.invalidateRevalidation()
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 if (transition.shouldClear) {

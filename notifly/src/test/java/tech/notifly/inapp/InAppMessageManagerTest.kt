@@ -1,5 +1,6 @@
 package tech.notifly.inapp
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageInfo
@@ -56,8 +57,11 @@ import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.services.NotiflyServiceProvider
 import tech.notifly.storage.NotiflyStorage
 import tech.notifly.storage.NotiflyStorageItem
+import tech.notifly.utils.NotiflyFirebaseUtil
+import tech.notifly.utils.NotiflyLogUtil
 import tech.notifly.utils.NotiflySyncStateUtil
 import tech.notifly.utils.NotiflyTimerUtil
+import tech.notifly.utils.NotiflyUserUtil
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -819,12 +823,14 @@ class InAppMessageManagerTest {
         campaign: Campaign,
         membership: String,
         eventCount: Int,
-        hiddenUntil: Int,
+        hiddenUntil: Int?,
     ): HttpResponse {
         val response = JSONObject(createGetUserStateResponse(campaign).payload!!)
         response.put(
             "userData",
-            JSONObject("""{"user_properties":{"membership":"$membership"},"campaign_hidden_until":{"hidden_campaign":$hiddenUntil}}"""),
+            JSONObject()
+                .put("user_properties", JSONObject().put("membership", membership))
+                .put("campaign_hidden_until", JSONObject().apply { hiddenUntil?.let { put("hidden_campaign", it) } }),
         )
         response.put(
             "eventIntermediateCountsData",
@@ -835,21 +841,23 @@ class InAppMessageManagerTest {
 
     private fun assertRevalidatedState(
         campaignId: String,
-        membership: String,
-        eventCount: Int,
-        hiddenUntil: Int,
+        membership: String?,
+        eventCount: Int?,
+        hiddenUntil: Int?,
     ) {
-        assertTrue(InAppMessageManager.hasSameUserProperties(mapOf("membership" to membership)))
         val campaigns = InAppMessageManager::class.java.getDeclaredField("campaigns").apply { isAccessible = true }
         assertEquals(listOf(campaignId), (campaigns.get(InAppMessageManager) as List<*>).map { (it as Campaign).id })
         val counts = InAppMessageManager::class.java.getDeclaredField("eventCounts").apply { isAccessible = true }
-        assertEquals(listOf(EventIntermediateCounts("2026-10-22", "test_event", eventCount, emptyMap())), counts.get(InAppMessageManager))
+        val expectedCounts = eventCount?.let { listOf(EventIntermediateCounts("2026-10-22", "test_event", it, emptyMap())) } ?: emptyList()
+        assertEquals(expectedCounts, counts.get(InAppMessageManager))
         val userData = InAppMessageManager::class.java.getDeclaredField("userData").apply { isAccessible = true }
-        assertEquals(mapOf("hidden_campaign" to hiddenUntil), (userData.get(InAppMessageManager) as UserData).campaignHiddenUntil)
+        val currentUserData = userData.get(InAppMessageManager) as UserData
+        assertEquals(membership, currentUserData.userProperties["membership"])
+        assertEquals(hiddenUntil?.let { mapOf("hidden_campaign" to it) } ?: emptyMap<String, Int>(), currentUserData.campaignHiddenUntil)
     }
 
     @Test
-    fun `foreground revalidation refreshes only campaigns after the interval`() =
+    fun `foreground revalidation replaces all state after the interval without doubling counts`() =
         runTest {
             val initialCampaign = createDummyCampaign(id = "initial_campaign")
             val updatedCampaign = createDummyCampaign(id = "updated_campaign")
@@ -872,14 +880,14 @@ class InAppMessageManagerTest {
 
                 now++
                 InAppMessageManager.maybeRevalidateCampaigns(context)
-                assertRevalidatedState("updated_campaign", "silver", 2, 100)
-                assertTrue(InAppMessageManager.hasSameUserProperties(mapOf("local_property" to true)))
+                assertRevalidatedState("updated_campaign", "gold", 5, 200)
+                assertFalse(InAppMessageManager.hasSameUserProperties(mapOf("local_property" to true)))
 
                 now += 600_001L
                 InAppMessageManager.maybeRevalidateCampaigns(context)
-                assertRevalidatedState("updated_campaign", "silver", 2, 100)
-                coVerify(exactly = 1) { httpClient.get(match { !it.contains("scope=") }, any()) }
-                coVerify(exactly = 2) { httpClient.get(match { it.contains("scope=campaign") }, any()) }
+                assertRevalidatedState("updated_campaign", "gold", 5, 200)
+                coVerify(exactly = 3) { httpClient.get(match { !it.contains("scope=") }, any()) }
+                coVerify(exactly = 0) { httpClient.get(match { it.contains("scope=") }, any()) }
             } finally {
                 unmockkObject(NotiflyTimerUtil)
             }
@@ -912,31 +920,247 @@ class InAppMessageManagerTest {
                 coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(updatedCampaign, "gold", 5, 200)
                 now++
                 InAppMessageManager.maybeRevalidateCampaigns(context)
-                assertRevalidatedState("updated_campaign", "silver", 2, 100)
+                assertRevalidatedState("updated_campaign", "gold", 5, 200)
+            } finally {
+                unmockkObject(NotiflyTimerUtil)
+            }
+        }
+
+    private suspend fun withPendingRevalidation(
+        beforeResponse: suspend () -> Unit,
+        assertState: () -> Unit,
+    ) {
+        val initialCampaign = createDummyCampaign(id = "initial_campaign")
+        val staleCampaign = createDummyCampaign(id = "stale_campaign")
+        val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+        var now = 1_000L
+        mockkObject(NotiflyTimerUtil)
+        try {
+            every { NotiflyTimerUtil.getTimestampMillis() } answers { now }
+            every { Campaign.fromJSONObject(any()) } answers { createDummyCampaign(id = firstArg<JSONObject>().getString("id")) }
+            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(initialCampaign, "silver", 2, 100)
+            InAppMessageManager.initialize(context)
+
+            val staleResponse = createRevalidationResponse(staleCampaign, "stale", 99, 999)
+            coEvery { httpClient.get(any(), any()) } coAnswers {
+                beforeResponse()
+                staleResponse
+            }
+            now += 600_001L
+            InAppMessageManager.maybeRevalidateCampaigns(context)
+            assertState()
+
+            // Discarded responses also retain the existing request interval.
+            val recoveredCampaign = createDummyCampaign(id = "recovered_campaign")
+            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(recoveredCampaign, "recovered", 7, 700)
+            now += 600_000L
+            InAppMessageManager.maybeRevalidateCampaigns(context)
+            assertState()
+            now++
+            InAppMessageManager.maybeRevalidateCampaigns(context)
+            assertRevalidatedState("recovered_campaign", "recovered", 7, 700)
+        } finally {
+            unmockkObject(NotiflyTimerUtil)
+        }
+    }
+
+    @Test
+    fun `revalidation cannot overwrite a newer user refresh`() =
+        runTest {
+            var externalUserId = "user-a"
+            every { NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) } answers { externalUserId }
+            withPendingRevalidation(
+                beforeResponse = {
+                    externalUserId = "user-b"
+                    val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "user_b_campaign"), "user-b", 8, 800)
+                    InAppMessageManager.refresh(context, shouldMergeData = false)
+                },
+                assertState = { assertRevalidatedState("user_b_campaign", "user-b", 8, 800) },
+            )
+        }
+
+    @Test
+    fun `revalidation cannot overwrite fresh state after returning to the same user`() =
+        runTest {
+            var externalUserId = "user-a"
+            every { NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) } answers { externalUserId }
+            withPendingRevalidation(
+                beforeResponse = {
+                    val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+                    externalUserId = "user-b"
+                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "user_b_campaign"), "user-b", 8, 800)
+                    InAppMessageManager.refresh(context, shouldMergeData = false)
+                    externalUserId = "user-a"
+                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "fresh_user_a"), "fresh", 9, 900)
+                    InAppMessageManager.refresh(context, shouldMergeData = false)
+                },
+                assertState = { assertRevalidatedState("fresh_user_a", "fresh", 9, 900) },
+            )
+        }
+
+    @Test
+    fun `revalidation is discarded when the stored user changes before a refresh`() =
+        runTest {
+            var externalUserId = "user-a"
+            every { NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) } answers { externalUserId }
+            withPendingRevalidation(
+                beforeResponse = { externalUserId = "user-b" },
+                assertState = { assertRevalidatedState("initial_campaign", "silver", 2, 100) },
+            )
+        }
+
+    @Test
+    fun `revalidation cannot restore cleared state even when the user id is unchanged`() =
+        runTest {
+            withPendingRevalidation(
+                beforeResponse = { InAppMessageManager.clearUserState() },
+                assertState = { assertRevalidatedState("initial_campaign", null, null, null) },
+            )
+        }
+
+    @Test
+    fun `revalidation preserves property changes made while fetching`() =
+        runTest {
+            withPendingRevalidation(
+                beforeResponse = { InAppMessageManager.updateUserProperties(mapOf("membership" to "local")) },
+                assertState = { assertRevalidatedState("initial_campaign", "local", 2, 100) },
+            )
+        }
+
+    @Test
+    fun `revalidation preserves hidden campaign changes made while fetching`() =
+        runTest {
+            withPendingRevalidation(
+                beforeResponse = { InAppMessageManager.updateHideUntilData("hidden_campaign", 300) },
+                assertState = { assertRevalidatedState("initial_campaign", "silver", 2, 300) },
+            )
+        }
+
+    @Test
+    fun `revalidation preserves events recorded while fetching`() =
+        runTest {
+            val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
+            every { applicationService.isInForeground } returns false
+            mockkObject(InAppMessageUtils)
+            try {
+                every { InAppMessageUtils.getKSTCalendarDateString() } returns "2026-10-22"
+                withPendingRevalidation(
+                    beforeResponse = {
+                        InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(context, "test_event", null, emptyMap(), false)
+                    },
+                    assertState = { assertRevalidatedState("initial_campaign", "silver", 3, 100) },
+                )
+            } finally {
+                unmockkObject(InAppMessageUtils)
+            }
+        }
+
+    @Test
+    fun `revalidation preserves active local hides before their show event is sent`() =
+        runTest {
+            val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+            var now = 1_000L
+            mockkObject(NotiflyTimerUtil)
+            try {
+                every { NotiflyTimerUtil.getTimestampMillis() } answers { now }
+                every { Campaign.fromJSONObject(any()) } answers { createDummyCampaign(id = firstArg<JSONObject>().getString("id")) }
+                val cases =
+                    listOf(
+                        // Unsent local hide is later than, or absent from, the server's hide.
+                        Triple(2_000, 700, 2_000),
+                        Triple(2_000, null, 2_000),
+                        // Local permanent hide must not become temporary.
+                        Triple(-1, 700, -1),
+                        // Server permanent hide takes precedence.
+                        Triple(2_000, -1, -1),
+                        // A later server hide still applies.
+                        Triple(700, 2_000, 2_000),
+                        // Expired local hide is replaced or removed.
+                        Triple(100, 700, 700),
+                        Triple(100, null, null),
+                    )
+                for ((localHide, serverHide, expectedHide) in cases) {
+                    now = 1_000L
+                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "initial_campaign"), "silver", 2, 100)
+                    InAppMessageManager.initialize(context)
+                    // Activity updates the hide before the asynchronous show-event sender starts.
+                    InAppMessageManager.updateHideUntilData("hidden_campaign", localHide)
+                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "updated_campaign"), "gold", 7, serverHide)
+
+                    now += 600_001L
+                    InAppMessageManager.maybeRevalidateCampaigns(context)
+
+                    assertRevalidatedState("updated_campaign", "gold", 7, expectedHide)
+                }
             } finally {
                 unmockkObject(NotiflyTimerUtil)
             }
         }
 
     @Test
-    fun `reinitialization replaces all user state while the process stays alive`() =
+    fun `revalidation waits for a property update already being sent`() =
         runTest {
-            val initialCampaign = createDummyCampaign(id = "initial_campaign")
-            val updatedCampaign = createDummyCampaign(id = "updated_campaign")
-            val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
-            every { Campaign.fromJSONObject(any()) } returns initialCampaign
-            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(initialCampaign, "silver", 2, 100)
-            InAppMessageManager.initialize(context)
-            InAppMessageManager.updateUserProperties(mapOf("removed_property" to true))
-
-            every { Campaign.fromJSONObject(any()) } returns updatedCampaign
-            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(updatedCampaign, "gold", 5, 200)
-            InAppMessageManager.initialize(context)
-
-            assertRevalidatedState("updated_campaign", "gold", 5, 200)
-            assertFalse(InAppMessageManager.hasSameUserProperties(mapOf("removed_property" to true)))
-            coVerify(exactly = 2) { httpClient.get(match { !it.contains("scope=") }, any()) }
+            assertPendingWritePreserved("gold", 2, false) {
+                NotiflyUserUtil.setUserProperties(context, mapOf("membership" to "gold"))
+            }
         }
+
+    @Test
+    fun `revalidation waits for an event already being sent`() =
+        runTest {
+            assertPendingWritePreserved("silver", 3, true) {
+                NotiflyLogUtil.logEvent(context, "test_event")
+            }
+        }
+
+    private suspend fun assertPendingWritePreserved(
+        membership: String,
+        eventCount: Int,
+        ingestEvents: Boolean,
+        write: suspend () -> Unit,
+    ) {
+        val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+        val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
+        every { applicationService.current } returns if (ingestEvents) mockk<Activity>() else null
+        every { applicationService.isInForeground } returns false
+        val postEntered = CountDownLatch(1)
+        val releasePost = CountDownLatch(1)
+        val executor = Executors.newSingleThreadExecutor()
+        var now = 1_000L
+        mockkObject(NotiflyTimerUtil, InAppMessageUtils, NotiflyFirebaseUtil)
+        try {
+            every { NotiflyTimerUtil.getTimestampMillis() } answers { now }
+            every { InAppMessageUtils.getKSTCalendarDateString() } returns "2026-10-22"
+            coEvery { NotiflyFirebaseUtil.getFcmToken() } returns null
+            every { Campaign.fromJSONObject(any()) } answers { createDummyCampaign(id = firstArg<JSONObject>().getString("id")) }
+            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "initial_campaign"), "silver", 2, 100)
+            InAppMessageManager.initialize(context)
+            coEvery { httpClient.post("https://e.notifly.tech/records", any(), any()) } coAnswers {
+                postEntered.countDown()
+                check(releasePost.await(5, TimeUnit.SECONDS))
+                HttpResponse(statusCode = 200, payload = "{}", throwable = null)
+            }
+            val pendingWrite = executor.submit { runBlocking { write() } }
+            assertTrue("Expected the local update to reach the pending POST", postEntered.await(5, TimeUnit.SECONDS))
+
+            now += 600_001L
+            InAppMessageManager.maybeRevalidateCampaigns(context)
+            coVerify(exactly = 1) { httpClient.get(any(), any()) }
+            assertRevalidatedState("initial_campaign", membership, eventCount, 100)
+
+            releasePost.countDown()
+            pendingWrite.get(5, TimeUnit.SECONDS)
+            coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "updated_campaign"), "server", 7, 700)
+            InAppMessageManager.maybeRevalidateCampaigns(context)
+            assertRevalidatedState("updated_campaign", "server", 7, 700)
+        } finally {
+            releasePost.countDown()
+            executor.shutdown()
+            executor.awaitTermination(5, TimeUnit.SECONDS)
+            unmockkObject(NotiflyTimerUtil, InAppMessageUtils, NotiflyFirebaseUtil)
+        }
+    }
 
     @Test
     fun `refresh waits for active event processing before replacing state`() =
@@ -959,14 +1183,13 @@ class InAppMessageManagerTest {
         }
 
     @Test
-    fun `campaign refresh waits for active event processing`() =
+    fun `state revalidation waits for active event processing`() =
         runTest {
             assertFalse(
                 operationCompletesWhileEventIsProcessing {
                     mockkObject(NotiflyTimerUtil)
                     try {
                         every { NotiflyTimerUtil.getTimestampMillis() } returns Long.MAX_VALUE
-                        coEvery { NotiflySyncStateUtil.fetchCampaigns(context) } returns mutableListOf()
                         InAppMessageManager.maybeRevalidateCampaigns(context)
                     } finally {
                         unmockkObject(NotiflyTimerUtil)
