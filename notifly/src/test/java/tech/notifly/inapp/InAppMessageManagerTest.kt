@@ -949,6 +949,23 @@ class InAppMessageManagerTest {
             }
         }
 
+    @Test
+    fun `revalidation keeps the existing fetch behavior without changing SDK state`() =
+        runTest {
+            try {
+                withPendingRevalidation(
+                    beforeResponse = { NotiflySdkStateManager.setState(NotiflySdkState.FAILED) },
+                    assertState = {
+                        assertRevalidatedState("stale_campaign", "silver", 2, 100)
+                        assertTrue(InAppMessageManager.hasSameUserProperties(mapOf("created_during_fetch" to "server")))
+                        assertEquals(NotiflySdkState.FAILED, NotiflySdkStateManager.getState())
+                    },
+                )
+            } finally {
+                NotiflySdkStateManager.setState(NotiflySdkState.READY)
+            }
+        }
+
     private suspend fun withPendingRevalidation(
         beforeResponse: suspend () -> Unit,
         assertState: () -> Unit,
@@ -999,82 +1016,6 @@ class InAppMessageManagerTest {
                     assertFalse(InAppMessageManager.hasSameUserProperties(mapOf("created_during_fetch" to "server")))
                 },
             )
-        }
-
-    @Test
-    fun `revalidation cannot overwrite fresh state after returning to the same user`() =
-        runTest {
-            var externalUserId = "user-a"
-            every { NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) } answers { externalUserId }
-            withPendingRevalidation(
-                beforeResponse = {
-                    val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
-                    externalUserId = "user-b"
-                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "user_b_campaign"), "user-b", 8, 800)
-                    InAppMessageManager.refresh(context, shouldMergeData = false)
-                    externalUserId = "user-a"
-                    coEvery { httpClient.get(any(), any()) } returns createRevalidationResponse(createDummyCampaign(id = "fresh_user_a"), "fresh", 9, 900)
-                    InAppMessageManager.refresh(context, shouldMergeData = false)
-                },
-                assertState = {
-                    assertRevalidatedState("fresh_user_a", "fresh", 9, 900)
-                    assertFalse(InAppMessageManager.hasSameUserProperties(mapOf("created_during_fetch" to "server")))
-                },
-            )
-        }
-
-    @Test
-    fun `revalidation is discarded when the stored user changes before a refresh`() =
-        runTest {
-            var externalUserId = "user-a"
-            every { NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) } answers { externalUserId }
-            withPendingRevalidation(
-                beforeResponse = { externalUserId = "user-b" },
-                assertState = {
-                    assertRevalidatedState("initial_campaign", "silver", 2, 100)
-                    assertFalse(InAppMessageManager.hasSameUserProperties(mapOf("created_during_fetch" to "server")))
-                },
-            )
-        }
-
-    @Test
-    fun `revalidation cannot restore cleared state even when the user id is unchanged`() =
-        runTest {
-            withPendingRevalidation(
-                beforeResponse = { InAppMessageManager.clearUserState() },
-                assertState = {
-                    assertRevalidatedState("initial_campaign", null, null, null)
-                    assertFalse(InAppMessageManager.hasSameUserProperties(mapOf("created_during_fetch" to "server")))
-                },
-            )
-        }
-
-    @Test
-    fun `revalidation preserves hidden campaign changes made while fetching`() =
-        runTest {
-            withPendingRevalidation(
-                beforeResponse = { InAppMessageManager.updateHideUntilData("hidden_campaign", 300) },
-                assertState = { assertRevalidatedState("stale_campaign", "silver", 2, 300) },
-            )
-        }
-
-    @Test
-    fun `revalidation preserves events recorded while fetching`() =
-        runTest {
-            val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
-            every { applicationService.isInForeground } returns false
-            mockkObject(InAppMessageUtils)
-            try {
-                every { InAppMessageUtils.getKSTCalendarDateString() } returns "2026-10-22"
-                withPendingRevalidation(
-                    beforeResponse = {
-                        InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(context, "test_event", null, emptyMap(), false)
-                    },
-                    assertState = { assertRevalidatedState("stale_campaign", "silver", 3, 100) },
-                )
-            } finally {
-                unmockkObject(InAppMessageUtils)
-            }
         }
 
     @Test

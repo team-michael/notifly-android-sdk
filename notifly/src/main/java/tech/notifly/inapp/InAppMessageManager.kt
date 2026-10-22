@@ -48,7 +48,6 @@ object InAppMessageManager {
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
     private val eventProcessingLock = Any()
-    private var userStateGeneration = 0L
 
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
         set(value) =
@@ -90,11 +89,7 @@ object InAppMessageManager {
         try {
             NotiflySdkStateManager.setState(NotiflySdkState.REFRESHING)
 
-            val skeleton = UserData.getSkeleton(context)
-            synchronized(eventProcessingLock) {
-                userStateGeneration++
-                userData = skeleton
-            }
+            userData = UserData.getSkeleton(context)
             sync(context, shouldMergeData = false, shouldHandleExternalUserIdMismatch = true)
             isInitialized = true
 
@@ -141,10 +136,6 @@ object InAppMessageManager {
 
         if (!isInitialized) {
             Logger.w("[Notifly] InAppMessageManager is not initialized.")
-            return
-        }
-
-        if (NotiflySdkStateManager.getState() != NotiflySdkState.READY) {
             return
         }
 
@@ -296,7 +287,6 @@ object InAppMessageManager {
             return
         }
         synchronized(eventProcessingLock) {
-            userStateGeneration++
             eventCounts = mutableListOf()
             userData.apply {
                 this.userProperties.clear()
@@ -319,7 +309,6 @@ object InAppMessageManager {
         val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
         synchronized(eventProcessingLock) {
-            userStateGeneration++
             InAppMessageScheduler.descheduleAll()
             campaigns = syncStateResult.campaigns
             eventCounts =
@@ -377,16 +366,10 @@ object InAppMessageManager {
 
     private suspend fun syncCampaignsAndUserProperties(context: Context) {
         try {
-            val (generation, externalUserId) =
-                synchronized(eventProcessingLock) {
-                    userStateGeneration to NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-                }
+            val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
             val fetched = NotiflySyncStateUtil.fetchState(context)
             synchronized(eventProcessingLock) {
-                if (userStateGeneration != generation ||
-                    NotiflySdkStateManager.getState() != NotiflySdkState.READY ||
-                    NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) != externalUserId
-                ) {
+                if (NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) != externalUserId) {
                     return
                 }
                 InAppMessageScheduler.descheduleAll()
