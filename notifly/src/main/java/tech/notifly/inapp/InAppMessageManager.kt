@@ -48,13 +48,7 @@ object InAppMessageManager {
     private lateinit var eventCounts: MutableList<EventIntermediateCounts>
     private lateinit var userData: UserData
     private val eventProcessingLock = Any()
-    private var stateRevision = 0L
-    private var pendingStateUpdates = 0
-
-    private data class RevalidationSnapshot(
-        val revision: Long,
-        val externalUserId: String?,
-    )
+    private var userStateGeneration = 0L
 
     var campaignRevalidationIntervalMillis: Long = 10 * 60 * 1000L // 10 minutes
         set(value) =
@@ -98,7 +92,7 @@ object InAppMessageManager {
 
             val skeleton = UserData.getSkeleton(context)
             synchronized(eventProcessingLock) {
-                stateRevision++
+                userStateGeneration++
                 userData = skeleton
             }
             sync(context, shouldMergeData = false, shouldHandleExternalUserIdMismatch = true)
@@ -154,14 +148,8 @@ object InAppMessageManager {
             return
         }
 
-        synchronized(eventProcessingLock) {
-            if (pendingStateUpdates > 0) {
-                return
-            }
-        }
-
         if (shouldRevalidateCampaign) {
-            revalidateState(context)
+            syncCampaignsAndUserProperties(context)
             campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
         } else {
             Logger.v("[Notifly] Not revalidating campaigns since the interval has not passed.")
@@ -189,7 +177,6 @@ object InAppMessageManager {
         }
 
         synchronized(eventProcessingLock) {
-            stateRevision++
             userData.userProperties += params
         }
         Logger.v("[Notifly] Updated user data to $userData")
@@ -258,10 +245,7 @@ object InAppMessageManager {
         }
 
         try {
-            synchronized(eventProcessingLock) {
-                stateRevision++
-                userData.campaignHiddenUntil[campaignId] = hideUntil
-            }
+            userData.campaignHiddenUntil[campaignId] = hideUntil
             Logger.d("[Notifly] Updating hideUntil to $userData")
         } catch (e: Exception) {
             Logger.e("[Notifly] updateHideUntilData failed", e)
@@ -312,32 +296,11 @@ object InAppMessageManager {
             return
         }
         synchronized(eventProcessingLock) {
-            stateRevision++
+            userStateGeneration++
             eventCounts = mutableListOf()
             userData.apply {
                 this.userProperties.clear()
                 this.campaignHiddenUntil.clear()
-            }
-        }
-    }
-
-    internal fun invalidateRevalidation() {
-        synchronized(eventProcessingLock) {
-            stateRevision++
-        }
-    }
-
-    internal suspend fun withPendingStateUpdate(update: suspend () -> Unit) {
-        synchronized(eventProcessingLock) {
-            pendingStateUpdates++
-            stateRevision++
-        }
-        try {
-            update()
-        } finally {
-            synchronized(eventProcessingLock) {
-                pendingStateUpdates--
-                stateRevision++
             }
         }
     }
@@ -352,37 +315,11 @@ object InAppMessageManager {
         context: Context,
         shouldMergeData: Boolean,
         shouldHandleExternalUserIdMismatch: Boolean = false,
-        revalidationSnapshot: RevalidationSnapshot? = null,
     ) {
         val syncStateResult = NotiflySyncStateUtil.fetchState(context)
 
         synchronized(eventProcessingLock) {
-            if (revalidationSnapshot != null &&
-                (
-                    stateRevision != revalidationSnapshot.revision ||
-                        pendingStateUpdates > 0 ||
-                        NotiflySdkStateManager.getState() != NotiflySdkState.READY ||
-                        NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) != revalidationSnapshot.externalUserId
-                )
-            ) {
-                Logger.d("[Notifly] Discarding revalidation because the user or local state changed while fetching.")
-                return
-            }
-            if (revalidationSnapshot != null) {
-                // The Activity applies hides before the asynchronous show-event sender starts.
-                // A same-user revalidation must not shorten an active local hide.
-                val now = NotiflyTimerUtil.getTimestampSeconds()
-                for ((campaignId, hiddenUntil) in userData.campaignHiddenUntil) {
-                    if (hiddenUntil >= 0 && hiddenUntil <= now) continue
-                    val fetchedHiddenUntil = syncStateResult.userData.campaignHiddenUntil[campaignId]
-                    if (fetchedHiddenUntil == null ||
-                        (fetchedHiddenUntil >= 0 && (hiddenUntil < 0 || hiddenUntil > fetchedHiddenUntil))
-                    ) {
-                        syncStateResult.userData.campaignHiddenUntil[campaignId] = hiddenUntil
-                    }
-                }
-            }
-            stateRevision++
+            userStateGeneration++
             InAppMessageScheduler.descheduleAll()
             campaigns = syncStateResult.campaigns
             eventCounts =
@@ -438,15 +375,31 @@ object InAppMessageManager {
         return true
     }
 
-    private suspend fun revalidateState(context: Context) {
+    private suspend fun syncCampaignsAndUserProperties(context: Context) {
         try {
-            val snapshot =
+            val (generation, externalUserId) =
                 synchronized(eventProcessingLock) {
-                    RevalidationSnapshot(stateRevision, NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID))
+                    userStateGeneration to NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
                 }
-            sync(context, shouldMergeData = false, revalidationSnapshot = snapshot)
+            val fetched = NotiflySyncStateUtil.fetchState(context)
+            synchronized(eventProcessingLock) {
+                if (userStateGeneration != generation ||
+                    NotiflySdkStateManager.getState() != NotiflySdkState.READY ||
+                    NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) != externalUserId
+                ) {
+                    return
+                }
+                InAppMessageScheduler.descheduleAll()
+                campaigns = fetched.campaigns
+                // Fill missing keys using the current local state, preserving explicit nulls too.
+                for ((key, value) in fetched.userData.userProperties) {
+                    if (!userData.userProperties.containsKey(key)) {
+                        userData.userProperties[key] = value
+                    }
+                }
+            }
         } catch (e: Exception) {
-            Logger.e("Failed to fetch user state, keeping cached data", e)
+            Logger.e("Failed to fetch campaigns and user properties, keeping cached data", e)
         }
     }
 
@@ -455,7 +408,6 @@ object InAppMessageManager {
         eventParams: Map<String, Any?>,
         segmentationEventParamKeys: List<String>? = null,
     ) {
-        stateRevision++
         val formattedDate = InAppMessageUtils.getKSTCalendarDateString()
         val keyField = segmentationEventParamKeys?.getOrNull(0)
         val valueField = keyField?.let { eventParams[keyField] }

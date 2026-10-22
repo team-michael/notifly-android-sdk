@@ -59,47 +59,46 @@ object NotiflyLogUtil {
         eventParams: Map<String, Any?> = emptyMap(),
         segmentationEventParamKeys: List<String>? = null,
         isInternalEvent: Boolean = false,
-    ): Unit =
-        InAppMessageManager.withPendingStateUpdate {
-            if (eventName.isEmpty()) {
-                Logger.e("[Notifly] eventName must be provided.")
-                return@withPendingStateUpdate
-            }
+    ) {
+        if (eventName.isEmpty()) {
+            Logger.e("[Notifly] eventName must be provided.")
+            return
+        }
 
-            val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
-            val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
+        val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+        val applicationService = NotiflyServiceProvider.getService<IApplicationService>()
 
-            if (applicationService.current != null) {
-                Logger.v("[Notifly] Consider scheduling in app messages.")
-                Logger.v("$eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys")
-                InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
-                    context,
-                    eventName,
-                    externalUserId,
-                    eventParams,
-                    isInternalEvent,
-                    segmentationEventParamKeys,
-                )
-            }
-
-            /**
-             * Required Parameters:
-             * - Cognito ID Token: invalidate once when not found
-             * - User ID: [NotiflyAuthUtil.getNotiflyUserId] ensures non-null
-             * - Project ID: throw if null
-             * - Event ID: [NotiflyIdUtil.generateEventId] ensures non-null
-             * - Unique ID: non-null is ensured by native-level API
-             * - Device ID: non-null is ensured by native-level API
-             * - FCM Token: nullable if sdk-caller did not integrate nor set FCM and its token.
-             */
-            logEventInternal(
+        if (applicationService.current != null) {
+            Logger.v("[Notifly] Consider scheduling in app messages.")
+            Logger.v("$eventName, $externalUserId, $eventParams, $isInternalEvent, $segmentationEventParamKeys")
+            InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
                 context,
                 eventName,
+                externalUserId,
                 eventParams,
-                segmentationEventParamKeys,
                 isInternalEvent,
+                segmentationEventParamKeys,
             )
         }
+
+        /**
+         * Required Parameters:
+         * - Cognito ID Token: invalidate once when not found
+         * - User ID: [NotiflyAuthUtil.getNotiflyUserId] ensures non-null
+         * - Project ID: throw if null
+         * - Event ID: [NotiflyIdUtil.generateEventId] ensures non-null
+         * - Unique ID: non-null is ensured by native-level API
+         * - Device ID: non-null is ensured by native-level API
+         * - FCM Token: nullable if sdk-caller did not integrate nor set FCM and its token.
+         */
+        logEventInternal(
+            context,
+            eventName,
+            eventParams,
+            segmentationEventParamKeys,
+            isInternalEvent,
+        )
+    }
 
     private suspend fun logEventInternal(
         context: Context,
