@@ -28,7 +28,6 @@ class ApplicationService :
     override var entryState: ApplicationEntryAction = ApplicationEntryAction.APP_CLOSE
 
     private var firstStarted: Boolean = true
-    private val createdActivities = mutableSetOf<Activity>()
 
     private var _current: Activity? = null
     override var current: Activity?
@@ -39,8 +38,6 @@ class ApplicationService :
             Logger.d("ApplicationService: current activity=$current")
 
             if (value != null) {
-                // Also track activities that were created before SDK initialization.
-                createdActivities.add(value)
                 try {
                     value
                         .window
@@ -128,11 +125,9 @@ class ApplicationService :
     ) {
         Logger.d("ApplicationService.onActivityCreated($activityReferences,$entryState): $activity")
 
-        // Stopped activities still belong to the current session.
-        if (createdActivities.isEmpty() && !isInForeground && !isActivityChangingConfigurations) {
+        if (activityReferences == 0 && !isInForeground && !isActivityChangingConfigurations) {
             firstStarted = true
         }
-        createdActivities.add(activity)
     }
 
     override fun onActivityStarted(activity: Activity) {
@@ -180,7 +175,7 @@ class ApplicationService :
         Logger.d("ApplicationService.onActivityStopped($activityReferences,$entryState): $activity")
 
         isActivityChangingConfigurations = activity.isChangingConfigurations
-        if (--activityReferences <= 0 && !isActivityChangingConfigurations) {
+        if (!isActivityChangingConfigurations && --activityReferences <= 0) {
             current = null
             activityReferences = 0
             handleLostFocus()
@@ -196,7 +191,6 @@ class ApplicationService :
 
     override fun onActivityDestroyed(activity: Activity) {
         Logger.d("ApplicationService.onActivityDestroyed($activityReferences,$entryState): $activity")
-        createdActivities.remove(activity)
     }
 
     override fun onGlobalLayout() {
