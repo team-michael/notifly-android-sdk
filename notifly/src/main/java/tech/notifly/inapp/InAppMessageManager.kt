@@ -140,7 +140,7 @@ object InAppMessageManager {
         }
 
         if (shouldRevalidateCampaign) {
-            syncCampaigns(context)
+            syncCampaignsAndUserProperties(context)
             campaignLastFetchedAt = NotiflyTimerUtil.getTimestampMillis()
         } else {
             Logger.v("[Notifly] Not revalidating campaigns since the interval has not passed.")
@@ -167,8 +167,10 @@ object InAppMessageManager {
             return
         }
 
-        userData.userProperties += params
-        Logger.v("[Notifly] Updated user data to $userData")
+        synchronized(eventProcessingLock) {
+            userData.userProperties += params
+            Logger.v("[Notifly] Updated user data to $userData")
+        }
     }
 
     private fun isReEligibleCampaign(
@@ -362,15 +364,25 @@ object InAppMessageManager {
         return true
     }
 
-    private suspend fun syncCampaigns(context: Context) {
+    private suspend fun syncCampaignsAndUserProperties(context: Context) {
         try {
-            val fetched = NotiflySyncStateUtil.fetchCampaigns(context)
+            val externalUserId = NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID)
+            val fetched = NotiflySyncStateUtil.fetchState(context)
             synchronized(eventProcessingLock) {
+                if (NotiflyStorage.get(context, NotiflyStorageItem.EXTERNAL_USER_ID) != externalUserId) {
+                    return
+                }
                 InAppMessageScheduler.descheduleAll()
-                campaigns = fetched
+                campaigns = fetched.campaigns
+                // Fill missing keys using the current local state, preserving explicit nulls too.
+                for ((key, value) in fetched.userData.userProperties) {
+                    if (!userData.userProperties.containsKey(key)) {
+                        userData.userProperties[key] = value
+                    }
+                }
             }
         } catch (e: Exception) {
-            Logger.e("Failed to fetch campaigns, keeping cached data", e)
+            Logger.e("Failed to fetch campaigns and user properties, keeping cached data", e)
         }
     }
 

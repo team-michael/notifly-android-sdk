@@ -10,7 +10,7 @@ class InAppMessagePrefs {
     private var intentFlagsForInAppLinkOpening: Int? = null
 
     /**
-     * Sets the interval in milliseconds for revalidating the campaign.
+     * Sets the interval in milliseconds for refreshing campaigns and filling missing local user-property keys.
      * The default value is 10 minutes (600,000 milliseconds).
      * The value should be greater than 3 minutes (180,000 milliseconds).
      * @param interval The interval in milliseconds.
