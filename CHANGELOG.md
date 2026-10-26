@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Prevent ad push notification inflation crashes on Android 9 and earlier when `unsubscribe_url` is present, preserving light and dark mode colors.
+- Keep the unsubscribe row visible in image ad notifications by shrinking the image when the system limits the expanded notification height.
 - Prevent late in-app message load callbacks from accessing unavailable views or recording impressions after the screen closes, and clean up WebViews and display state when the Activity is destroyed.
 
 ## [1.24.2] - 2026-10-22

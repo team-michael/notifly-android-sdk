@@ -47,6 +47,8 @@ class NotiflyWebView
         private val path = Path()
         private val rect = RectF()
         private var radii: FloatArray? = null
+
+        @Volatile
         private var disposed = false
 
         override fun destroy() {
@@ -281,6 +283,8 @@ class NotiflyWebView
             @JavascriptInterface
             @Suppress("unused")
             fun postMessage(json: String) {
+                val activity = context as? Activity
+                if (disposed || activity?.isFinishing == true || activity?.isDestroyed == true) return
                 Logger.d("In-app message postMessage: $json")
                 val data = JSONObject(json)
                 val type = data.getString("type")

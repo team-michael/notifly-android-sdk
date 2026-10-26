@@ -177,6 +177,20 @@ class NotiflyInAppMessageLifecycleTest {
     }
 
     @Test
+    fun destroyedWebViewIgnoresCapturedJavascriptBridge() {
+        val old = create()
+        val view = old.get().findViewById<NotiflyWebView>(R.id.webView)
+        val bridge = shadowOf(view).getJavascriptInterface("Android")
+        old.pause().stop().destroy()
+        bridge
+            .javaClass
+            .getDeclaredMethod("postMessage", String::class.java)
+            .apply { isAccessible = true }
+            .invoke(bridge, """{"type":"close","button_name":"late-close"}""")
+        noImpression()
+    }
+
+    @Test
     fun destructionDetachesAndDestroysWebView() {
         val old = create()
         val view = old.get().findViewById<NotiflyWebView>(R.id.webView)
