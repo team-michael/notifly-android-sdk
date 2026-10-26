@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.3] - 2026-10-26
+
+### Fixed
+
+- Prevent ad push notification inflation crashes on Android 9 and earlier when `unsubscribe_url` is present, preserving light and dark mode colors.
+- Prevent late in-app message load callbacks from accessing unavailable views or recording impressions after the screen closes, and clean up WebViews and display state when the Activity is destroyed.
+
 ## [1.24.2] - 2026-10-22
 
 ### Fixed
