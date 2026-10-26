@@ -47,6 +47,15 @@ class NotiflyWebView
         private val path = Path()
         private val rect = RectF()
         private var radii: FloatArray? = null
+        private var disposed = false
+
+        override fun destroy() {
+            if (disposed) return
+            disposed = true
+            webViewClient = WebViewClient()
+            removeJavascriptInterface(JS_INTERFACE_NAME)
+            super.destroy()
+        }
 
         init {
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
@@ -75,6 +84,8 @@ class NotiflyWebView
                         view: WebView?,
                         url: String?,
                     ) {
+                        val activity = context as? Activity
+                        if (disposed || activity?.isFinishing == true || activity?.isDestroyed == true) return
                         super.onPageFinished(view, url)
                         Logger.v("NotiflyWebView.onPageFinished: $url")
                         if (pageLoadedSuccessfully) {

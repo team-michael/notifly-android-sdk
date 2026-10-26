@@ -13,9 +13,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 import tech.notifly.R
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [23, 26, 27, 28, 29, 30, 33, 34])
 class FCMBroadcastReceiverTest {
     @Test
     fun `ad push expanded notification uses system night mode colors`() {

@@ -7,6 +7,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import org.json.JSONObject
@@ -33,6 +34,7 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private var mNotiflyWebView: NotiflyWebView? = null
+    private var ownsActiveSlot = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +50,7 @@ class NotiflyInAppMessageActivity : Activity() {
         }
 
         isActivityRunning = true
+        ownsActiveSlot = true
         Logger.d("NotiflyInAppMessageActivity.onCreate")
         setContentView(R.layout.activity_notifly_in_app_message)
 
@@ -114,8 +117,12 @@ class NotiflyInAppMessageActivity : Activity() {
         modalProperties: JSONObject?,
         eventLogData: EventLogData,
     ) {
-        if (mNotiflyWebView == null) {
-            Logger.e("NotiflyWebView is null! Cannot show in app message")
+        if (isFinishing || isDestroyed) return
+
+        val webView = mNotiflyWebView
+        val touchInterceptorLayout = findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
+        if (webView == null || touchInterceptorLayout == null || findViewById<NotiflyWebView>(R.id.webView) !== webView) {
+            Logger.e("In app message views are unavailable; skipping display")
             finish()
             return
         }
@@ -137,7 +144,7 @@ class NotiflyInAppMessageActivity : Activity() {
                     Color.WHITE
                 }
 
-            mNotiflyWebView?.setBackgroundColor(backgroundColorInt)
+            webView.setBackgroundColor(backgroundColorInt)
         }
 
         Logger.v("shouldInterceptTouchEvent: $shouldInterceptTouchEvent")
@@ -145,14 +152,15 @@ class NotiflyInAppMessageActivity : Activity() {
         Logger.v("backgroundColor: $backgroundColor")
 
         setupTouchInterceptorLayout(
+            touchInterceptorLayout,
             shouldInterceptTouchEvent,
             backgroundOpacity,
         )
 
-        Logger.v("Previous visibility: ${mNotiflyWebView!!.visibility}") // Should be 4 (INVISIBLE)
-        mNotiflyWebView!!.visibility = View.VISIBLE
-        mNotiflyWebView!!.bringToFront()
-        Logger.v("Visibility: ${mNotiflyWebView!!.visibility}") // 0
+        Logger.v("Previous visibility: ${webView.visibility}") // Should be 4 (INVISIBLE)
+        webView.visibility = View.VISIBLE
+        webView.bringToFront()
+        Logger.v("Visibility: ${webView.visibility}") // 0
 
         val eventParams =
             mutableMapOf<String, Any?>(
@@ -190,18 +198,38 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private fun onWebViewLoadedWithError(errorMessage: String?) {
+        if (isFinishing || isDestroyed) return
         Logger.e("Error loading in app message! Error: " + (errorMessage ?: "Unknown error"))
         finish()
     }
 
     override fun finish() {
-        // Clear the flag to indicate the activity is no longer running
-        isActivityRunning = false
+        releaseActiveSlot()
 
         super.finish()
 
         // Remove the animation when the activity gets destroyed
         overridePendingTransition(0, 0)
+    }
+
+    override fun onDestroy() {
+        releaseActiveSlot()
+        val webView = mNotiflyWebView
+        mNotiflyWebView = null
+        if (webView != null) {
+            webView.stopLoading()
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.destroy()
+        }
+        super.onDestroy()
+    }
+
+    private fun releaseActiveSlot() {
+        // A rejected or already-finished Activity must not clear a newer Activity's slot.
+        if (ownsActiveSlot) {
+            ownsActiveSlot = false
+            isActivityRunning = false
+        }
     }
 
     private fun rejectCreation() {
@@ -210,12 +238,10 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     private fun setupTouchInterceptorLayout(
+        touchInterceptorLayout: TouchInterceptorLayout,
         shouldInterceptTouchEvent: Boolean,
         backgroundOpacity: Double,
     ) {
-        val touchInterceptorLayout =
-            findViewById<TouchInterceptorLayout>(R.id.touch_interceptor_layout)
-
         touchInterceptorLayout.setBackgroundColor(
             Color.argb(
                 (backgroundOpacity.coerceIn(0.0, 1.0) * 255).roundToInt(),
