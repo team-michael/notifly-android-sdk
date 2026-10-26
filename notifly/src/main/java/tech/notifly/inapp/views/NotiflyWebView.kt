@@ -283,8 +283,8 @@ class NotiflyWebView
             @JavascriptInterface
             @Suppress("unused")
             fun postMessage(json: String) {
-                val activity = context as? Activity
-                if (disposed || activity?.isFinishing == true || activity?.isDestroyed == true) return
+                val activity = context as? Activity ?: return
+                if (disposed || activity.isFinishing || activity.isDestroyed) return
                 Logger.d("In-app message postMessage: $json")
                 val data = JSONObject(json)
                 val type = data.getString("type")
@@ -292,7 +292,10 @@ class NotiflyWebView
                 val link = data.optString("link", null.toString())
                 val extraData = data.optJSONObject("extra_data")
 
-                handleButtonClick(type, buttonName, link, extraData, templateName)
+                activity.runOnUiThread {
+                    if (disposed || activity.isFinishing || activity.isDestroyed) return@runOnUiThread
+                    handleButtonClick(type, buttonName, link, extraData, templateName)
+                }
             }
 
             fun handleButtonClick(

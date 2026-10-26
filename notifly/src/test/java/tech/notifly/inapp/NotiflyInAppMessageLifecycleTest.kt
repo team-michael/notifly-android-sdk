@@ -191,6 +191,21 @@ class NotiflyInAppMessageLifecycleTest {
     }
 
     @Test
+    fun queuedJavascriptBridgeIsDiscardedAfterActivityDestruction() {
+        val old = create()
+        val view = old.get().findViewById<NotiflyWebView>(R.id.webView)
+        val bridge = shadowOf(view).getJavascriptInterface("Android")
+        val method = bridge.javaClass.getDeclaredMethod("postMessage", String::class.java)
+        method.isAccessible = true
+        val bridgeThread = Thread { method.invoke(bridge, """{"type":"close","button_name":"queued-close"}""") }
+        bridgeThread.start()
+        bridgeThread.join()
+        old.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        noImpression()
+    }
+
+    @Test
     fun destructionDetachesAndDestroysWebView() {
         val old = create()
         val view = old.get().findViewById<NotiflyWebView>(R.id.webView)
