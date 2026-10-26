@@ -1,6 +1,7 @@
 package tech.notifly.inapp
 
 import android.content.Intent
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import io.mockk.Runs
@@ -160,6 +161,19 @@ class NotiflyInAppMessageLifecycleTest {
         old.pause().stop().destroy()
         assertTrue(NotiflyInAppMessageActivity.isActive)
         assertFalse(current.isFinishing)
+    }
+
+    @Test
+    fun backgroundFinishWaitsForMainThreadBeforeReleasingActiveSlot() {
+        val activity = create().get()
+        val bridgeThread = Thread { activity.finish() }
+        bridgeThread.start()
+        bridgeThread.join()
+        assertFalse(activity.isFinishing)
+        assertTrue(NotiflyInAppMessageActivity.isActive)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(activity.isFinishing)
+        assertFalse(NotiflyInAppMessageActivity.isActive)
     }
 
     @Test

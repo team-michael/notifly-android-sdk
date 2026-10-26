@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.ViewCompat
@@ -204,6 +205,10 @@ class NotiflyInAppMessageActivity : Activity() {
     }
 
     override fun finish() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            runOnUiThread { finish() }
+            return
+        }
         releaseActiveSlot()
 
         super.finish()
