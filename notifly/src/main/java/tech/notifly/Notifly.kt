@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import tech.notifly.application.ApplicationService
 import tech.notifly.application.BaseApplicationLifecycleHandler
 import tech.notifly.application.IApplicationService
@@ -43,6 +44,7 @@ import tech.notifly.utils.NotiflyDeviceUtil
 import tech.notifly.utils.NotiflyIdUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.NotiflyUtil
+import tech.notifly.utils.UserPropertyKeyPolicy
 
 object Notifly {
     private var isInitialized: Boolean = false
@@ -344,6 +346,8 @@ object Notifly {
     /**
      * Sets the user properties for the current user.
      * User properties are key-value pairs that can be used to segment users.
+     * Custom keys support only ASCII letters, digits, and underscores. Invalid keys
+     * produce a warning without blocking the call. Built-in and official integration keys are exempt.
      *
      * Calls are skipped if every supplied key and value matches the available local user state
      * and less than 5 seconds have elapsed since the last user-property send attempt.
@@ -380,6 +384,14 @@ object Notifly {
                     }
                 return setUserProperties(context, newParams)
             }
+        }
+        val invalidKeys = UserPropertyKeyPolicy.invalidKeys(params.keys)
+        if (invalidKeys.isNotEmpty()) {
+            Logger.w(
+                "Invalid custom user property key(s): ${JSONArray(invalidKeys)}. " +
+                    "Only English letters (A-Z, a-z), digits (0-9), and underscores (_) are supported. " +
+                    "This warning does not block the operation.",
+            )
         }
         CommandDispatcher.dispatch(
             SetUserPropertiesCommand(
