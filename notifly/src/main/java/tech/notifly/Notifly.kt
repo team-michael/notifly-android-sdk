@@ -4,7 +4,6 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import tech.notifly.application.ApplicationService
 import tech.notifly.application.BaseApplicationLifecycleHandler
 import tech.notifly.application.IApplicationService
@@ -20,6 +19,7 @@ import tech.notifly.http.IHttpClient
 import tech.notifly.http.impl.HttpClient
 import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.kmp.user.UserPropertyKeyPolicy
 import tech.notifly.push.PushNotificationManager
 import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.push.interfaces.INotificationClickListener
@@ -44,7 +44,6 @@ import tech.notifly.utils.NotiflyDeviceUtil
 import tech.notifly.utils.NotiflyIdUtil
 import tech.notifly.utils.NotiflyUserUtil
 import tech.notifly.utils.NotiflyUtil
-import tech.notifly.utils.UserPropertyKeyPolicy
 
 object Notifly {
     private var isInitialized: Boolean = false
@@ -385,13 +384,8 @@ object Notifly {
                 return setUserProperties(context, newParams)
             }
         }
-        val invalidKeys = UserPropertyKeyPolicy.invalidKeys(params.keys)
-        if (invalidKeys.isNotEmpty()) {
-            Logger.w(
-                "Invalid custom user property key(s): ${JSONArray(invalidKeys)}. " +
-                    "Only English letters (A-Z, a-z), digits (0-9), and underscores (_) are supported. " +
-                    "This warning does not block the operation.",
-            )
+        UserPropertyKeyPolicy.warningMessage(params.keys.toTypedArray())?.let { warning ->
+            Logger.w(warning)
         }
         CommandDispatcher.dispatch(
             SetUserPropertiesCommand(

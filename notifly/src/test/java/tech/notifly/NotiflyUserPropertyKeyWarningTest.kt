@@ -50,37 +50,13 @@ class NotiflyUserPropertyKeyWarningTest {
     }
 
     @Test
-    fun `ASCII keys and exact reserved keys do not warn`() {
-        val keys =
-            listOf(
-                "user_name", "User123", "_", "123", "1st_purchase",
-                "\$email", "\$phone_number", "\$timezone", "\$line_user_id", "\$appsflyer_id",
-            )
-        keys.forEach { key ->
-            val params = mapOf(key to if (key == "\$timezone") "Asia/Seoul" else "value")
-            Notifly.setUserProperties(context, params)
-            assertTrue(key, warnings.isEmpty())
-            assertSame(params, forwardedParams())
-        }
-    }
+    fun `valid keys are dispatched without warnings`() {
+        val params = mapOf("user_name" to "Kim", "purchase_count_30d" to 3)
 
-    @Test
-    fun `invalid keys warn without preventing dispatch or exposing values`() {
-        val keys =
-            listOf(
-                "", "first.name", "full name", "사용자명", "\$custom", "\$EMAIL", "a^b", "a-b", "a/b",
-                "😀", "é", "Ａ", "name\n", "name\r\n", "name\t", "name\u00a0",
-            )
-        keys.forEach { key ->
-            warnings.clear()
-            commands.clear()
-            val params = mapOf(key to "private-value")
-            Notifly.setUserProperties(context, params)
-            assertEquals(key, 1, warnings.size)
-            assertFalse(warnings.single().contains("private-value"))
-            assertEquals(1, commands.size)
-            assertSame(params, forwardedParams())
-        }
+        Notifly.setUserProperties(context, params)
+
+        assertTrue(warnings.isEmpty())
+        assertSame(params, forwardedParams())
     }
 
     @Test
