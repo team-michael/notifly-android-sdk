@@ -19,6 +19,7 @@ import tech.notifly.http.IHttpClient
 import tech.notifly.http.impl.HttpClient
 import tech.notifly.http.impl.HttpConnectionFactory
 import tech.notifly.inapp.InAppMessageManager
+import tech.notifly.kmp.user.UserPropertyKeyPolicy
 import tech.notifly.push.PushNotificationManager
 import tech.notifly.push.interfaces.IInAppMessageEventListener
 import tech.notifly.push.interfaces.INotificationClickListener
@@ -344,6 +345,8 @@ object Notifly {
     /**
      * Sets the user properties for the current user.
      * User properties are key-value pairs that can be used to segment users.
+     * Custom keys support only ASCII letters, digits, and underscores. Invalid keys
+     * produce a warning without blocking the call. Built-in and official integration keys are exempt.
      *
      * Calls are skipped if every supplied key and value matches the available local user state
      * and less than 5 seconds have elapsed since the last user-property send attempt.
@@ -380,6 +383,9 @@ object Notifly {
                     }
                 return setUserProperties(context, newParams)
             }
+        }
+        UserPropertyKeyPolicy.warningMessage(params.keys.toTypedArray())?.let { warning ->
+            Logger.w(warning)
         }
         CommandDispatcher.dispatch(
             SetUserPropertiesCommand(

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.4] - 2026-11-12
+
+### Added
+
+- Warn when `setUserProperties` receives custom keys containing characters other than ASCII letters, digits, or underscores (or an empty key). Known built-in keys remain exempt, and warnings do not block or modify property updates.
+
 ## [1.24.3] - 2026-10-26
 
 ### Fixed
