@@ -22,6 +22,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -665,6 +666,79 @@ class InAppMessageManagerTest {
             "IS_NULL should return true when user property is absent",
             result,
         )
+    }
+
+    private fun notIncludeCondition(target: String): JSONObject =
+        JSONObject()
+            .put("unit", "user")
+            .put("attribute", "tags")
+            .put("operator", "NOT_INCLUDE")
+            .put("value", target)
+            .put("valueType", "TEXT")
+
+    private fun matchesNotInclude(
+        userProperties: MutableMap<String, Any?>,
+        target: String,
+    ): Boolean {
+        setUserData(
+            UserData(
+                platform = "android",
+                osVersion = "13",
+                appVersion = "1.0.0",
+                sdkVersion = "1.12.0",
+                sdkType = "native",
+                randomBucketNumber = null,
+                deviceExternalUserId = null,
+                updatedAt = null,
+                userProperties = userProperties,
+                campaignHiddenUntil = mutableMapOf(),
+            ),
+        )
+        val condition = Condition.fromJSONObject(notIncludeCondition(target))
+        assertNotNull("NOT_INCLUDE condition should parse", condition)
+        return callMatchUserPropertyBasedCondition(context, condition!!)
+    }
+
+    @Test
+    fun `NOT_INCLUDE matches when the array user property lacks the target`() {
+        assertTrue(matchesNotInclude(mutableMapOf("tags" to listOf("a", "b")), "c"))
+    }
+
+    @Test
+    fun `NOT_INCLUDE does not match when the array user property contains the target`() {
+        assertFalse(matchesNotInclude(mutableMapOf("tags" to listOf("a", "b")), "a"))
+    }
+
+    @Test
+    fun `NOT_INCLUDE does not match when the user property is absent`() {
+        assertFalse(matchesNotInclude(mutableMapOf(), "c"))
+    }
+
+    @Test
+    fun `NOT_INCLUDE does not match when the user property is not an array`() {
+        assertFalse(matchesNotInclude(mutableMapOf("tags" to "a"), "c"))
+    }
+
+    @Test
+    fun `campaign with a NOT_INCLUDE segment condition is parsed instead of dropped`() {
+        unmockkObject(Campaign.Companion)
+
+        val campaign =
+            Campaign.fromJSONObject(
+                JSONObject(
+                    """
+                    {
+                      "id": "not-include-campaign", "channel": "in-app-message", "updated_at": "2026-11-18",
+                      "starts": [0], "end": null, "segment_type": "condition",
+                      "segment_info": {"groups": [{"conditions": [${notIncludeCondition("c")}]}]},
+                      "triggering_conditions": [[{"type": "event_name", "operator": "=", "operand": "purchase"}]],
+                      "message": {"html_url": "https://example.com/message", "modal_properties": {}}
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+        assertEquals("not-include-campaign", campaign.id)
     }
 
     @Test
