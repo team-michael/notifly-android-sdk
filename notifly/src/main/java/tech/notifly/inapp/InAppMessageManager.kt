@@ -673,6 +673,14 @@ object InAppMessageManager {
                 )
             }
 
+            Operator.NOT_CONTAINS -> {
+                Comparator.notContains(
+                    userAttributeValue,
+                    value,
+                    valueType,
+                )
+            }
+
             else -> {
                 false
             } // Should never happen
@@ -1083,7 +1091,19 @@ object InAppMessageManager {
                 a: Any,
                 b: Any,
                 type: ValueType,
-            ): Boolean =
+            ): Boolean = containsOrNull(a, b, type) ?: false
+
+            fun notContains(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean = containsOrNull(a, b, type) == false
+
+            private fun containsOrNull(
+                a: Any,
+                b: Any,
+                type: ValueType,
+            ): Boolean? =
                 try {
                     val castedA = cast(a, "ARRAY") as List<*>
                     when (type) {
@@ -1116,7 +1136,7 @@ object InAppMessageManager {
                     }
                 } catch (error: Exception) {
                     Logger.d("[Notifly] ${error.message}")
-                    false
+                    null
                 }
         }
     }
