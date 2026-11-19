@@ -1,6 +1,7 @@
 package tech.notifly.inapp.models
 
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import tech.notifly.sdk.NotiflySdkInfo
@@ -193,10 +194,7 @@ data class UserData(
                         val userProperties = mutableMapOf<String, Any?>()
                         while (keys.hasNext()) {
                             val key = keys.next()
-                            userProperties[key] =
-                                userPropertiesJSONObject.get(key).let {
-                                    if (it == JSONObject.NULL) null else it
-                                }
+                            userProperties[key] = parseJSONValue(userPropertiesJSONObject.get(key))
                         }
                         userProperties
                     } else {
@@ -246,6 +244,13 @@ data class UserData(
                 )
             }
         }
+
+        private fun parseJSONValue(value: Any): Any? =
+            when (value) {
+                JSONObject.NULL -> null
+                is JSONArray -> List(value.length()) { parseJSONValue(value.get(it)) }
+                else -> value
+            }
 
         suspend fun getSkeleton(context: Context): UserData {
             val platform = NotiflyDeviceUtil.getPlatform()

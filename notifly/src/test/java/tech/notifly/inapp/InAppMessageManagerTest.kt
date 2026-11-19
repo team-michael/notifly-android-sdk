@@ -51,6 +51,7 @@ import tech.notifly.inapp.models.TriggeringConditionUnit
 import tech.notifly.inapp.models.TriggeringConditions
 import tech.notifly.inapp.models.TriggeringEventFilters
 import tech.notifly.inapp.models.UserData
+import tech.notifly.inapp.models.ValueType
 import tech.notifly.sdk.NotiflySdkState
 import tech.notifly.sdk.NotiflySdkStateManager
 import tech.notifly.services.NotiflyServiceProvider
@@ -851,6 +852,80 @@ class InAppMessageManagerTest {
         assertEquals(membership, currentUserData.userProperties["membership"])
         assertEquals(hiddenUntil?.let { mapOf("hidden_campaign" to it) } ?: emptyMap<String, Int>(), currentUserData.campaignHiddenUntil)
     }
+
+    private fun createTagsIncludeSegmentInfo(tag: String): SegmentInfo =
+        SegmentInfo(
+            conditionGroup =
+                listOf(
+                    ConditionGroup(
+                        conditions =
+                            listOf(
+                                Condition(
+                                    unit = SegmentConditionUnitType.USER,
+                                    operator = Operator.CONTAINS,
+                                    value = tag,
+                                    attribute = "tags",
+                                    event = null,
+                                    eventConditionType = null,
+                                    secondaryValue = null,
+                                    valueType = ValueType.TEXT,
+                                    comparisonParameter = null,
+                                    useEventParamsAsConditionValue = null,
+                                ),
+                            ),
+                        conditionOperator = ConditionOperator.NULL,
+                    ),
+                ),
+            groupOperator = GroupOperator.NULL,
+        )
+
+    private suspend fun scheduleCountWhenServerTagsInclude(tag: String): Int {
+        val campaign = createDummyCampaign(start = 0, segmentInfo = createTagsIncludeSegmentInfo(tag))
+        val httpClient = NotiflyServiceProvider.getService<IHttpClient>()
+        every { Campaign.fromJSONObject(any()) } returns campaign
+        coEvery { httpClient.get(any(), any()) } returns
+            HttpResponse(
+                statusCode = 200,
+                payload =
+                    """
+                    {
+                        "campaignData": [{}],
+                        "eventIntermediateCountsData": [],
+                        "userData": {"user_properties": {"tags": ["vip", "beta"]}}
+                    }
+                    """.trimIndent(),
+                throwable = null,
+            )
+        var scheduleCount = 0
+        mockkObject(InAppMessageScheduler)
+        try {
+            every { InAppMessageScheduler.getScheduledCampaignIds() } returns emptyList()
+            every { InAppMessageScheduler.schedule(context, campaign, any(), any()) } answers { scheduleCount++ }
+            InAppMessageManager.initialize(context)
+            InAppMessageManager.maybeScheduleInAppMessagesAndIngestEvent(
+                context = context,
+                eventName = "test_event",
+                externalUserId = null,
+                eventParams = emptyMap(),
+                isInternalEvent = false,
+            )
+        } finally {
+            unmockkObject(InAppMessageScheduler)
+        }
+        return scheduleCount
+    }
+
+    @Test
+    fun `includes condition targets a server-synced array user property containing the value`() =
+        runTest {
+            assertEquals(1, scheduleCountWhenServerTagsInclude("vip"))
+        }
+
+    @Test
+    fun `includes condition skips a server-synced array user property missing the value`() =
+        runTest {
+            assertEquals(0, scheduleCountWhenServerTagsInclude("gold"))
+        }
 
     @Test
     fun `foreground revalidation only adds missing properties after the interval`() =
