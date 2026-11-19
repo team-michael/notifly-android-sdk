@@ -382,6 +382,7 @@ data class Condition(
                         "<=" -> Operator.LESS_THAN_OR_EQUAL
                         "<>" -> Operator.NOT_EQUALS
                         "@>" -> Operator.CONTAINS
+                        "NOT_INCLUDE" -> Operator.NOT_CONTAINS
                         else -> null
                     }
                 }

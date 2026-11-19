@@ -27,6 +27,7 @@ enum class Operator {
     LESS_THAN,
     LESS_THAN_OR_EQUAL,
     CONTAINS,
+    NOT_CONTAINS,
 }
 
 enum class TriggeringConditionType {
